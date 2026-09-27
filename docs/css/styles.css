@@ -109,6 +109,37 @@ html:has(.about-page) {
   text-wrap: pretty;
 }
 
+.about-repo-link {
+  gap: 0.4rem;
+  max-width: 100%;
+  margin-top: clamp(0.35rem, 1.1vh, 0.65rem);
+  padding: clamp(0.2rem, 0.6vh, 0.35rem) clamp(0.6rem, 1.8vw, 0.85rem);
+  font-size: clamp(0.65rem, 1.6vh, 0.8rem);
+  color: var(--ink);
+  background: var(--chalk);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 2px 2px 0 var(--ink);
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.about-repo-link:hover {
+  background: var(--lemon);
+}
+
+.about-repo-link svg {
+  width: 1.1em;
+  height: 1.1em;
+  flex-shrink: 0;
+}
+
+.about-repo-link span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .about-flow {
   flex-shrink: 1;
   min-height: 0;
@@ -201,6 +232,27 @@ html:has(.about-page) {
 @media (max-height: 700px) {
   .about-page .flow-connector {
     display: none;
+  }
+}
+
+/* Too short to fit the pitch in one viewport — let the page scroll instead of overlapping */
+@media (max-height: 500px) {
+  html:has(.about-page),
+  .about-page {
+    height: auto;
+    overflow: auto;
+  }
+
+  .about-shell {
+    height: auto;
+    min-height: 100dvh;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .about-main {
+    justify-content: flex-start;
+    gap: 1rem;
   }
 }
 
