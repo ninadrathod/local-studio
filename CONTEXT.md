@@ -81,7 +81,7 @@ Optional helpers:
 - `backend/helpers/extract_subject.py` — background removal (rembg / `u2net`)
 - `backend/helpers/upscale_model.py` — local AI super-resolution (Real-ESRGAN `realesr-general-x4v3`, BSD-3-Clause): downloads the official release weights (SHA-256 pinned), converts them to ONNX locally (no PyTorch), runs tiled on onnxruntime CPU. Used by the `ai_upscale` filter.
 - `backend/helpers/apply_preset.py` — run a JSON preset from `backend/presets/` (also used by the apply-preset API)
-- Example presets: `bw_bg_glowing_subject`, `polaroid_memory` (square-only; optional caption via `text_input`), `warm_faded_print` (any aspect ratio; sun-faded color grade), `full_hd` / `4k_crisp` (any aspect ratio; local AI upscale to 1920 / 3840 px long edge)
+- Example presets: `bw_bg_glowing_subject`, `polaroid_memory` (square-only; optional caption via `text_input`), `warm_faded_print` (any aspect ratio; sun-faded color grade), `full_hd` / `4k_crisp` (any aspect ratio; local AI upscale to 1920 / 3840 px long edge), `doodle_corner_xo` / `doodle_halo_rings` (any aspect ratio; white sticker outline on the subject + hand-drawn background doodles)
 - `backend/database/` — lightweight SQLite file (`presets.db`) for preset metadata (name, path, keywords, `ar`, `text_input`, `default_text`, `text_character_limit`) plus `popular` download counts (`preset_id` FK, `used_count`). Ops in `db_ops.py`; created/seeded by `./scripts/setup.sh`.
 - `previews/` — static preset gallery assets (`pre-edit/` + `post-edit/` + `presets.json`); wired into the index UI gallery
 - Preset catalog + how-to: `backend/presets/PRESETS.md`

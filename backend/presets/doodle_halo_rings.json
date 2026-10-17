@@ -1,0 +1,55 @@
+{
+  "name": "doodle_halo_rings",
+  "label": "Doodle halo rings",
+  "description": "Extract the subject with a white sticker outline, then hand-draw four wobbly concentric rings behind the subject and three sparkles top-left on the background.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "require_clear_subject": true
+    },
+    {
+      "filter": "sticker_outline",
+      "on": "subject",
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "width_ratio": 0.008,
+      "softness": 0.6
+    },
+    {
+      "filter": "doodle",
+      "on": "background",
+      "style": "rings",
+      "anchor": "subject",
+      "around": "subject",
+      "size": 0.92,
+      "stroke": 0.007,
+      "count": 4,
+      "seed": 5
+    },
+    {
+      "filter": "doodle",
+      "on": "background",
+      "style": "stars",
+      "anchor": "top_left",
+      "size": 0.3,
+      "count": 3,
+      "seed": 2
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    }
+  ]
+}

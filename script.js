@@ -27,8 +27,8 @@ const PREVIEW_PATH_RE =
 
 /** DB / JSON preset_name shape used by this project. */
 const PRESET_NAME_RE = /^[a-z0-9][a-z0-9_]{0,63}$/;
-/** Name words shown fully upper-case in labels (e.g. `full_hd` → "Full HD", `4k_crisp` → "4K Crisp"). */
-const UPPERCASE_LABEL_WORD_RE = /^(hd|uhd|\d+k)$/i;
+/** Name words shown fully upper-case in labels (e.g. `full_hd` → "Full HD", `4k_crisp` → "4K Crisp", `doodle_corner_xo` → "Doodle Corner XO"). */
+const UPPERCASE_LABEL_WORD_RE = /^(hd|uhd|xo|\d+k)$/i;
 const MAX_PRESET_TEXT_CHARS = 200;
 
 const els = {

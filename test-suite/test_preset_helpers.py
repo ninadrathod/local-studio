@@ -55,6 +55,8 @@ def test_filter_registry_is_name_lookup() -> None:
         "sharpen",
         "denoise",
         "ai_upscale",
+        "doodle",
+        "sticker_outline",
     }
 
 
@@ -437,3 +439,196 @@ def test_upscale_model_build_onnx_is_atomic(tmp_path: Path) -> None:
     dest = U.build_onnx(params, tmp_path / "m.onnx")
     assert [p.name for p in tmp_path.iterdir()] == ["m.onnx"]
     assert dest.stat().st_size > 0
+
+
+@pytest.mark.parametrize("style", ["xo", "rings", "wiggles", "stars"])
+def test_doodle_styles_draw_white_and_keep_size(style: str) -> None:
+    base = Image.new("RGB", (200, 120), (20, 20, 20))
+    out = F.doodle(base, style=style, anchor="center", size=0.6, count=3)
+    assert out.size == base.size
+    assert out.mode == "RGB"
+    assert out.convert("L").getextrema()[1] > 200
+
+
+def test_doodle_is_deterministic_and_seeded() -> None:
+    base = Image.new("RGB", (160, 160), (0, 0, 0))
+    a = F.doodle(base, style="xo", seed=1)
+    assert a.tobytes() == F.doodle(base, style="xo", seed=1).tobytes()
+    assert a.tobytes() != F.doodle(base, style="xo", seed=2).tobytes()
+
+
+def test_doodle_anchor_places_in_corner() -> None:
+    base = Image.new("RGB", (200, 200), (0, 0, 0))
+    out = F.doodle(base, style="xo", anchor="top_right", size=0.2).convert("L")
+    bbox = out.point(lambda v: 255 if v > 60 else 0).getbbox()
+    assert bbox is not None
+    assert bbox[0] > 100 and bbox[3] < 100
+
+
+def test_doodle_subject_anchor_centres_on_around_layer() -> None:
+    base = Image.new("RGB", (200, 200), (0, 0, 0))
+    subject = Image.new("RGBA", (200, 200), (0, 0, 0, 0))
+    subject.paste((255, 0, 0, 255), (120, 120, 180, 180))
+    out = F.doodle(base, style="rings", anchor="subject", around=subject, size=0.3, count=2)
+    bbox = out.convert("L").point(lambda v: 255 if v > 60 else 0).getbbox()
+    assert bbox is not None
+    assert abs((bbox[0] + bbox[2]) / 2 - 150) < 6
+    assert abs((bbox[1] + bbox[3]) / 2 - 150) < 6
+
+
+def test_doodle_rejects_bad_params() -> None:
+    base = Image.new("RGB", (50, 50))
+    with pytest.raises(ValueError):
+        F.doodle(base, style="hearts")
+    with pytest.raises(ValueError):
+        F.doodle(base, anchor="middle_ish")
+    with pytest.raises(ValueError):
+        F.doodle(base, count=0)
+    with pytest.raises(ValueError):
+        F.doodle(base, count=F.DOODLE_MAX_COUNT + 1)
+
+
+def test_apply_steps_doodle_with_around_layer() -> None:
+    background = Image.new("RGB", (64, 64), (10, 10, 10))
+    subject = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    subject.paste((200, 50, 50, 255), (24, 24, 40, 40))
+    layers = {"background": background, "subject": subject}
+    steps = [
+        {"filter": "doodle", "on": "background", "style": "rings", "anchor": "subject", "around": "subject"},
+        {"filter": "composite", "base": "background", "overlay": "subject", "as": "image"},
+    ]
+    from apply_preset import FILTERS as REG
+
+    for i, step in enumerate(steps):
+        params = dict(step)
+        REG[params.pop("filter")](layers, index=i, **params)
+    assert layers["image"].size == (64, 64)
+    with pytest.raises(KeyError):
+        REG["doodle"](layers, index=0, on="background", around="missing")
+
+
+def test_doodle_preset_files() -> None:
+    for name, styles in (
+        ("doodle_corner_xo", ["xo", "wiggles"]),
+        ("doodle_halo_rings", ["rings", "stars"]),
+    ):
+        data = load_preset(PRESETS / f"{name}.json")
+        assert data["ar"] == "non-square"
+        assert data["text_input"] == "no"
+        filters = [s["filter"] for s in data["steps"]]
+        assert filters[0] == "extract_subject"
+        assert filters[1] == "sticker_outline"
+        assert filters[-1] == "composite"
+        assert [s["style"] for s in data["steps"] if s["filter"] == "doodle"] == styles
+        assert all(s["on"] == "background" for s in data["steps"] if s["filter"] == "doodle")
+
+
+def test_doodle_draws_only_near_anchor_and_offscreen_is_noop() -> None:
+    base = Image.new("RGB", (400, 400), (0, 0, 0))
+    out = F.doodle(base, style="stars", anchor="top_left", size=0.2, count=2)
+    bbox = out.convert("L").point(lambda v: 255 if v > 40 else 0).getbbox()
+    assert bbox is not None and bbox[2] < 200 and bbox[3] < 200
+    off = F.doodle(base, style="xo", x=5.0, y=5.0)
+    assert off.tobytes() == base.tobytes()
+
+
+def test_doodle_large_region_skips_supersample(monkeypatch: pytest.MonkeyPatch) -> None:
+    sizes: list[tuple[int, int]] = []
+    real_new = Image.new
+
+    def spy(mode, size, *args, **kwargs):
+        if mode == "RGBA":
+            sizes.append(tuple(size))
+        return real_new(mode, size, *args, **kwargs)
+
+    monkeypatch.setattr(F.Image, "new", spy)
+    monkeypatch.setattr(F, "_DOODLE_SUPERSAMPLE_MAX_PIXELS", 100)
+    F.doodle(real_new("RGB", (60, 60)), style="rings", anchor="center", size=0.8)
+    assert sizes and max(w * h for w, h in sizes) <= 60 * 60
+
+
+def test_sticker_outline_scales_with_image_and_keeps_subject() -> None:
+    def outline_px(side: int) -> int:
+        subject = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+        lo, hi = side // 4, side * 3 // 4
+        subject.paste((200, 0, 0, 255), (lo, lo, hi, hi))
+        out = F.sticker_outline(subject, width_ratio=0.02, softness=0)
+        assert out.getpixel((side // 2, side // 2)) == (200, 0, 0, 255)
+        assert out.getpixel((lo - 2, side // 2))[:3] == (255, 255, 255)
+        return lo - out.getchannel("A").getbbox()[0]
+
+    small, large = outline_px(200), outline_px(800)
+    assert 3 <= small <= 6
+    assert 14 <= large <= 22
+    with pytest.raises(ValueError):
+        F.sticker_outline(Image.new("RGBA", (10, 10)), width_ratio=0)
+
+
+def test_is_reliable_cutout_rejects_smear_and_tiny_masks() -> None:
+    solid = Image.new("RGBA", (100, 100), (0, 0, 0, 0))
+    solid.paste((9, 9, 9, 255), (20, 20, 80, 80))
+    assert F.is_reliable_cutout(solid)
+    smear = Image.new("RGBA", (100, 100), (0, 0, 0, 60))
+    smear.paste((9, 9, 9, 255), (48, 48, 52, 52))
+    assert not F.is_reliable_cutout(smear)
+    assert not F.is_reliable_cutout(Image.new("RGBA", (100, 100), (0, 0, 0, 0)))
+    assert not F.is_reliable_cutout(Image.new("RGB", (10, 10)))
+
+
+def test_extract_subject_layers_falls_back_when_cutout_unreliable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import types
+
+    smear = Image.new("RGBA", (40, 40), (0, 0, 0, 50))
+    fake = types.ModuleType("extract_subject")
+    fake.extract_subject = lambda image: smear
+    monkeypatch.setitem(sys.modules, "extract_subject", fake)
+    original = Image.new("RGB", (40, 40), (90, 120, 150))
+    subject, background = F.extract_subject_layers(original, require_clear_subject=True)
+    assert subject.getchannel("A").getbbox() is None
+    assert background.tobytes() == original.tobytes()
+
+    # Off by default: existing presets keep the rembg mask as-is.
+    kept, _ = F.extract_subject_layers(original)
+    assert kept.tobytes() == smear.tobytes()
+
+
+def test_is_reliable_cutout_accepts_fluffy_edges_near_body() -> None:
+    from PIL import ImageDraw
+
+    def blob(r_body: int, r_soft: int, soft_alpha: int = 90) -> Image.Image:
+        alpha = Image.new("L", (400, 400), 0)
+        draw = ImageDraw.Draw(alpha)
+        draw.ellipse((200 - r_soft, 200 - r_soft, 200 + r_soft, 200 + r_soft), fill=soft_alpha)
+        draw.ellipse((200 - r_body, 200 - r_body, 200 + r_body, 200 + r_body), fill=255)
+        subject = Image.new("RGBA", (400, 400), (0, 0, 0, 0))
+        subject.putalpha(alpha)
+        return subject
+
+    # Fur area > body area, but hugging the body → still a real subject.
+    assert F.is_reliable_cutout(blob(60, 95))
+    # Soft haze far beyond the body → smear.
+    assert not F.is_reliable_cutout(blob(30, 190))
+
+
+def test_doodle_presets_require_clear_subject() -> None:
+    for name in ("doodle_corner_xo", "doodle_halo_rings"):
+        step = load_preset(PRESETS / f"{name}.json")["steps"][0]
+        assert step["filter"] == "extract_subject"
+        assert step["require_clear_subject"] is True
+    assert "require_clear_subject" not in load_preset(PRESETS / "bw_bg_glowing_subject.json")["steps"][0]
+
+
+def test_run_extract_subject_passes_require_clear_subject(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: list[bool] = []
+
+    def fake_layers(image, require_clear_subject=False):
+        seen.append(require_clear_subject)
+        return Image.new("RGBA", image.size), image
+
+    monkeypatch.setattr(F, "extract_subject_layers", fake_layers)
+    layers = {"image": Image.new("RGB", (8, 8))}
+    FILTERS["extract_subject"](layers, index=0, on="image", require_clear_subject=True)
+    FILTERS["extract_subject"](layers, index=1, on="image")
+    assert seen == [True, False]
