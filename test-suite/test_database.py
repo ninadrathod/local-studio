@@ -77,7 +77,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     init_db(db)
     first = seed_default_presets(db_path=db)
     second = seed_default_presets(db_path=db)
-    assert len(first) == 7
+    assert len(first) == 10
     names = {row["preset_name"] for row in first}
     assert names == {
         "bw_bg_glowing_subject",
@@ -87,6 +87,9 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "4k_crisp",
         "doodle_corner_xo",
         "doodle_halo_rings",
+        "comic_pop",
+        "old_newspaper",
+        "vintage_comic",
     }
     by_name = {row["preset_name"]: row for row in first}
     assert by_name["bw_bg_glowing_subject"]["ar"] == "non-square"
@@ -99,13 +102,24 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     assert by_name["warm_faded_print"]["text_input"] == "no"
     assert by_name["warm_faded_print"]["default_text"] == ""
     assert by_name["warm_faded_print"]["text_character_limit"] == 0
-    for name in ("full_hd", "4k_crisp", "doodle_corner_xo", "doodle_halo_rings"):
+    for name in (
+        "full_hd",
+        "4k_crisp",
+        "doodle_corner_xo",
+        "doodle_halo_rings",
+        "comic_pop",
+        "old_newspaper",
+        "vintage_comic",
+    ):
         assert by_name[name]["ar"] == "non-square"
         assert by_name[name]["text_input"] == "no"
         assert by_name[name]["text_character_limit"] == 0
     assert second == []
     names_in_order = [row["preset_name"] for row in list_presets(db_path=db)]
     assert names_in_order == [
+        "vintage_comic",
+        "old_newspaper",
+        "comic_pop",
         "doodle_halo_rings",
         "doodle_corner_xo",
         "4k_crisp",
@@ -115,7 +129,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "bw_bg_glowing_subject",
     ]
     popular = list_popular(db_path=db)
-    assert len(popular) == 7
+    assert len(popular) == 10
     assert all(row["used_count"] == 0 for row in popular)
 
 
@@ -142,6 +156,9 @@ def test_seed_default_presets_syncs_text_fields(tmp_path: Path) -> None:
         "4k_crisp",
         "doodle_corner_xo",
         "doodle_halo_rings",
+        "comic_pop",
+        "old_newspaper",
+        "vintage_comic",
     ]
     synced = get_preset_by_name("bw_bg_glowing_subject", db_path=db)
     assert synced is not None

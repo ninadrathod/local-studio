@@ -1,0 +1,51 @@
+{
+  "name": "old_newspaper",
+  "label": "Old newspaper",
+  "description": "Grayscale photo printed as a fine black-ink halftone (70% mix) on warm newsprint, with light grain, stains and fade.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "grayscale",
+      "on": "image"
+    },
+    {
+      "filter": "brightness",
+      "on": "image",
+      "amount": 1.06
+    },
+    {
+      "filter": "contrast",
+      "on": "image",
+      "amount": 1.12
+    },
+    {
+      "filter": "halftone",
+      "on": "image",
+      "mode": "mono",
+      "cell": 0.007,
+      "angle": 45,
+      "paper": [
+        236,
+        226,
+        200
+      ],
+      "ink": [
+        40,
+        37,
+        34
+      ],
+      "mix": 0.7
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0.22,
+      "grain": 0.05,
+      "stains": 0.12,
+      "fade": 0.05
+    }
+  ]
+}

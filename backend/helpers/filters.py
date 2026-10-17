@@ -610,6 +610,281 @@ def doodle(
     return out
 
 
+def _keep_alpha(out: Image.Image, image: Image.Image) -> Image.Image:
+    """Return `out` as RGB, or RGBA carrying `image`'s alpha when it had one."""
+    if image.mode == "RGBA":
+        out = out.convert("RGBA")
+        out.putalpha(image.getchannel("A"))
+        return out
+    return out if out.mode == "RGB" else out.convert("RGB")
+
+
+def _flatten(image: Image.Image, background: Sequence[int] = (255, 255, 255)) -> Image.Image:
+    """RGB copy of `image`; RGBA is composited onto `background` first so hidden
+    pixels under transparency can't leak into tone/edge detection."""
+    if image.mode != "RGBA":
+        return _as_rgb(image)
+    flat = Image.new("RGB", image.size, tuple(background))
+    flat.paste(image.convert("RGB"), (0, 0), image.getchannel("A"))
+    return flat
+
+
+def _band_lut(fn) -> list[int]:
+    """768-entry RGB point table from `fn(value, band_index)`."""
+    return [max(0, min(255, round(fn(v, band)))) for band in range(3) for v in range(256)]
+
+
+def posterize(image: Image.Image, levels: int = 5, smooth: int = 3) -> Image.Image:
+    """
+    Flatten each RGB channel to `levels` evenly spaced values (comic-style colour
+    bands). `smooth` (odd, 0 to skip) median-filters first so bands stay clean.
+    """
+    steps = int(levels)
+    if not 2 <= steps <= 32:
+        raise ValueError("levels must be between 2 and 32")
+    base = _as_rgb(image)
+    window = int(smooth)
+    if window:
+        if window < 3 or window % 2 == 0:
+            raise ValueError("smooth must be 0 or an odd integer >= 3")
+        base = base.filter(ImageFilter.MedianFilter(size=window))
+    lut = [round(round(v / 255 * (steps - 1)) * 255 / (steps - 1)) for v in range(256)]
+    return _keep_alpha(base.point(lut * 3), image)
+
+
+def ink_edges(
+    image: Image.Image,
+    detail: float = 0.0025,
+    threshold: int = 6,
+    thickness: float = 0.0015,
+    color: Sequence[int] | None = None,
+    rgb: Sequence[int] | None = None,
+    opacity: float = 1.0,
+) -> Image.Image:
+    """
+    Draw comic-style ink outlines (difference of Gaussians on luminance).
+
+    `detail` is the edge blur radius and `thickness` the line growth, both as
+    fractions of the short side so the look scales with resolution. Lower
+    `threshold` → more lines.
+    """
+    base = _flatten(image)
+    short = min(base.size)
+    gray = base.convert("L")
+    r1 = max(0.5, float(detail) * short)
+    fine = gray.filter(ImageFilter.GaussianBlur(radius=r1))
+    coarse = gray.filter(ImageFilter.GaussianBlur(radius=r1 * 1.6))
+    del gray
+    # Pixels darker than their surroundings → the dark side of an edge.
+    dog = ImageChops.subtract(coarse, fine)
+    del fine, coarse
+    cut = int(threshold)
+    lines = dog.point(lambda v: 255 if v > cut else 0)
+    del dog
+    grow = float(thickness) * short
+    if grow >= 1.0:
+        lines = _dilate(lines, grow)
+    lines = lines.filter(ImageFilter.GaussianBlur(radius=0.6))
+    strength = max(0.0, min(1.0, float(opacity)))
+    if strength < 1.0:
+        lines = lines.point(lambda v: int(v * strength))
+    # Paint ink through the line mask in place (no full-size ink layer).
+    base.paste(_rgb_tint(color, rgb, (20, 18, 16)), (0, 0, *base.size), lines)
+    return _keep_alpha(base, image)
+
+
+# Process halftone at most this long edge, then resize back, so dot drawing and
+# the rotated screens stay bounded on very large uploads.
+_HALFTONE_MAX_EDGE = 2400
+# Dots are drawn one by one; if a screen would need more than this many cells
+# (tiny `cell`, extreme aspect ratios), the pitch is enlarged to fit.
+_HALFTONE_MAX_DOTS = 160_000
+_CMYK_ANGLES = (15.0, 75.0, 0.0, 45.0)
+_CMYK_INKS = ((0, 160, 225), (230, 0, 125), (255, 230, 0), (25, 22, 20))
+
+
+def _separate_cmyk(image: Image.Image, gcr: float = 0.6) -> tuple[Image.Image, ...]:
+    """
+    Split RGB into C, M, Y, K ink channels with grey-component replacement.
+
+    Pillow's own RGB→CMYK leaves K at 0, so shadows would print as muddy
+    overlapping C+M+Y dots. Here `gcr` (0–1) of the shared grey moves to the
+    black plate: 1 = cleanest blacks, lower keeps more colour in the darks.
+    """
+    r, g, b = _as_rgb(image).split()
+    c, m, y = ImageChops.invert(r), ImageChops.invert(g), ImageChops.invert(b)
+    amount = max(0.0, min(1.0, float(gcr)))
+    k = ImageChops.darker(ImageChops.darker(c, m), y).point(lambda v: int(v * amount))
+    return ImageChops.subtract(c, k), ImageChops.subtract(m, k), ImageChops.subtract(y, k), k
+
+
+def _dot_screen(ink: Image.Image, cell: float, angle: float) -> Image.Image:
+    """
+    Halftone one ink channel (L, 255 = full ink) into a dot mask of the same size.
+
+    The channel is rotated to the screen angle, averaged per cell, a dot sized by
+    coverage is drawn at each cell centre, then the screen is rotated back.
+    """
+    import math
+
+    w, h = ink.size
+    rotated = ink.rotate(angle, resample=Image.Resampling.BILINEAR, expand=True, fillcolor=0)
+    rw, rh = rotated.size
+    cols, rows = max(1, math.ceil(rw / cell)), max(1, math.ceil(rh / cell))
+    means = rotated.resize((cols, rows), Image.Resampling.BOX)
+    ss = 2 if cell < 12 else 1
+    screen = Image.new("L", (int(cols * cell * ss), int(rows * cell * ss)), 0)
+    draw = ImageDraw.Draw(screen)
+    px = means.load()
+    unit = cell * ss
+    # Dot area ≈ ink coverage (r = sqrt(c/π)), with mild print "dot gain" that
+    # grows to 0.71 × cell at full ink so solid areas close up.
+    for row in range(rows):
+        cy = (row + 0.5) * unit
+        for col in range(cols):
+            value = px[col, row]
+            if value < 6:
+                continue
+            coverage = value / 255
+            radius = unit * math.sqrt(coverage / math.pi) * (1 + 0.26 * coverage)
+            cx = (col + 0.5) * unit
+            draw.ellipse((cx - radius, cy - radius, cx + radius, cy + radius), fill=255)
+    if ss > 1:
+        screen = screen.resize((int(cols * cell), int(rows * cell)), Image.Resampling.LANCZOS)
+    screen = screen.crop((0, 0, rw, rh)).rotate(-angle, resample=Image.Resampling.BILINEAR, expand=True)
+    sw, sh = screen.size
+    left, top = (sw - w) // 2, (sh - h) // 2
+    return screen.crop((left, top, left + w, top + h))
+
+
+def halftone(
+    image: Image.Image,
+    mode: str = "mono",
+    cell: float = 0.012,
+    angle: float = 45.0,
+    paper: Sequence[int] | None = None,
+    ink: Sequence[int] | None = None,
+    mix: float = 1.0,
+    gcr: float = 0.6,
+) -> Image.Image:
+    """
+    Printed halftone dot screen.
+
+    `mode`: `mono` (one `ink` colour at `angle`) or `cmyk` (four process inks at
+    15/75/0/45°; `gcr` sets how much shared grey prints on the black plate).
+    `cell` is the dot pitch as a fraction of the short side.
+    Dots print on `paper`; `mix` < 1 blends the print back over the original.
+    """
+    kind = (mode or "mono").strip().lower()
+    if kind not in {"mono", "cmyk"}:
+        raise ValueError("mode must be 'mono' or 'cmyk'")
+    pitch = float(cell)
+    if not 0.002 <= pitch <= 0.1:
+        raise ValueError("cell must be between 0.002 and 0.1")
+    paper_rgb = _rgb_tint(paper, None, (255, 255, 255))
+    base = _flatten(image, paper_rgb)
+    w, h = base.size
+    scale = min(1.0, _HALFTONE_MAX_EDGE / max(w, h))
+    work = base if scale == 1.0 else base.resize(
+        (max(1, round(w * scale)), max(1, round(h * scale))), Image.Resampling.LANCZOS
+    )
+    cell_px = max(3.0, pitch * min(work.size))
+    # Worst case (45°) rotated screen area / cell area ≈ dots per channel.
+    screen_area = (work.size[0] + work.size[1]) ** 2 / 2
+    if screen_area / cell_px**2 > _HALFTONE_MAX_DOTS:
+        cell_px = math.sqrt(screen_area / _HALFTONE_MAX_DOTS)
+    printed = Image.new("RGB", work.size, paper_rgb)
+
+    if kind == "mono":
+        darkness = ImageChops.invert(work.convert("L"))
+        dots = _dot_screen(darkness, cell_px, float(angle))
+        layer = Image.new("RGB", work.size, _rgb_tint(ink, None, (25, 22, 20)))
+        printed = Image.composite(layer, printed, dots)
+    else:
+        for channel, ang, ink_rgb in zip(_separate_cmyk(work, gcr), _CMYK_ANGLES, _CMYK_INKS):
+            dots = _dot_screen(channel, cell_px, ang)
+            inked = Image.composite(Image.new("RGB", work.size, ink_rgb), Image.new("RGB", work.size, (255, 255, 255)), dots)
+            printed = ImageChops.multiply(printed, inked)
+
+    del work
+    if printed.size != base.size:
+        printed = printed.resize(base.size, Image.Resampling.LANCZOS)
+    amount = max(0.0, min(1.0, float(mix)))
+    if amount < 1.0:
+        printed = Image.blend(base, printed, amount)
+    del base
+    return _keep_alpha(printed, image)
+
+
+def paper_texture(
+    image: Image.Image,
+    color: Sequence[int] | None = None,
+    rgb: Sequence[int] | None = None,
+    tint: float = 0.35,
+    grain: float = 0.08,
+    stains: float = 0.12,
+    fade: float = 0.0,
+    seed: int = 11,
+) -> Image.Image:
+    """
+    Age a print onto paper: multiply-tint toward `color` by `tint`, add fine
+    `grain` speckle and low-frequency `stains` (blotchy yellowing), then `fade`
+    (lift blacks toward the paper). All randomness is seeded; grain size scales
+    with resolution.
+    """
+    import random
+
+    out = _as_rgb(image)
+    w, h = out.size
+    paper_rgb = _rgb_tint(color, rgb, (236, 222, 190))
+    rng = random.Random(int(seed))
+
+    # Tint, stain darkening and fade are per-channel tone curves, so they run as
+    # point tables instead of allocating full-size solid/blend layers.
+    t = max(0.0, min(1.0, float(tint)))
+    if t > 0:
+        out = out.point(_band_lut(lambda v, b: v * (1 - t + t * paper_rgb[b] / 255)))
+
+    g = max(0.0, min(1.0, float(grain)))
+    if g > 0:
+        tile_side = 256
+        tile = Image.frombytes("L", (tile_side, tile_side), rng.randbytes(tile_side * tile_side))
+        grain_px = max(1.0, min(w, h) / 720)
+        if grain_px > 1.0:
+            tile = tile.resize((round(tile_side * grain_px),) * 2, Image.Resampling.BILINEAR)
+        low = round(255 * (1 - g))
+        tile = tile.point(lambda v: low + (v * (255 - low)) // 255)
+        tile_rgb = Image.merge("RGB", (tile, tile, tile))
+        tw, th = tile_rgb.size
+        # Multiply grain tile by tile in place (no full-size noise layer).
+        for ty in range(0, h, th):
+            for tx in range(0, w, tw):
+                box = (tx, ty, min(w, tx + tw), min(h, ty + th))
+                region = out.crop(box)
+                out.paste(ImageChops.multiply(region, tile_rgb.crop((0, 0, *region.size))), box[:2])
+
+    st = max(0.0, min(1.0, float(stains)))
+    if st > 0:
+        short = min(w, h)
+        # Blot grid follows the aspect ratio so stains stay round on panoramas.
+        cols = max(2, min(240, round(12 * w / short)))
+        rows = max(2, min(240, round(12 * h / short)))
+        blot = Image.frombytes("L", (cols, rows), rng.randbytes(cols * rows)).resize(
+            (w, h), Image.Resampling.BICUBIC
+        )
+        blot = blot.filter(ImageFilter.GaussianBlur(radius=short / 30))
+        mask = blot.point(lambda v: int(max(0, v - 110) / 145 * 255 * st))
+        del blot
+        stained = out.point(_band_lut(lambda v, b: v * paper_rgb[b] * 0.82 / 255))
+        out.paste(stained, (0, 0), mask)
+        del stained, mask
+
+    f = max(0.0, min(1.0, float(fade)))
+    if f > 0:
+        out = out.point(_band_lut(lambda v, b: v + f * max(0, paper_rgb[b] - v)))
+    return _keep_alpha(out, image)
+
+
 def composite(base: Image.Image, overlay: Image.Image) -> Image.Image:
     """Paste overlay (with alpha) on top of base."""
     bottom = _as_rgba(base)

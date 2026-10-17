@@ -1,5 +1,32 @@
 [
   {
+    "preset_name": "vintage_comic",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/vintage_comic.jpg",
+    "post_edit_image": "previews/post-edit/vintage_comic.png"
+  },
+  {
+    "preset_name": "old_newspaper",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/old_newspaper.jpg",
+    "post_edit_image": "previews/post-edit/old_newspaper.png"
+  },
+  {
+    "preset_name": "comic_pop",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/comic_pop.jpg",
+    "post_edit_image": "previews/post-edit/comic_pop.png"
+  },
+  {
     "preset_name": "doodle_halo_rings",
     "ar": "non-square",
     "text_input": "no",
