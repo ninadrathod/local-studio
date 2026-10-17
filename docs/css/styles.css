@@ -42,24 +42,12 @@ body {
   padding-top: 0;
 }
 
-/* About page — fit full pitch in one viewport (no scroll at 100% zoom) */
-html:has(.about-page) {
-  height: 100%;
-  overflow: hidden;
-}
-
-.about-page {
-  overflow: hidden;
-  height: 100%;
-}
-
+/* About page — fills one viewport when the pitch fits; scrolls instead of overlapping when it doesn't */
 .about-shell {
-  height: 100dvh;
-  max-height: 100dvh;
-  overflow: hidden;
+  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  min-height: 0;
 }
 
 .about-main {
@@ -141,8 +129,7 @@ html:has(.about-page) {
 }
 
 .about-flow {
-  flex-shrink: 1;
-  min-height: 0;
+  flex-shrink: 0;
 }
 
 .about-flow-title {
@@ -157,12 +144,14 @@ html:has(.about-page) {
   display: grid;
   grid-template-columns: 1fr;
   gap: clamp(0.45rem, 1.4vh, 0.75rem);
+  --step-num-size: clamp(1.6rem, 3.8vh, 2rem);
 }
 
 @media (min-width: 640px) {
   .about-steps {
+    --steps-gap: clamp(0.5rem, 1.2vw, 0.85rem);
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: clamp(0.5rem, 1.2vw, 0.85rem);
+    gap: var(--steps-gap);
   }
 }
 
@@ -174,8 +163,8 @@ html:has(.about-page) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: clamp(1.6rem, 3.8vh, 2rem);
-  height: clamp(1.6rem, 3.8vh, 2rem);
+  width: var(--step-num-size);
+  height: var(--step-num-size);
   margin-bottom: clamp(0.25rem, 0.8vh, 0.45rem);
   border-radius: 0.45rem;
   border: 2px solid var(--ink);
@@ -235,21 +224,8 @@ html:has(.about-page) {
   }
 }
 
-/* Too short to fit the pitch in one viewport — let the page scroll instead of overlapping */
+/* Too short to fit the pitch in one viewport — stack sections from the top */
 @media (max-height: 500px) {
-  html:has(.about-page),
-  .about-page {
-    height: auto;
-    overflow: auto;
-  }
-
-  .about-shell {
-    height: auto;
-    min-height: 100dvh;
-    max-height: none;
-    overflow: visible;
-  }
-
   .about-main {
     justify-content: flex-start;
     gap: 1rem;
@@ -273,9 +249,10 @@ html:has(.about-page) {
   .flow-connector {
     display: block;
     position: absolute;
-    top: 1.15rem;
-    left: calc(100% - 0.25rem);
-    width: calc(100% - 2rem);
+    /* Runs from just after this step's number to just before the next step's number */
+    top: calc(var(--step-num-size, 2.3rem) / 2 - 1.25px);
+    left: calc(0.15rem + var(--step-num-size, 2.3rem) + 0.5rem);
+    right: calc(-1 * var(--steps-gap, 0.85rem) + 0.4rem);
     height: 2.5px;
     background: var(--ink);
     pointer-events: none;
