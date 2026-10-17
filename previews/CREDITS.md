@@ -24,3 +24,19 @@ Attribution is required where the license says so.
 - **Photographer:** [Paolobon140](https://commons.wikimedia.org/wiki/User:Paolobon140)
 - **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
 - **Files:** `pre-edit/warm_faded_print.jpg` → `post-edit/warm_faded_print.png` (preset `warm_faded_print`)
+
+## `full_hd`
+
+- **Photograph:** [Bubo bubo portrait](https://commons.wikimedia.org/wiki/File:Bubo_bubo_portrait.jpg)
+- **Photographer:** [indygnome](https://www.flickr.com/people/indygnome/) (Flickr, via Wikimedia Commons)
+- **License:** [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/)
+- **Files:** `pre-edit/full_hd.jpg` → `post-edit/full_hd.png` (preset `full_hd`)
+- **Note:** to show the upscale at gallery size, the square crop was reduced to a 200 px low-quality JPEG; `pre-edit` shows that low-res input enlarged to 720 px, `post-edit` is the preset output on it, downscaled to 720 px.
+
+## `4k_crisp`
+
+- **Photograph:** [Olsztyn 2023 038 Old Town Hall](https://commons.wikimedia.org/wiki/File:Olsztyn_2023_038_Old_Town_Hall.jpg)
+- **Photographer:** [Scotch Mist](https://commons.wikimedia.org/wiki/User:Scotch_Mist)
+- **License:** [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+- **Files:** `pre-edit/4k_crisp.jpg` → `post-edit/4k_crisp.png` (preset `4k_crisp`)
+- **Note:** same low-res simulation as `full_hd` (200 px JPEG input; both files shown at 720 px).

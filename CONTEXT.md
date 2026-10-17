@@ -23,7 +23,7 @@ Repo: https://github.com/ninadrathod/local-studio
 | `previews/_candidates/` | Gitignored create-preset comparison HTML (POC edits, fonts, gallery picks) — not shipped |
 | `docs/` | GitHub Pages pitch site (`docs/index.html` + local css/icons) |
 | `backend/` | FastAPI app |
-| `backend/helpers/` | CLI helpers: subject extraction + JSON preset runner |
+| `backend/helpers/` | CLI helpers: subject extraction, local AI upscale model, JSON preset runner |
 | `backend/presets/` | JSON image presets (ordered filter steps); see `PRESETS.md` |
 | `backend/database/` | SQLite preset metadata (`presets.db` + `db_ops.py`) |
 | `.cursor/skills/create-preset/` | Skill: gated workflow to design and ship a new preset (visual rounds → `previews/_candidates/`) |
@@ -79,8 +79,9 @@ Repo: https://github.com/ninadrathod/local-studio
 
 Optional helpers:
 - `backend/helpers/extract_subject.py` — background removal (rembg / `u2net`)
+- `backend/helpers/upscale_model.py` — local AI super-resolution (Real-ESRGAN `realesr-general-x4v3`, BSD-3-Clause): downloads the official release weights (SHA-256 pinned), converts them to ONNX locally (no PyTorch), runs tiled on onnxruntime CPU. Used by the `ai_upscale` filter.
 - `backend/helpers/apply_preset.py` — run a JSON preset from `backend/presets/` (also used by the apply-preset API)
-- Example presets: `bw_bg_glowing_subject`, `polaroid_memory` (square-only; optional caption via `text_input`), `warm_faded_print` (any aspect ratio; sun-faded color grade)
+- Example presets: `bw_bg_glowing_subject`, `polaroid_memory` (square-only; optional caption via `text_input`), `warm_faded_print` (any aspect ratio; sun-faded color grade), `full_hd` / `4k_crisp` (any aspect ratio; local AI upscale to 1920 / 3840 px long edge)
 - `backend/database/` — lightweight SQLite file (`presets.db`) for preset metadata (name, path, keywords, `ar`, `text_input`, `default_text`, `text_character_limit`) plus `popular` download counts (`preset_id` FK, `used_count`). Ops in `db_ops.py`; created/seeded by `./scripts/setup.sh`.
 - `previews/` — static preset gallery assets (`pre-edit/` + `post-edit/` + `presets.json`); wired into the index UI gallery
 - Preset catalog + how-to: `backend/presets/PRESETS.md`
@@ -88,4 +89,4 @@ Optional helpers:
 - To commit locally without pushing and get PR title/description copy, use skill `.cursor/skills/commit-draft-pr/`
 - To remove unused/redundant code without changing UI or workflows, use skill `.cursor/skills/prune-unused-code/`
 
-`./scripts/setup.sh` installs helper deps and downloads the `u2net` model into `~/.rembg/` (outside the repo; gitignored). It also recreates `backend/.venv` if the project was renamed/moved and console-script shebangs are stale. `./scripts/run.sh` uses the venv Python directly and exits with a clear error if deps are missing or ports `8000`/`5500` are already taken.
+`./scripts/setup.sh` installs helper deps and downloads the `u2net` model into `~/.rembg/` and builds the Real-ESRGAN ONNX model in `~/.local-studio/models/` (both outside the repo; override with `LOCAL_STUDIO_MODELS`). It also recreates `backend/.venv` if the project was renamed/moved and console-script shebangs are stale. `./scripts/run.sh` uses the venv Python directly and exits with a clear error if deps are missing or ports `8000`/`5500` are already taken.

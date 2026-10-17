@@ -16,7 +16,7 @@ git clone https://github.com/ninadrathod/local-studio.git
 cd local-studio
 ```
 
-2. Set up the project (creates `backend/.venv`, installs API + helper deps, downloads the rembg `u2net` model into `~/.rembg/`, and initializes `backend/database/presets.db`):
+2. Set up the project (creates `backend/.venv`, installs API + helper deps, downloads the rembg `u2net` model into `~/.rembg/`, prepares the Real-ESRGAN upscale model in `~/.local-studio/models/`, and initializes `backend/database/presets.db`):
 
 ```bash
 ./scripts/setup.sh
@@ -57,7 +57,7 @@ source backend/.venv/bin/activate
 python backend/helpers/extract_subject.py path/to/photo.jpg -o subject.png
 ```
 
-Model weights live in `~/.rembg/` and are gitignored (also `*.onnx`).
+Model weights live in `~/.rembg/` (rembg) and `~/.local-studio/models/` (Real-ESRGAN for the HD presets), outside the repo; `*.onnx` is gitignored.
 
 ## Optional: JSON presets
 

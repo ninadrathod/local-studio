@@ -254,6 +254,10 @@ FILTERS: dict[str, FilterHandler] = {
     "glow_line_border": _run_simple(F.glow_line_border),
     "draw_text": _run_simple(F.draw_text),
     "place_on_canvas": _run_simple(F.place_on_canvas),
+    "upscale": _run_simple(F.upscale),
+    "sharpen": _run_simple(F.sharpen),
+    "denoise": _run_simple(F.denoise),
+    "ai_upscale": _run_simple(F.ai_upscale),
 }
 
 

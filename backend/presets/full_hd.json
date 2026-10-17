@@ -1,0 +1,17 @@
+{
+  "name": "full_hd",
+  "label": "Full HD",
+  "description": "Local AI super-resolution (Real-ESRGAN general-x4v3) to a 1920px long edge with balanced denoise.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.5
+    }
+  ]
+}

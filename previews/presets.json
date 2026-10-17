@@ -1,5 +1,23 @@
 [
   {
+    "preset_name": "4k_crisp",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/4k_crisp.jpg",
+    "post_edit_image": "previews/post-edit/4k_crisp.png"
+  },
+  {
+    "preset_name": "full_hd",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/full_hd.jpg",
+    "post_edit_image": "previews/post-edit/full_hd.png"
+  },
+  {
     "preset_name": "warm_faded_print",
     "ar": "non-square",
     "text_input": "no",

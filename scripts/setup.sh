@@ -62,6 +62,12 @@ if [[ -f "${HELPERS_DIR}/requirements.txt" ]]; then
     cd "${HELPERS_DIR}"
     "${PYTHON}" download_model.py
   )
+
+  echo "==> Preparing Real-ESRGAN upscale model (~10MB, cached in ~/.local-studio/models — not in the repo)"
+  (
+    cd "${HELPERS_DIR}"
+    "${PYTHON}" upscale_model.py
+  )
 fi
 
 echo "==> Initializing preset metadata database"
