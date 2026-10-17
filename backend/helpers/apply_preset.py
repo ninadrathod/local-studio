@@ -220,7 +220,10 @@ def _run_extract_subject(
     source_key = step.get("on", "image")
     if source_key not in layers:
         raise KeyError(f"Step {index}: unknown layer '{source_key}'")
-    subject, background = F.extract_subject_layers(layers[source_key])
+    subject, background = F.extract_subject_layers(
+        layers[source_key],
+        require_clear_subject=bool(step.get("require_clear_subject", False)),
+    )
     layers[step.get("as", "subject")] = subject
     layers[step.get("bg_as", "background")] = background
 
@@ -241,6 +244,25 @@ def _run_composite(
     layers[step.get("as", "image")] = result
 
 
+def _run_doodle(
+    layers: dict[str, Image.Image],
+    *,
+    index: int = 0,
+    **step: Any,
+) -> None:
+    on_key = step.get("on", "image")
+    if on_key not in layers:
+        raise KeyError(f"Step {index}: unknown layer '{on_key}'")
+    around_key = step.get("around")
+    if around_key is not None and around_key not in layers:
+        raise KeyError(f"Step {index}: unknown around layer '{around_key}'")
+    call_params = {
+        key: value for key, value in step.items() if key not in _LAYER_KEYS and key != "around"
+    }
+    around = layers[around_key] if around_key is not None else None
+    layers[step.get("as", on_key)] = F.doodle(layers[on_key], around=around, **call_params)
+
+
 # JSON `"filter"` name → function. Add new ops here; do not add if/else in the runner.
 FILTERS: dict[str, FilterHandler] = {
     "extract_subject": _run_extract_subject,
@@ -252,12 +274,14 @@ FILTERS: dict[str, FilterHandler] = {
     "grayscale": _run_simple(F.grayscale),
     "glow_border": _run_simple(F.glow_border),
     "glow_line_border": _run_simple(F.glow_line_border),
+    "sticker_outline": _run_simple(F.sticker_outline),
     "draw_text": _run_simple(F.draw_text),
     "place_on_canvas": _run_simple(F.place_on_canvas),
     "upscale": _run_simple(F.upscale),
     "sharpen": _run_simple(F.sharpen),
     "denoise": _run_simple(F.denoise),
     "ai_upscale": _run_simple(F.ai_upscale),
+    "doodle": _run_doodle,
 }
 
 

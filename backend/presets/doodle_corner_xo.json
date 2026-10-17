@@ -1,0 +1,54 @@
+{
+  "name": "doodle_corner_xo",
+  "label": "Doodle corner XO",
+  "description": "Extract the subject with a white sticker outline, then hand-draw an X/O tic-tac-toe grid top-right and three wiggly lines bottom-left on the background.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "require_clear_subject": true
+    },
+    {
+      "filter": "sticker_outline",
+      "on": "subject",
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "width_ratio": 0.008,
+      "softness": 0.6
+    },
+    {
+      "filter": "doodle",
+      "on": "background",
+      "style": "xo",
+      "anchor": "top_right",
+      "size": 0.26,
+      "stroke": 0.008,
+      "seed": 3
+    },
+    {
+      "filter": "doodle",
+      "on": "background",
+      "style": "wiggles",
+      "anchor": "bottom_left",
+      "size": 0.32,
+      "stroke": 0.008,
+      "count": 3,
+      "angle": -20
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    }
+  ]
+}

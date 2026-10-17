@@ -87,11 +87,27 @@ Only one apply-preset job runs at a time; concurrent extras get HTTP **503**.
 - **Text input:** `no`
 - **DB:** seeded via `seed_default_presets()` / setup
 
+### `doodle_corner_xo`
+
+- **Idea:** Extract subject (`require_clear_subject: true`) → white sticker outline (`sticker_outline`, `width_ratio` 0.008 — ~6 px at 720, scales with size) → hand-drawn X/O grid top-right + three wiggly lines bottom-left on the **background** → composite (subject sits over the doodles).
+- **File:** `backend/presets/doodle_corner_xo.json`
+- **AR:** `non-square` (any aspect ratio)
+- **Text input:** `no`
+- **DB:** seeded via `seed_default_presets()` / setup
+
+### `doodle_halo_rings`
+
+- **Idea:** Extract subject → white sticker outline → four wobbly concentric rings centred on the subject (`anchor: subject`, `around: subject`) + three sparkles top-left on the background → composite.
+- **File:** `backend/presets/doodle_halo_rings.json`
+- **AR:** `non-square` (any aspect ratio)
+- **Text input:** `no`
+- **DB:** seeded via `seed_default_presets()` / setup
+
 ## Built-in filters
 
 | Filter | What it does | Common params |
 |--------|----------------|---------------|
-| `extract_subject` | rembg cutout + blurred fill background | `on`, `as` (subject), `bg_as` (background) |
+| `extract_subject` | rembg cutout + blurred fill background. With `require_clear_subject: true`, an unreliable mask (tiny, or semi-transparent smear away from the body — e.g. dark backlit subjects) gives an empty subject and the untouched original as background; soft hair/fur next to the body is fine | `on`, `as` (subject), `bg_as` (background), `require_clear_subject` (default `false`) |
 | `brightness` | Brightness enhance | `on`, `amount` |
 | `color` | Saturation enhance | `on`, `amount` |
 | `contrast` | Contrast enhance | `on`, `amount` |
@@ -99,12 +115,14 @@ Only one apply-preset job runs at a time; concurrent extras get HTTP **503**.
 | `grayscale` | Desaturate | `on` |
 | `glow_border` | Soft halo under subject (fills expanded mask) | `on`, `rgb`/`color`, `width`, `blur` |
 | `glow_line_border` | Outline **ring** only (subject body unchanged) | `on`, `color`/`rgb`, `width`, `blur` |
+| `sticker_outline` | Solid round-cornered outline whose width scales with the image (blur + threshold dilation, flat cost at any width) | `on`, `color`/`rgb`, `width_ratio` (fraction of short side; default 0.008), `softness` (edge AA px) |
 | `composite` | Paste overlay on base | `base`, `overlay`, `as` |
 | `place_on_canvas` | Put layer on a larger solid canvas | `on`, `scale` (e.g. `1.4`), `fill`/`color`, `layout` (`polaroid` or `center`), `as` |
 | `upscale` | Pillow resize so the long side reaches `long_edge` (keeps aspect; never shrinks) | `on`, `long_edge`, `max_scale` (default 4), `resample` (`lanczos`/`bicubic`/`bilinear`) |
 | `sharpen` | Unsharp mask | `on`, `radius`, `percent`, `threshold` |
 | `denoise` | Median filter (noise / JPEG blocking) | `on`, `size` (odd ≥ 3) |
 | `ai_upscale` | Local Real-ESRGAN 4× super-resolution, then Lanczos to target (keeps aspect + alpha; never shrinks) | `on`, `long_edge` (default 1920), `max_scale` (4), `denoise` (0 keep grain – 1 smoothest; 0.5), `max_input_pixels` (1 000 000), `tile` (256) |
+| `doodle` | One hand-drawn white (or tinted) doodle; sizes are fractions of the short side so it scales with resolution; seeded wobble is deterministic; draws only its own region (2× supersampled up to 4 MP regions, 1× above) |  `on`, `style` (`xo`/`rings`/`wiggles`/`stars`), `anchor` (`top_right`/`top_left`/`bottom_left`/`bottom_right`/`top`/`bottom`/`left`/`right`/`center`/`subject`), `around` (layer whose alpha bbox centres `anchor: subject`), `x`/`y` (0–1, override anchor), `size`, `stroke`, `count` (1–12), `angle` (wiggles), `color`/`rgb`, `opacity`, `jitter`, `seed` |
 | `draw_text` | Paint a string onto a layer | `on`, `text` (`$text` / `$datetime` / `$date` / `$time`), `font_size`, `color`/`rgb`, `align` (`center`/`top`/`bottom`/`top_right`/…), `font_style` (`sans`/`flow`), `font_path` (optional TTF/OTF/TTC; overrides `font_style`), `margin`, `x`, `y`, `stroke_width` |
 
 Layers are named images in memory. Typical keys: `image`, `subject`, `background`.
@@ -165,10 +183,11 @@ Rules of thumb:
 
 1. Always end with a `composite` (or other step) that writes `as: "image"`.
 2. Apply background edits with `"on": "background"`; subject edits with `"on": "subject"`.
-3. Prefer `glow_line_border` when you want an outline, not a filled glow.
+3. Prefer `glow_line_border` for a glow ring and `sticker_outline` for a solid outline that should scale with resolution.
 4. Set `"ar": "square"` when the recipe only works on square images; `"ar": "non-square"` (default) works on any aspect ratio. A square-only preset applied to a non-square image raises `PresetAspectRatioError`.
 5. Set `"text_input": "yes"` only when a step uses `$text`. Then `text_character_limit` must be 1–200. `"no"` (default) ignores submitted text.
-6. HD pre-pass: put `{ "filter": "ai_upscale", "on": "image", "long_edge": 1920 }` as step 0 so later steps work at HD size — then scale pixel-sized params (`font_size`, `margin`, `stroke_width`, glow `width`/`blur`) by about the upscale factor.
+6. Doodles: apply `doodle` steps `"on": "background"` before the final `composite` so the subject covers them; use `"anchor": "subject", "around": "subject"` to centre rings behind the cutout.
+7. HD pre-pass: put `{ "filter": "ai_upscale", "on": "image", "long_edge": 1920 }` as step 0 so later steps work at HD size — then scale pixel-sized params (`font_size`, `margin`, `stroke_width`, glow `width`/`blur`) by about the upscale factor.
 
 ## Database metadata
 

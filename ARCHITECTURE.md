@@ -176,16 +176,21 @@ Upload guards (`services/image_io.py`): max **20 MiB** body (`MAX_UPLOAD_BYTES`)
 - Presets live in `backend/presets/*.json` as ordered `steps`. Each step sets `"filter"` to a registered helper name plus that helper's parameters. The runner looks the function up in `FILTERS` — it does not branch on filter type. String params equal to (or containing) `$text` receive the user/default text.
 - Runner: `backend/helpers/apply_preset.py` (uses `filters.py`).
 - HTTP: `POST /api/apply-preset` looks up `preset_name` in `presets.db`, loads that JSON path, runs the same runner, returns PNG (`app/services/preset.py` + `app/routes/preset.py`). The route does not choose filters; it passes `preset_name`, the image, and optional `text`. Presets with `"ar": "square"` reject non-square input images (`PresetAspectRatioError` → HTTP **400**). Presets with `"text_input": "yes"` validate `text` against `text_character_limit` (`PresetTextError` → HTTP **400**); omitted text uses `default_text`.
-- Built-in filters: `extract_subject`, `brightness`, `color`, `contrast`, `overlay`, `grayscale`, `glow_border`, `glow_line_border`, `composite`, `draw_text`, `place_on_canvas`, `upscale`, `sharpen`, `denoise`, `ai_upscale`.
+- Built-in filters: `extract_subject`, `brightness`, `color`, `contrast`, `overlay`, `grayscale`, `glow_border`, `glow_line_border`, `composite`, `draw_text`, `place_on_canvas`, `upscale`, `sharpen`, `denoise`, `ai_upscale`, `doodle`, `sticker_outline`.
 - `glow_line_border` draws a colored outline ring only (does not fill/glow the subject body). Pass `"color": [R,G,B]` (or `"rgb"`).
+- `sticker_outline` draws a solid outline sized by `width_ratio` × short side via blur + threshold (cost independent of width; round corners).
+- `extract_subject` with `"require_clear_subject": true` (opt-in; the doodle presets use it) falls back to an empty subject + untouched background when `is_reliable_cutout` rejects the rembg mask, so the preset degrades to "no cutout" instead of a smeared shape. Rejected when solid alpha is < 0.3% of pixels, or when soft pixels *outside* a band around the solid body outnumber solid pixels (band = max(4% of short side, 0.75 × body equivalent radius)), so hair/fur hugging the body is accepted. Presets without the flag keep the raw mask.
 - `draw_text` paints `text` onto a layer. Use `"$text"` for user caption, or `"$datetime"` / `"$date"` / `"$time"` for apply-time stamps. Common params: `font_size`, `color`/`rgb`, `align` (`center`/`top`/`bottom`/`top_right`/…), `font_style` (`sans`/`flow`), optional `font_path` (TTF/OTF/TTC, overrides style), `margin`, `x`/`y`, `stroke_width`.
 - `place_on_canvas` puts a layer on a larger solid canvas (`scale`, `fill`, `layout`: `polaroid` or `center`).
+- `doodle` draws one hand-drawn doodle (`style`: `xo`/`rings`/`wiggles`/`stars`) with seeded wobble. It draws only the doodle's neighbourhood (not a full-frame layer), 2× supersampled when that region is ≤ 4 MP and 1× above, so a 25 MP upload stays bounded; `count` is capped at 12. Sizes are fractions of the short side. Its runner (`_run_doodle`) accepts an optional `around` layer so `anchor: subject` centres on that layer's alpha bbox — the only filter that reads a second layer besides `composite`.
 - Shipped presets:
   - `bw_bg_glowing_subject` — extract → grayscale background → `glow_line_border` on subject → composite (`text_input: no`)
   - `polaroid_memory` — soft warm grade → `$datetime` stamp → 1.4× white polaroid mat → flow `$text` caption (`ar: square`, `text_input: yes`)
   - `warm_faded_print` — lower contrast → muted color → slight lift → cream-amber overlay (`ar: non-square`, `text_input: no`)
   - `full_hd` — `ai_upscale` to 1920 px long edge, denoise 0.5 (`ar: non-square`, `text_input: no`)
   - `4k_crisp` — `ai_upscale` to 3840 px long edge, denoise 0.3 → light `sharpen` → contrast ×1.04 (`ar: non-square`, `text_input: no`)
+  - `doodle_corner_xo` — extract → white `sticker_outline` → `doodle` xo (top-right) + wiggles (bottom-left) on background → composite (`ar: non-square`, `text_input: no`)
+  - `doodle_halo_rings` — extract → white `sticker_outline` → `doodle` rings around subject + stars (top-left) on background → composite (`ar: non-square`, `text_input: no`)
 - Example CLI: `python backend/helpers/apply_preset.py photo.jpg -p bw_bg_glowing_subject -o out.png`
 - Human/agent guide: `backend/presets/PRESETS.md`
 - New-preset workflow skill: `.cursor/skills/create-preset/SKILL.md`

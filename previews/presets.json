@@ -1,5 +1,23 @@
 [
   {
+    "preset_name": "doodle_halo_rings",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/doodle_halo_rings.jpg",
+    "post_edit_image": "previews/post-edit/doodle_halo_rings.png"
+  },
+  {
+    "preset_name": "doodle_corner_xo",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/doodle_corner_xo.jpg",
+    "post_edit_image": "previews/post-edit/doodle_corner_xo.png"
+  },
+  {
     "preset_name": "4k_crisp",
     "ar": "non-square",
     "text_input": "no",

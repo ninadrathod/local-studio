@@ -40,3 +40,17 @@ Attribution is required where the license says so.
 - **License:** [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
 - **Files:** `pre-edit/4k_crisp.jpg` → `post-edit/4k_crisp.png` (preset `4k_crisp`)
 - **Note:** same low-res simulation as `full_hd` (200 px JPEG input; both files shown at 720 px).
+
+## `doodle_corner_xo`
+
+- **Photograph:** [Paris Coffee (Unsplash)](https://commons.wikimedia.org/wiki/File:Paris_Coffee_(Unsplash).jpg)
+- **Photographer:** [AO](https://unsplash.com/@yokoao) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/doodle_corner_xo.jpg` → `post-edit/doodle_corner_xo.png` (preset `doodle_corner_xo`)
+
+## `doodle_halo_rings`
+
+- **Photograph:** [Skateboarding at Mexico City - Flip - 001](https://commons.wikimedia.org/wiki/File:Skateboarding_at_Mexico_City_-_Flip_-_001.JPG)
+- **Photographer:** [Jarek Tuszyński](https://commons.wikimedia.org/wiki/User:Jarekt)
+- **License:** [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+- **Files:** `pre-edit/doodle_halo_rings.jpg` → `post-edit/doodle_halo_rings.png` (preset `doodle_halo_rings`)
