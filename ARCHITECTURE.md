@@ -94,15 +94,18 @@ Detailed architecture for the preset-based local image editor.
 backend/
   requirements.txt
   helpers/
-    requirements.txt     # rembg[cpu] — installed by setup.sh
+    requirements.txt     # rembg[cpu] + onnx + certifi — installed by setup.sh
     download_model.py    # warm-cache u2net during setup (~/.rembg)
     extract_subject.py   # CLI: image in → subject PNG (transparent bg)
-    filters.py           # Pillow + rembg filter ops for presets
+    upscale_model.py     # Real-ESRGAN weights → local ONNX + tiled 4× inference
+    filters.py           # Pillow + rembg + upscale filter ops for presets
     apply_preset.py      # CLI: apply JSON preset steps to an image
   presets/
     bw_bg_glowing_subject.json
     polaroid_memory.json
     warm_faded_print.json
+    full_hd.json
+    4k_crisp.json
   database/
     schema.sql           # presets + popular tables
     init_db.py           # create presets.db
@@ -161,12 +164,19 @@ Upload guards (`services/image_io.py`): max **20 MiB** body (`MAX_UPLOAD_BYTES`)
 - Gitignore blocks `.rembg/`, `*.onnx`, and `backend/helpers/models/` so weights are never committed.
 - Example: `python backend/helpers/extract_subject.py photo.jpg -o subject.png`
 
+### AI upscale helper
+
+- `backend/helpers/upscale_model.py` — Real-ESRGAN `realesr-general-x4v3` (BSD-3-Clause) from the official `xinntao/Real-ESRGAN` v0.2.5.0 release. Both checkpoints (regular + `wdn`) are SHA-256 pinned and fetched over verified HTTPS (certifi CA bundle, 60 s stall timeout; temp file renamed into place only after the hash matches); a restricted unpickler reads them without PyTorch, `denoise` blends them (upstream DNI), and `onnx` builds the SRVGGNetCompact graph (conv/PReLU body → `DepthToSpace` + nearest residual).
+- Cache: `~/.local-studio/models/` (`LOCAL_STUDIO_MODELS` overrides) — one `realesr-general-x4v3-dn<strength>.onnx` per denoise value, written to a temp file and renamed so a crash never leaves a partial model. `./scripts/setup.sh` warms the default (`python upscale_model.py`).
+- Inference: onnxruntime CPU, 256 px tiles with 24 px overlap; session cached per model path.
+- `filters.ai_upscale` runs the 4× pass then Lanczos-resizes to `long_edge` (capped by `max_scale`, never shrinks). Inputs over `max_input_pixels` (default 1 MP) are reduced first so time/memory stay bounded (~1–4 s per image on CPU).
+
 ### JSON preset pipeline
 
 - Presets live in `backend/presets/*.json` as ordered `steps`. Each step sets `"filter"` to a registered helper name plus that helper's parameters. The runner looks the function up in `FILTERS` — it does not branch on filter type. String params equal to (or containing) `$text` receive the user/default text.
 - Runner: `backend/helpers/apply_preset.py` (uses `filters.py`).
 - HTTP: `POST /api/apply-preset` looks up `preset_name` in `presets.db`, loads that JSON path, runs the same runner, returns PNG (`app/services/preset.py` + `app/routes/preset.py`). The route does not choose filters; it passes `preset_name`, the image, and optional `text`. Presets with `"ar": "square"` reject non-square input images (`PresetAspectRatioError` → HTTP **400**). Presets with `"text_input": "yes"` validate `text` against `text_character_limit` (`PresetTextError` → HTTP **400**); omitted text uses `default_text`.
-- Built-in filters: `extract_subject`, `brightness`, `color`, `contrast`, `overlay`, `grayscale`, `glow_border`, `glow_line_border`, `composite`, `draw_text`, `place_on_canvas`.
+- Built-in filters: `extract_subject`, `brightness`, `color`, `contrast`, `overlay`, `grayscale`, `glow_border`, `glow_line_border`, `composite`, `draw_text`, `place_on_canvas`, `upscale`, `sharpen`, `denoise`, `ai_upscale`.
 - `glow_line_border` draws a colored outline ring only (does not fill/glow the subject body). Pass `"color": [R,G,B]` (or `"rgb"`).
 - `draw_text` paints `text` onto a layer. Use `"$text"` for user caption, or `"$datetime"` / `"$date"` / `"$time"` for apply-time stamps. Common params: `font_size`, `color`/`rgb`, `align` (`center`/`top`/`bottom`/`top_right`/…), `font_style` (`sans`/`flow`), optional `font_path` (TTF/OTF/TTC, overrides style), `margin`, `x`/`y`, `stroke_width`.
 - `place_on_canvas` puts a layer on a larger solid canvas (`scale`, `fill`, `layout`: `polaroid` or `center`).
@@ -174,6 +184,8 @@ Upload guards (`services/image_io.py`): max **20 MiB** body (`MAX_UPLOAD_BYTES`)
   - `bw_bg_glowing_subject` — extract → grayscale background → `glow_line_border` on subject → composite (`text_input: no`)
   - `polaroid_memory` — soft warm grade → `$datetime` stamp → 1.4× white polaroid mat → flow `$text` caption (`ar: square`, `text_input: yes`)
   - `warm_faded_print` — lower contrast → muted color → slight lift → cream-amber overlay (`ar: non-square`, `text_input: no`)
+  - `full_hd` — `ai_upscale` to 1920 px long edge, denoise 0.5 (`ar: non-square`, `text_input: no`)
+  - `4k_crisp` — `ai_upscale` to 3840 px long edge, denoise 0.3 → light `sharpen` → contrast ×1.04 (`ar: non-square`, `text_input: no`)
 - Example CLI: `python backend/helpers/apply_preset.py photo.jpg -p bw_bg_glowing_subject -o out.png`
 - Human/agent guide: `backend/presets/PRESETS.md`
 - New-preset workflow skill: `.cursor/skills/create-preset/SKILL.md`
@@ -215,7 +227,7 @@ When features change, update these in the same change set (enforced by `.cursor/
 
 ## Helper scripts
 
-- `scripts/setup.sh` — creates `backend/.venv` (recreates if shebangs/interpreter are broken after a folder rename), installs API + helper requirements, downloads rembg `u2net` into `~/.rembg/`, initializes `backend/database/presets.db`, ensures scripts are executable.
+- `scripts/setup.sh` — creates `backend/.venv` (recreates if shebangs/interpreter are broken after a folder rename), installs API + helper requirements, downloads rembg `u2net` into `~/.rembg/`, builds the Real-ESRGAN ONNX model in `~/.local-studio/models/`, initializes `backend/database/presets.db`, ensures scripts are executable.
 - `scripts/run.sh` — starts uvicorn (port 8000) and a static file server on the repo root (port 5500) using `backend/.venv/bin/python -m …`; checks deps + free ports; Ctrl+C stops both.
 
 ## Extension points

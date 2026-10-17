@@ -2,7 +2,7 @@
 
 Guide for The Local Studio JSON presets: what exists today, and how to add a new one.
 
-For the agent workflow (POC → name → keywords → ar → text → fonts → ship → gallery),
+For the agent workflow (POC → name → keywords → ar → text → HD pre-pass → fonts → ship → gallery),
 use the project skill `.cursor/skills/create-preset/SKILL.md`. Visual option rounds
 write comparison HTML under `previews/_candidates/` via
 `.cursor/skills/create-preset/scripts/render_candidates.py` (calls `apply_preset.py`
@@ -17,6 +17,7 @@ and `filters.draw_text`).
 | `backend/helpers/apply_preset.py` | Step runner + CLI |
 | `backend/helpers/extract_subject.py` | Subject cutout CLI (rembg / `u2net`) |
 | `backend/helpers/download_model.py` | Warm-cache `u2net` during setup |
+| `backend/helpers/upscale_model.py` | Real-ESRGAN weights → local ONNX (`~/.local-studio/models/`) + tiled 4× inference for `ai_upscale`; `python upscale_model.py` warms the cache |
 | `backend/database/` | SQLite metadata (`presets.db`, `db_ops.py`) |
 | `previews/pre-edit/` + `previews/post-edit/` + `previews/presets.json` | Before/after gallery assets per DB preset + name→path map (sources in `previews/CREDITS.md`) |
 | `previews/_candidates/` | Gitignored create-preset comparison HTML (POC / fonts / gallery); not shipped |
@@ -70,6 +71,22 @@ Only one apply-preset job runs at a time; concurrent extras get HTTP **503**.
 - **Text input:** `no`
 - **DB:** seeded via `seed_default_presets()` / setup
 
+### `full_hd`
+
+- **Idea:** Local AI super-resolution (Real-ESRGAN general-x4v3, denoise 0.5) to a **1920 px** long edge.
+- **File:** `backend/presets/full_hd.json`
+- **AR:** `non-square` (any aspect ratio)
+- **Text input:** `no`
+- **DB:** seeded via `seed_default_presets()` / setup
+
+### `4k_crisp`
+
+- **Idea:** Local AI super-resolution (denoise 0.3, keeps more texture) to a **3840 px** long edge → light unsharp mask → contrast ×1.04.
+- **File:** `backend/presets/4k_crisp.json`
+- **AR:** `non-square` (any aspect ratio)
+- **Text input:** `no`
+- **DB:** seeded via `seed_default_presets()` / setup
+
 ## Built-in filters
 
 | Filter | What it does | Common params |
@@ -84,6 +101,10 @@ Only one apply-preset job runs at a time; concurrent extras get HTTP **503**.
 | `glow_line_border` | Outline **ring** only (subject body unchanged) | `on`, `color`/`rgb`, `width`, `blur` |
 | `composite` | Paste overlay on base | `base`, `overlay`, `as` |
 | `place_on_canvas` | Put layer on a larger solid canvas | `on`, `scale` (e.g. `1.4`), `fill`/`color`, `layout` (`polaroid` or `center`), `as` |
+| `upscale` | Pillow resize so the long side reaches `long_edge` (keeps aspect; never shrinks) | `on`, `long_edge`, `max_scale` (default 4), `resample` (`lanczos`/`bicubic`/`bilinear`) |
+| `sharpen` | Unsharp mask | `on`, `radius`, `percent`, `threshold` |
+| `denoise` | Median filter (noise / JPEG blocking) | `on`, `size` (odd ≥ 3) |
+| `ai_upscale` | Local Real-ESRGAN 4× super-resolution, then Lanczos to target (keeps aspect + alpha; never shrinks) | `on`, `long_edge` (default 1920), `max_scale` (4), `denoise` (0 keep grain – 1 smoothest; 0.5), `max_input_pixels` (1 000 000), `tile` (256) |
 | `draw_text` | Paint a string onto a layer | `on`, `text` (`$text` / `$datetime` / `$date` / `$time`), `font_size`, `color`/`rgb`, `align` (`center`/`top`/`bottom`/`top_right`/…), `font_style` (`sans`/`flow`), `font_path` (optional TTF/OTF/TTC; overrides `font_style`), `margin`, `x`, `y`, `stroke_width` |
 
 Layers are named images in memory. Typical keys: `image`, `subject`, `background`.
@@ -147,6 +168,7 @@ Rules of thumb:
 3. Prefer `glow_line_border` when you want an outline, not a filled glow.
 4. Set `"ar": "square"` when the recipe only works on square images; `"ar": "non-square"` (default) works on any aspect ratio. A square-only preset applied to a non-square image raises `PresetAspectRatioError`.
 5. Set `"text_input": "yes"` only when a step uses `$text`. Then `text_character_limit` must be 1–200. `"no"` (default) ignores submitted text.
+6. HD pre-pass: put `{ "filter": "ai_upscale", "on": "image", "long_edge": 1920 }` as step 0 so later steps work at HD size — then scale pixel-sized params (`font_size`, `margin`, `stroke_width`, glow `width`/`blur`) by about the upscale factor.
 
 ## Database metadata
 
@@ -194,13 +216,14 @@ print(list_popular())
 5. Finalize the keywords list.
 6. Finalize `ar`: `square` (square-only) or `non-square` (any aspect ratio).
 7. Finalize text input: `text_input` `yes`/`no`; if yes, also `default_text` and `text_character_limit` (1–200).
-8. If the look uses `draw_text`, pick a font from `previews/_candidates/fonts/index.html`.
-9. Agent then ships code:
+8. Answer "Would you like to turn the image to HD first before applying the new preset?" — if yes, the recipe gains an `ai_upscale` step 0 (local Real-ESRGAN; `long_edge` 1920 or 3840, `denoise`), pixel-sized params are scaled for HD, and you confirm the re-render at `previews/_candidates/poc-hd/index.html`.
+9. If the look uses `draw_text`, pick a font from `previews/_candidates/fonts/index.html`.
+10. Agent then ships code:
    - adds helpers/filters only if needed (register in `FILTERS`; no API if/else)
    - writes `backend/presets/<name>.json` (include `"ar"` and `text_input` / `default_text` / `text_character_limit`)
    - inserts a row with `add_preset(..., ar=..., text_input=..., default_text=..., text_character_limit=...)` (also creates a `popular` row at `used_count` 0)
    - updates this file + CONTEXT/ARCHITECTURE (+ tests if needed)
-10. Gallery previews (gated — see create-preset skill step 8):
+11. Gallery previews (gated — see create-preset skill step 8):
    - search open-licensed candidates that suit the preset
    - agent writes `previews/_candidates/gallery/index.html` (`render_candidates.py gallery`: square crop + **720×720** + `apply_preset.py`; `--crop ID=left|right|top|bottom` when center clips the subject; pass `--text` when `text_input=yes`)
    - pick the best preview from that page

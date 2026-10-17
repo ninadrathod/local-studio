@@ -1,0 +1,29 @@
+{
+  "name": "4k_crisp",
+  "label": "4K Crisp",
+  "description": "Local AI super-resolution (Real-ESRGAN general-x4v3) to a 3840px long edge, light denoise to keep texture, then a gentle sharpen and contrast lift.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 3840,
+      "denoise": 0.3
+    },
+    {
+      "filter": "sharpen",
+      "on": "image",
+      "radius": 1.0,
+      "percent": 50,
+      "threshold": 2
+    },
+    {
+      "filter": "contrast",
+      "on": "image",
+      "amount": 1.04
+    }
+  ]
+}

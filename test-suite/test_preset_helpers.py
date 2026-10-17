@@ -51,6 +51,10 @@ def test_filter_registry_is_name_lookup() -> None:
         "glow_line_border",
         "draw_text",
         "place_on_canvas",
+        "upscale",
+        "sharpen",
+        "denoise",
+        "ai_upscale",
     }
 
 
@@ -276,3 +280,160 @@ def test_apply_warm_faded_print_on_non_square() -> None:
     pixel = out.convert("RGB").getpixel((12, 8))
     assert pixel[0] > src[0]
     assert pixel[2] < src[2]
+
+
+def test_upscale_hits_long_edge_and_keeps_aspect() -> None:
+    out = F.upscale(Image.new("RGB", (40, 20), (10, 20, 30)), long_edge=100)
+    assert out.size == (100, 50)
+
+
+def test_upscale_never_shrinks_and_caps_scale() -> None:
+    big = Image.new("RGB", (200, 100))
+    assert F.upscale(big, long_edge=100).size == (200, 100)
+    assert F.upscale(Image.new("RGB", (10, 10)), long_edge=1000, max_scale=2.0).size == (20, 20)
+
+
+def test_upscale_keeps_alpha_and_rejects_bad_resample() -> None:
+    rgba = Image.new("RGBA", (10, 10), (255, 0, 0, 0))
+    out = F.upscale(rgba, long_edge=20)
+    assert out.mode == "RGBA"
+    assert out.getpixel((10, 10))[3] == 0
+    with pytest.raises(ValueError):
+        F.upscale(rgba, long_edge=20, resample="nearest-ish")
+
+
+def test_sharpen_and_denoise_preserve_size_and_alpha() -> None:
+    rgba = Image.new("RGBA", (16, 12), (90, 90, 90, 128))
+    for out in (F.sharpen(rgba), F.denoise(rgba, size=3)):
+        assert out.size == rgba.size
+        assert out.mode == "RGBA"
+        assert out.getpixel((5, 5))[3] == 128
+    with pytest.raises(ValueError):
+        F.denoise(rgba, size=4)
+
+
+def _fake_super_resolve(rgb, denoise=0.5, tile=256):
+    import numpy as np
+
+    return np.repeat(np.repeat(rgb, 4, axis=0), 4, axis=1)
+
+
+def test_ai_upscale_sizes_output(monkeypatch: pytest.MonkeyPatch) -> None:
+    pytest.importorskip("numpy")
+    import upscale_model
+
+    monkeypatch.setattr(upscale_model, "super_resolve", _fake_super_resolve)
+    out = F.ai_upscale(Image.new("RGB", (30, 20), (1, 2, 3)), long_edge=90)
+    assert out.size == (90, 60)
+    assert out.getpixel((45, 30)) == (1, 2, 3)
+    big = Image.new("RGB", (100, 50))
+    assert F.ai_upscale(big, long_edge=80).size == (100, 50)
+
+
+def test_ai_upscale_bounds_model_input_and_keeps_alpha(monkeypatch: pytest.MonkeyPatch) -> None:
+    pytest.importorskip("numpy")
+    import upscale_model
+
+    seen: list[tuple[int, int]] = []
+
+    def spy(rgb, denoise=0.5, tile=256):
+        seen.append(rgb.shape[:2])
+        return _fake_super_resolve(rgb)
+
+    monkeypatch.setattr(upscale_model, "super_resolve", spy)
+    rgba = Image.new("RGBA", (40, 40), (5, 5, 5, 60))
+    out = F.ai_upscale(rgba, long_edge=80, max_input_pixels=400)
+    assert seen == [(20, 20)]
+    assert out.size == (80, 80)
+    assert out.mode == "RGBA"
+    assert out.getpixel((40, 40))[3] == 60
+
+
+def test_upscale_model_onnx_graph_and_tiling(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    pytest.importorskip("numpy")
+    pytest.importorskip("onnx")
+    pytest.importorskip("onnxruntime")
+    import numpy as np
+    import upscale_model as U
+
+    # Zero conv weights → network output is exactly the nearest-upsampled residual.
+    params = {
+        "body.0.weight": np.zeros((4, 3, 3, 3), np.float32),
+        "body.0.bias": np.zeros(4, np.float32),
+        "body.1.weight": np.full(4, 0.25, np.float32),
+        "body.2.weight": np.zeros((48, 4, 3, 3), np.float32),
+        "body.2.bias": np.zeros(48, np.float32),
+    }
+    model = U.build_onnx(params, tmp_path / "tiny.onnx")
+    monkeypatch.setattr(U, "ensure_model", lambda denoise=0.5: model)
+    rgb = np.random.default_rng(0).integers(0, 256, (37, 23, 3), dtype=np.uint8)
+    out = U.super_resolve(rgb, tile=16, pad=4)
+    assert out.shape == (148, 92, 3)
+    assert np.array_equal(out, np.repeat(np.repeat(rgb, 4, axis=0), 4, axis=1))
+
+
+def test_upscale_model_rejects_bad_denoise() -> None:
+    pytest.importorskip("numpy")
+    import upscale_model as U
+
+    with pytest.raises(ValueError):
+        U.ensure_model(1.5)
+
+
+def test_hd_preset_files() -> None:
+    full = load_preset(PRESETS / "full_hd.json")
+    crisp = load_preset(PRESETS / "4k_crisp.json")
+    for data in (full, crisp):
+        assert data["ar"] == "non-square"
+        assert data["text_input"] == "no"
+        assert data["text_character_limit"] == 0
+        assert data["steps"][0]["filter"] == "ai_upscale"
+    assert full["steps"][0]["long_edge"] == 1920
+    assert crisp["steps"][0]["long_edge"] == 3840
+    assert [s["filter"] for s in crisp["steps"]] == ["ai_upscale", "sharpen", "contrast"]
+
+
+def test_upscale_model_download_uses_timeout_and_cleans_up(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pytest.importorskip("numpy")
+    import io
+    import upscale_model as U
+
+    seen: dict[str, object] = {}
+
+    def fake_urlopen(url, timeout=None, context=None):
+        seen["timeout"] = timeout
+        seen["verify"] = context.verify_mode
+        return io.BytesIO(b"not the real weights")
+
+    monkeypatch.setattr(U, "MODEL_DIR", tmp_path)
+    monkeypatch.setattr(U.urllib.request, "urlopen", fake_urlopen)
+    with pytest.raises(RuntimeError, match="Checksum mismatch"):
+        U.download_weights("realesr-general-x4v3.pth")
+    assert seen["timeout"] == U.DOWNLOAD_TIMEOUT
+    assert seen["verify"] == __import__("ssl").CERT_REQUIRED
+    assert list(tmp_path.iterdir()) == []
+
+    def stalled(url, timeout=None, context=None):
+        raise TimeoutError("read timed out")
+
+    monkeypatch.setattr(U.urllib.request, "urlopen", stalled)
+    with pytest.raises(TimeoutError):
+        U.download_weights("realesr-general-x4v3.pth")
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_upscale_model_build_onnx_is_atomic(tmp_path: Path) -> None:
+    pytest.importorskip("numpy")
+    pytest.importorskip("onnx")
+    import numpy as np
+    import upscale_model as U
+
+    params = {
+        "body.0.weight": np.zeros((48, 3, 3, 3), np.float32),
+        "body.0.bias": np.zeros(48, np.float32),
+    }
+    dest = U.build_onnx(params, tmp_path / "m.onnx")
+    assert [p.name for p in tmp_path.iterdir()] == ["m.onnx"]
+    assert dest.stat().st_size > 0

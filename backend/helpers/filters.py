@@ -207,6 +207,123 @@ def glow_line_border(
     return Image.alpha_composite(line, subject)
 
 
+_RESAMPLE = {
+    "lanczos": Image.Resampling.LANCZOS,
+    "bicubic": Image.Resampling.BICUBIC,
+    "bilinear": Image.Resampling.BILINEAR,
+}
+
+
+def upscale(
+    image: Image.Image,
+    long_edge: int = 1920,
+    max_scale: float = 4.0,
+    resample: str = "lanczos",
+) -> Image.Image:
+    """
+    Enlarge so the longer side reaches `long_edge` px (aspect ratio kept).
+
+    Never shrinks: images already at/above `long_edge` are returned unchanged.
+    The enlargement factor is capped at `max_scale`.
+    """
+    target = int(long_edge)
+    if target < 1:
+        raise ValueError("long_edge must be >= 1")
+    cap = float(max_scale)
+    if cap < 1.0:
+        raise ValueError("max_scale must be >= 1.0")
+    mode = (resample or "lanczos").strip().lower()
+    if mode not in _RESAMPLE:
+        raise ValueError(f"resample must be one of {sorted(_RESAMPLE)}")
+
+    width, height = image.size
+    factor = min(target / max(width, height), cap)
+    if factor <= 1.0:
+        return image.copy()
+    size = (max(1, int(round(width * factor))), max(1, int(round(height * factor))))
+    return image.resize(size, _RESAMPLE[mode])
+
+
+def sharpen(
+    image: Image.Image,
+    radius: float = 2.0,
+    percent: int = 120,
+    threshold: int = 3,
+) -> Image.Image:
+    """Unsharp-mask sharpening (alpha preserved)."""
+    base = _as_rgb(image)
+    out = base.filter(
+        ImageFilter.UnsharpMask(radius=float(radius), percent=int(percent), threshold=int(threshold))
+    )
+    if image.mode == "RGBA":
+        out = out.convert("RGBA")
+        out.putalpha(image.getchannel("A"))
+    return out
+
+
+def denoise(image: Image.Image, size: int = 3) -> Image.Image:
+    """Median filter to soften noise / JPEG blocking (`size` odd, >= 3)."""
+    window = int(size)
+    if window < 3 or window % 2 == 0:
+        raise ValueError("size must be an odd integer >= 3")
+    base = _as_rgb(image)
+    out = base.filter(ImageFilter.MedianFilter(size=window))
+    if image.mode == "RGBA":
+        out = out.convert("RGBA")
+        out.putalpha(image.getchannel("A"))
+    return out
+
+
+def ai_upscale(
+    image: Image.Image,
+    long_edge: int = 1920,
+    max_scale: float = 4.0,
+    denoise: float = 0.5,
+    max_input_pixels: int = 1_000_000,
+    tile: int = 256,
+) -> Image.Image:
+    """
+    Real-ESRGAN 4× super-resolution (local ONNX), then Lanczos to the target size.
+
+    Longer side reaches `long_edge` px (factor capped at `max_scale`; never shrinks).
+    Inputs above `max_input_pixels` are reduced before the model so the 4× pass
+    stays bounded. `denoise` is 0.0 (keep grain) – 1.0 (smoothest). Alpha is
+    resized with Lanczos.
+    """
+    import numpy as np
+
+    from upscale_model import super_resolve
+
+    target = int(long_edge)
+    if target < 1:
+        raise ValueError("long_edge must be >= 1")
+    cap = float(max_scale)
+    if cap < 1.0:
+        raise ValueError("max_scale must be >= 1.0")
+    budget = int(max_input_pixels)
+    if budget < 1:
+        raise ValueError("max_input_pixels must be >= 1")
+
+    width, height = image.size
+    factor = min(target / max(width, height), cap)
+    if factor <= 1.0:
+        return image.copy()
+    size = (max(1, int(round(width * factor))), max(1, int(round(height * factor))))
+
+    src = _as_rgb(image)
+    if width * height > budget:
+        shrink = (budget / (width * height)) ** 0.5
+        src = src.resize(
+            (max(1, int(width * shrink)), max(1, int(height * shrink))), Image.Resampling.LANCZOS
+        )
+    hires = Image.fromarray(super_resolve(np.asarray(src), denoise=denoise, tile=tile))
+    out = hires.resize(size, Image.Resampling.LANCZOS)
+    if image.mode == "RGBA":
+        out = out.convert("RGBA")
+        out.putalpha(image.getchannel("A").resize(size, Image.Resampling.LANCZOS))
+    return out
+
+
 def composite(base: Image.Image, overlay: Image.Image) -> Image.Image:
     """Paste overlay (with alpha) on top of base."""
     bottom = _as_rgba(base)

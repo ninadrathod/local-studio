@@ -77,12 +77,14 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     init_db(db)
     first = seed_default_presets(db_path=db)
     second = seed_default_presets(db_path=db)
-    assert len(first) == 3
+    assert len(first) == 5
     names = {row["preset_name"] for row in first}
     assert names == {
         "bw_bg_glowing_subject",
         "polaroid_memory",
         "warm_faded_print",
+        "full_hd",
+        "4k_crisp",
     }
     by_name = {row["preset_name"]: row for row in first}
     assert by_name["bw_bg_glowing_subject"]["ar"] == "non-square"
@@ -95,15 +97,21 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     assert by_name["warm_faded_print"]["text_input"] == "no"
     assert by_name["warm_faded_print"]["default_text"] == ""
     assert by_name["warm_faded_print"]["text_character_limit"] == 0
+    for name in ("full_hd", "4k_crisp"):
+        assert by_name[name]["ar"] == "non-square"
+        assert by_name[name]["text_input"] == "no"
+        assert by_name[name]["text_character_limit"] == 0
     assert second == []
     names_in_order = [row["preset_name"] for row in list_presets(db_path=db)]
     assert names_in_order == [
+        "4k_crisp",
+        "full_hd",
         "warm_faded_print",
         "polaroid_memory",
         "bw_bg_glowing_subject",
     ]
     popular = list_popular(db_path=db)
-    assert len(popular) == 3
+    assert len(popular) == 5
     assert all(row["used_count"] == 0 for row in popular)
 
 
@@ -126,6 +134,8 @@ def test_seed_default_presets_syncs_text_fields(tmp_path: Path) -> None:
     assert [row["preset_name"] for row in created] == [
         "polaroid_memory",
         "warm_faded_print",
+        "full_hd",
+        "4k_crisp",
     ]
     synced = get_preset_by_name("bw_bg_glowing_subject", db_path=db)
     assert synced is not None

@@ -3,7 +3,7 @@ name: create-preset
 description: >-
   Create a new JSON preset for The Local Studio from a plain-language request (and
   optional reference images). Runs a gated POC → name → keywords → ar → text_input →
-  ship → gallery preview workflow into backend/presets/, helpers/, the SQLite presets
+  HD pre-pass → ship → gallery preview workflow into backend/presets/, helpers/, the SQLite presets
   database, and previews/. Visual option rounds write comparison HTML under
   previews/_candidates/. Use when the user asks to create a preset, add a new
   look/filter recipe, design an image effect pipeline, or follow the
@@ -29,6 +29,7 @@ Create-preset progress:
 - [ ] 4. Propose keywords (user finalizes the list)
 - [ ] 5. Confirm `ar`: `square` (square-only) or `non-square` (any aspect ratio)
 - [ ] 6. Confirm text input: `text_input` yes/no (+ default_text + text_character_limit if yes)
+- [ ] 6a. Confirm HD pre-pass: turn the image to HD first (`ai_upscale` as step 0)? yes/no
 - [ ] 6b. Font options via _candidates HTML (only if the look uses draw_text)
 - [ ] 7. Ship: helpers (if needed) + presets/*.json + database row + docs/tests
 - [ ] 8. Gallery previews: search → _candidates HTML → user picks → ship assets
@@ -45,6 +46,7 @@ I will tell what I want in plain language (may also provide some reference image
 - then generate a list of potential keywords that would associate well with the preset, I'll finalize this list
 - then confirm whether the preset is square-only (`ar=square`) or works on any image (`ar=non-square`)
 - then confirm whether the preset needs user text (`text_input=yes`) — if yes, finalize `default_text` and `text_character_limit` (1–200)
+- then ask: "Would you like to turn the image to HD first before applying the new preset?" — if yes, the preset starts with an `ai_upscale` step and the rest of the recipe is re-checked at HD size
 - after all of this is finalized, create any helper scripts in helper/ if necessary, add the preset json to presets/, create an entry for this new preset in the database.
 - then find open-licensed candidate photos that suit the new preset, prepare square 720×720 previews, show me the applied results, and only after I pick one write `previews/pre-edit/`, `previews/post-edit/`, and `previews/presets.json`.
 
@@ -136,16 +138,32 @@ backend/.venv/bin/python .claude/skills/create-preset/scripts/render_candidates.
 - When `text_input` is `yes`, at least one step must use `"$text"` in a string parameter (typically `"text": "$text"` on `draw_text`).
 - Wait until the user **finalizes** these fields. JSON, DB (`add_preset`), and `previews/presets.json` must all match.
 
+### 6a. HD pre-pass
+
+- Ask exactly: **"Would you like to turn the image to HD first before applying the new preset?"** Default is **no**.
+- Skip the question (answer is effectively no) when the finalized POC already starts with `ai_upscale` or is itself an upscale/HD preset.
+- If **yes**:
+  - Prepend this as **step 0** of the finalized recipe, before every other step (including `extract_subject`):
+    ```json
+    { "filter": "ai_upscale", "on": "image", "long_edge": 1920, "denoise": 0.5 }
+    ```
+    `ai_upscale` (`backend/helpers/filters.py`, model code in `upscale_model.py`) is local Real-ESRGAN general-x4v3 (BSD-3-Clause, ONNX in `~/.local-studio/models/`). Offer `long_edge` 1920 (Full HD, default) or 3840 (4K), and `denoise` 0.5 (default) or lower (0.2–0.3) to keep grain. Never shrinks images already at/above `long_edge`.
+  - Pixel-sized params in later steps were tuned at POC size and will look smaller after upscale — `draw_text` `font_size` / `margin` / `stroke_width`, `glow_border` / `glow_line_border` `width` / `blur`, etc. Scale them by roughly `long_edge / POC sample long edge` (e.g. 720 → 1920 ≈ ×2.7). Ratio-based params (`place_on_canvas` `scale`, enhance `amount`, `overlay` `alpha`) need no change.
+  - Re-render the recipe with step 0 on the same sample via `render_candidates.py poc` into `previews/_candidates/poc-hd/` (`A` = without HD, `B` = with HD and scaled params) and confirm the look still matches the chosen POC. Wait for the user to confirm `B` (or adjust and re-render).
+  - Do the fonts round (6b) on the HD output so text sizes are judged at final resolution.
+- If **no**, ship the recipe unchanged.
+- Wait until the user **finalizes** yes/no (+ `long_edge` / `denoise` if yes).
+
 ### 6b. Fonts (only if a step uses `draw_text`)
 
 - Offer **2–4** options the runner can actually use: `font_style` `sans` or `flow` (via `filters.draw_text`), or a specific `.ttf` path via `font_path` (same helper; add that file to `_font_candidates` if you later ship it as a style).
 - Render + open `previews/_candidates/fonts/index.html` with `render_candidates.py fonts` (always `filters.draw_text`). Prefer the chosen POC output as `--image` so the type sits on the look. Match caption placement with `--align` when needed.
 - Wait until the user **finalizes one** letter. Ship that `font_style` (or register the TTF in `filters.py` if they picked a file).
 
-### 7. Ship (only after 2–6b are finalized)
+### 7. Ship (only after 2–6b are finalized, including the 6a HD answer)
 
 1. Add any new filter ops under `backend/helpers/filters.py` and register them in `backend/helpers/apply_preset.py` `FILTERS` (use `_run_simple` for single-layer ops). Keep helpers modular. Do not add per-filter if/else in the API or the step runner.
-2. Write `backend/presets/<final_name>.json` with `name`, `label`, `description`, `ar` (`square` or `non-square`), `text_input` (`yes` or `no`), `default_text`, `text_character_limit`, and `steps`. Each step’s `"filter"` is the helper function name; remaining keys are that helper’s parameters. Use `"$text"` in a param when the step should receive the user string.
+2. Write `backend/presets/<final_name>.json` with `name`, `label`, `description`, `ar` (`square` or `non-square`), `text_input` (`yes` or `no`), `default_text`, `text_character_limit`, and `steps`. Each step’s `"filter"` is the helper function name; remaining keys are that helper’s parameters. Use `"$text"` in a param when the step should receive the user string. If 6a was **yes**, `steps[0]` is the finalized `ai_upscale` step and later pixel-sized params are the HD-scaled values.
 3. Insert a DB row:
 
 ```bash
@@ -181,16 +199,17 @@ Understand what the shipped preset does, then pick photos where that effect actu
 3. **Render** with `render_candidates.py gallery` (square-crop → **720×720** → `apply_preset_file` on the shipped preset; pass `--text` when `text_input=yes`). Default crop is **center**. If the subject sits off-center, pass `--crop A=left` / `right` / `top` / `bottom` so the kept square still frames it. Open the HTML and **ask which letter is best**. Wait for the user to finalize one.
 4. **Once finalized**, write:
    - `previews/pre-edit/<final_name>.*` — the chosen square 720×720 source
-   - `previews/post-edit/<final_name>.png` — same crop after the preset
+   - `previews/post-edit/<final_name>.png` — same crop after the preset. If the preset has the HD pre-pass, Lanczos-downscale this file by the HD factor (e.g. 1920 → 720) so the gallery asset stays light and the same size it would be without HD
    - prepend `{ "preset_name", "ar", "text_input", "default_text", "text_character_limit", "pre_edit_image", "post_edit_image" }` to `previews/presets.json` (newest first)
    - record source + photographer + license in `previews/CREDITS.md`
    - delete `previews/_candidates/`
 
 ## Rules
 
-- Never commit rembg/ONNX weights; models stay in `~/.rembg/`.
+- Never commit rembg/ONNX weights; models stay in `~/.rembg/` (rembg) and `~/.local-studio/models/` (Real-ESRGAN for `ai_upscale`).
 - Do not invent extra HTTP routes unless asked — apply by DB name via existing `POST /api/apply-preset` (optional multipart `text` when needed).
-- Do not finalize name/keywords/`ar`/text fields/fonts/DB/files/gallery assets before the user confirms each gate.
+- Do not finalize name/keywords/`ar`/text fields/HD pre-pass/fonts/DB/files/gallery assets before the user confirms each gate.
+- HD pre-pass means one `ai_upscale` step at index 0 — reuse that helper; never write a separate upscaler or call a cloud API.
 - Keep `ar` and text-input fields in sync across preset JSON, `add_preset(...)`, and `previews/presets.json`.
 - Gallery previews must be open-licensed, square **720×720**, with matching pre-edit and post-edit crops.
 - If a needed look cannot be done with current filters, say so in step 1–2 and propose a small new helper filter before POC.

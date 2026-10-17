@@ -26,7 +26,9 @@ const PREVIEW_PATH_RE =
   /^previews\/(pre-edit|post-edit)\/[A-Za-z0-9][A-Za-z0-9._-]*\.(jpe?g|png|webp|gif)$/i;
 
 /** DB / JSON preset_name shape used by this project. */
-const PRESET_NAME_RE = /^[a-z][a-z0-9_]{0,63}$/;
+const PRESET_NAME_RE = /^[a-z0-9][a-z0-9_]{0,63}$/;
+/** Name words shown fully upper-case in labels (e.g. `full_hd` → "Full HD", `4k_crisp` → "4K Crisp"). */
+const UPPERCASE_LABEL_WORD_RE = /^(hd|uhd|\d+k)$/i;
 const MAX_PRESET_TEXT_CHARS = 200;
 
 const els = {
@@ -89,8 +91,14 @@ let popularGeneration = 0;
 
 function formatPresetLabel(name) {
   return String(name || "")
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+    .split("_")
+    .filter(Boolean)
+    .map((word) =>
+      UPPERCASE_LABEL_WORD_RE.test(word)
+        ? word.toUpperCase()
+        : word.charAt(0).toUpperCase() + word.slice(1),
+    )
+    .join(" ");
 }
 
 /**

@@ -1,3 +1,7 @@
 # Optional deps for helper scripts under backend/helpers/ (not required for the blur API).
 # Includes onnxruntime CPU backend via rembg[cpu].
 rembg[cpu]==2.0.84
+# Builds the Real-ESRGAN ONNX graph locally for ai_upscale (Apache-2.0).
+onnx==1.23.2
+# CA bundle for the verified HTTPS model download (MPL-2.0).
+certifi>=2024.2.2
