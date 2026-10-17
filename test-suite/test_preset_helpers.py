@@ -57,6 +57,10 @@ def test_filter_registry_is_name_lookup() -> None:
         "ai_upscale",
         "doodle",
         "sticker_outline",
+        "posterize",
+        "ink_edges",
+        "halftone",
+        "paper_texture",
     }
 
 
@@ -632,3 +636,175 @@ def test_run_extract_subject_passes_require_clear_subject(monkeypatch: pytest.Mo
     FILTERS["extract_subject"](layers, index=0, on="image", require_clear_subject=True)
     FILTERS["extract_subject"](layers, index=1, on="image")
     assert seen == [True, False]
+
+
+def _gradient(width: int = 120, height: int = 80) -> Image.Image:
+    img = Image.new("RGB", (width, height))
+    for x in range(width):
+        v = int(x / (width - 1) * 255)
+        for y in range(height):
+            img.putpixel((x, y), (v, 255 - v, (v + y) % 256))
+    return img
+
+
+def test_posterize_limits_channel_values_and_keeps_alpha() -> None:
+    out = F.posterize(_gradient(), levels=4, smooth=0)
+    allowed = {0, 85, 170, 255}
+    for band in out.split():
+        assert {v for v, n in enumerate(band.histogram()) if n} <= allowed
+    rgba = Image.new("RGBA", (10, 10), (100, 150, 200, 77))
+    assert F.posterize(rgba, levels=3).getpixel((5, 5))[3] == 77
+    with pytest.raises(ValueError):
+        F.posterize(rgba, levels=1)
+    with pytest.raises(ValueError):
+        F.posterize(rgba, smooth=4)
+
+
+def test_ink_edges_draws_dark_line_on_boundary_only() -> None:
+    img = Image.new("RGB", (100, 100), (230, 230, 230))
+    img.paste((40, 40, 40), (50, 0, 100, 100))
+    out = F.ink_edges(img, detail=0.02, threshold=4, thickness=0.0)
+    assert out.size == img.size
+    assert out.getpixel((10, 50)) == (230, 230, 230)
+    row = [out.getpixel((x, 50))[0] for x in range(40, 60)]
+    assert min(row) < 40
+    faint = F.ink_edges(img, detail=0.02, threshold=4, thickness=0.0, opacity=0.3)
+    assert min(faint.getpixel((x, 50))[0] for x in range(40, 60)) > min(row)
+
+
+@pytest.mark.parametrize("mode", ["mono", "cmyk"])
+def test_halftone_preserves_tone_roughly(mode: str) -> None:
+    for grey in (60, 128, 200):
+        img = Image.new("RGB", (160, 160), (grey, grey, grey))
+        out = F.halftone(img, mode=mode, cell=0.06).convert("L")
+        assert out.size == img.size
+        mean = sum(v * n for v, n in enumerate(out.histogram())) / (160 * 160)
+        assert abs(mean - grey) < 45
+
+
+def test_halftone_draws_dots_and_mix_blends_back() -> None:
+    img = Image.new("RGB", (120, 120), (128, 128, 128))
+    out = F.halftone(img, mode="mono", cell=0.08, paper=[250, 250, 250], ink=[0, 0, 0])
+    lo, hi = out.convert("L").getextrema()
+    assert lo < 40 and hi > 220
+    half = F.halftone(img, mode="mono", cell=0.08, mix=0.0)
+    assert half.tobytes() == img.tobytes()
+    with pytest.raises(ValueError):
+        F.halftone(img, mode="spot")
+    with pytest.raises(ValueError):
+        F.halftone(img, cell=0.5)
+
+
+def test_separate_cmyk_moves_grey_to_black_plate() -> None:
+    c, m, y, k = F._separate_cmyk(Image.new("RGB", (4, 4), (100, 100, 100)), gcr=1.0)
+    assert k.getpixel((0, 0)) == 155
+    assert c.getpixel((0, 0)) == m.getpixel((0, 0)) == y.getpixel((0, 0)) == 0
+    c2, _, _, k2 = F._separate_cmyk(Image.new("RGB", (4, 4), (255, 0, 0)), gcr=1.0)
+    assert k2.getpixel((0, 0)) == 0 and c2.getpixel((0, 0)) == 0
+
+
+def test_halftone_large_image_is_bounded_and_keeps_size() -> None:
+    big = Image.new("RGB", (F._HALFTONE_MAX_EDGE * 2, 300), (128, 128, 128))
+    out = F.halftone(big, mode="mono", cell=0.05)
+    assert out.size == big.size
+
+
+def test_paper_texture_tints_and_is_deterministic() -> None:
+    img = Image.new("RGB", (64, 64), (255, 255, 255))
+    a = F.paper_texture(img, color=[230, 210, 170], tint=1.0, grain=0.1, stains=0.3, seed=4)
+    assert a.tobytes() == F.paper_texture(img, color=[230, 210, 170], tint=1.0, grain=0.1, stains=0.3, seed=4).tobytes()
+    assert a.tobytes() != F.paper_texture(img, color=[230, 210, 170], tint=1.0, grain=0.1, stains=0.3, seed=5).tobytes()
+    r, g, b = a.getpixel((30, 30))
+    assert r > b
+    plain = F.paper_texture(img, tint=0, grain=0, stains=0, fade=0)
+    assert plain.tobytes() == img.tobytes()
+    black = F.paper_texture(Image.new("RGB", (8, 8)), tint=0, grain=0, stains=0, fade=1.0, color=[200, 190, 170])
+    assert black.getpixel((4, 4)) == (200, 190, 170)
+
+
+def test_comic_newsprint_preset_files() -> None:
+    expected = {
+        "comic_pop": ["contrast", "color", "posterize", "halftone", "ink_edges", "paper_texture"],
+        "old_newspaper": ["grayscale", "brightness", "contrast", "halftone", "paper_texture"],
+        "vintage_comic": ["brightness", "color", "posterize", "halftone", "ink_edges", "paper_texture"],
+    }
+    for name, filters in expected.items():
+        data = load_preset(PRESETS / f"{name}.json")
+        assert data["ar"] == "non-square"
+        assert data["text_input"] == "no"
+        assert [s["filter"] for s in data["steps"]] == filters
+
+
+@pytest.mark.parametrize("name", ["comic_pop", "old_newspaper", "vintage_comic"])
+def test_apply_comic_newsprint_presets_on_non_square(name: str) -> None:
+    out = apply_preset(_gradient(150, 90), PRESETS / f"{name}.json")
+    assert out.size == (150, 90)
+
+
+def test_halftone_caps_dot_count(monkeypatch: pytest.MonkeyPatch) -> None:
+    cells: list[float] = []
+    real = F._dot_screen
+
+    def spy(ink, cell, angle):
+        cells.append(cell)
+        return real(ink, cell, angle)
+
+    monkeypatch.setattr(F, "_dot_screen", spy)
+    monkeypatch.setattr(F, "_HALFTONE_MAX_DOTS", 500)
+    img = Image.new("RGB", (200, 100), (128, 128, 128))
+    F.halftone(img, mode="mono", cell=0.002)
+    area = (200 + 100) ** 2 / 2
+    assert cells and area / cells[0] ** 2 <= 500 + 1
+
+
+def test_halftone_and_ink_edges_ignore_pixels_under_transparency() -> None:
+    # Hidden RGB is black, but fully transparent: it must not print ink or edges.
+    rgba = Image.new("RGBA", (120, 120), (0, 0, 0, 0))
+    rgba.paste((200, 200, 200, 255), (30, 30, 90, 90))
+    paper = [250, 245, 235]
+    out = F.halftone(rgba, mode="mono", cell=0.05, paper=paper)
+    assert out.mode == "RGBA"
+    # Transparent area prints exactly like plain paper, not like the hidden black.
+    plain = F.halftone(Image.new("RGB", (120, 120), tuple(paper)), mode="mono", cell=0.05, paper=paper)
+    box = (0, 0, 20, 20)
+    assert out.convert("RGB").crop(box).tobytes() == plain.crop(box).tobytes()
+    hidden_black = F.halftone(Image.new("RGB", (120, 120), (0, 0, 0)), mode="mono", cell=0.05, paper=paper)
+    assert out.convert("RGB").crop(box).tobytes() != hidden_black.crop(box).tobytes()
+    flat = F._flatten(rgba, paper)
+    assert flat.getpixel((5, 5)) == tuple(paper)
+    assert flat.getpixel((60, 60)) == (200, 200, 200)
+    edges = F.ink_edges(rgba, detail=0.02, threshold=4, thickness=0.0)
+    assert edges.getpixel((5, 5))[3] == 0
+    assert edges.getpixel((60, 60))[:3] == (200, 200, 200)
+
+
+def test_paper_texture_stains_follow_aspect_ratio(monkeypatch: pytest.MonkeyPatch) -> None:
+    sizes: list[tuple[int, int]] = []
+    real = Image.frombytes
+
+    def spy(mode, size, data, *args, **kwargs):
+        sizes.append(tuple(size))
+        return real(mode, size, data, *args, **kwargs)
+
+    monkeypatch.setattr(F.Image, "frombytes", spy)
+    F.paper_texture(Image.new("RGB", (1000, 100)), grain=0, stains=0.5)
+    assert sizes == [(120, 12)]
+
+
+def test_paper_texture_tone_curves_match_blend_math() -> None:
+    img = Image.new("RGB", (4, 4), (200, 100, 50))
+    paper = (240, 200, 160)
+    tinted = F.paper_texture(img, color=list(paper), tint=0.5, grain=0, stains=0, fade=0)
+    expected = tuple(round(v * (1 - 0.5 + 0.5 * p / 255)) for v, p in zip((200, 100, 50), paper))
+    assert tinted.getpixel((1, 1)) == expected
+    faded = F.paper_texture(Image.new("RGB", (4, 4), (0, 250, 100)), color=list(paper), tint=0, grain=0, stains=0, fade=0.5)
+    assert faded.getpixel((1, 1)) == (120, 250, 130)
+
+
+def test_filters_do_not_mutate_input() -> None:
+    img = _gradient(80, 60)
+    before = img.tobytes()
+    F.ink_edges(img)
+    F.paper_texture(img, grain=0.2, stains=0.5)
+    F.halftone(img, mode="cmyk", cell=0.05)
+    assert img.tobytes() == before

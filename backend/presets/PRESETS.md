@@ -103,6 +103,30 @@ Only one apply-preset job runs at a time; concurrent extras get HTTP **503**.
 - **Text input:** `no`
 - **DB:** seeded via `seed_default_presets()` / setup
 
+### `comic_pop`
+
+- **Idea:** contrast ×1.11 → colour ×1.24 → `posterize` 6 levels → light CMYK `halftone` (25% mix) → `ink_edges` (74%) → faint `paper_texture`. Bold comic-panel colour with soft dots and outlines.
+- **File:** `backend/presets/comic_pop.json`
+- **AR:** `non-square` (any aspect ratio)
+- **Text input:** `no`
+- **DB:** seeded via `seed_default_presets()` / setup
+
+### `old_newspaper`
+
+- **Idea:** grayscale → slight lift + contrast → mono black-ink `halftone` (70% mix) on warm newsprint → `paper_texture` grain, stains and fade.
+- **File:** `backend/presets/old_newspaper.json`
+- **AR:** `non-square` (any aspect ratio)
+- **Text input:** `no`
+- **DB:** seeded via `seed_default_presets()` / setup
+
+### `vintage_comic`
+
+- **Idea:** brighten → colour ×1.1 → `posterize` 8 → CMYK `halftone` (55% mix, `gcr` 0.4) on cream paper → soft `ink_edges` → aged `paper_texture`.
+- **File:** `backend/presets/vintage_comic.json`
+- **AR:** `non-square` (any aspect ratio)
+- **Text input:** `no`
+- **DB:** seeded via `seed_default_presets()` / setup
+
 ## Built-in filters
 
 | Filter | What it does | Common params |
@@ -123,6 +147,10 @@ Only one apply-preset job runs at a time; concurrent extras get HTTP **503**.
 | `denoise` | Median filter (noise / JPEG blocking) | `on`, `size` (odd ≥ 3) |
 | `ai_upscale` | Local Real-ESRGAN 4× super-resolution, then Lanczos to target (keeps aspect + alpha; never shrinks) | `on`, `long_edge` (default 1920), `max_scale` (4), `denoise` (0 keep grain – 1 smoothest; 0.5), `max_input_pixels` (1 000 000), `tile` (256) |
 | `doodle` | One hand-drawn white (or tinted) doodle; sizes are fractions of the short side so it scales with resolution; seeded wobble is deterministic; draws only its own region (2× supersampled up to 4 MP regions, 1× above) |  `on`, `style` (`xo`/`rings`/`wiggles`/`stars`), `anchor` (`top_right`/`top_left`/`bottom_left`/`bottom_right`/`top`/`bottom`/`left`/`right`/`center`/`subject`), `around` (layer whose alpha bbox centres `anchor: subject`), `x`/`y` (0–1, override anchor), `size`, `stroke`, `count` (1–12), `angle` (wiggles), `color`/`rgb`, `opacity`, `jitter`, `seed` |
+| `posterize` | Flatten each RGB channel to N levels (comic colour bands); optional median smooth first | `on`, `levels` (2–32), `smooth` (0 or odd ≥ 3) |
+| `ink_edges` | Comic ink outlines via difference of Gaussians on luminance; scales with resolution; RGBA is flattened on white first so hidden pixels don't create edges | `on`, `detail` (blur, fraction of short side), `threshold` (lower = more lines), `thickness` (fraction of short side), `color`/`rgb`, `opacity` |
+| `halftone` | Printed dot screen: `mono` (one ink at `angle`) or `cmyk` (process inks at 15/75/0/45° with grey-component replacement); dot area ≈ ink coverage; processed at ≤ 2400 px long edge then resized back; pitch auto-enlarges if a screen would need > 160k dots; transparent pixels print as paper | `on`, `mode`, `cell` (dot pitch, 0.002–0.1 of short side), `angle`, `paper`, `ink`, `mix` (blend back over original), `gcr` (0–1, share of grey on black plate) |
+| `paper_texture` | Age onto paper: multiply tint, seeded fine grain (scales with resolution), low-frequency stains (grid follows aspect ratio), fade toward paper; tone steps run as point tables, grain is applied tile by tile | `on`, `color`/`rgb`, `tint`, `grain`, `stains`, `fade` (0–1 each), `seed` |
 | `draw_text` | Paint a string onto a layer | `on`, `text` (`$text` / `$datetime` / `$date` / `$time`), `font_size`, `color`/`rgb`, `align` (`center`/`top`/`bottom`/`top_right`/…), `font_style` (`sans`/`flow`), `font_path` (optional TTF/OTF/TTC; overrides `font_style`), `margin`, `x`, `y`, `stroke_width` |
 
 Layers are named images in memory. Typical keys: `image`, `subject`, `background`.

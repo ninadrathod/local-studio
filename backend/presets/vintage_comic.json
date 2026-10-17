@@ -1,0 +1,56 @@
+{
+  "name": "vintage_comic",
+  "label": "Vintage comic",
+  "description": "Softened posterized colour printed as CMYK halftone dots over the photo on lightly aged paper, with soft ink outlines.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "brightness",
+      "on": "image",
+      "amount": 1.12
+    },
+    {
+      "filter": "color",
+      "on": "image",
+      "amount": 1.1
+    },
+    {
+      "filter": "posterize",
+      "on": "image",
+      "levels": 8,
+      "smooth": 3
+    },
+    {
+      "filter": "halftone",
+      "on": "image",
+      "mode": "cmyk",
+      "cell": 0.01,
+      "paper": [
+        242,
+        232,
+        206
+      ],
+      "gcr": 0.4,
+      "mix": 0.55
+    },
+    {
+      "filter": "ink_edges",
+      "on": "image",
+      "detail": 0.003,
+      "threshold": 8,
+      "thickness": 0.0012,
+      "opacity": 0.55
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0.15,
+      "grain": 0.04,
+      "stains": 0.1,
+      "fade": 0.03
+    }
+  ]
+}

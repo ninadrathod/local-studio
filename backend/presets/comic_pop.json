@@ -1,0 +1,50 @@
+{
+  "name": "comic_pop",
+  "label": "Comic pop",
+  "description": "Lifted contrast and colour, six posterized bands, light CMYK halftone dots and ink outlines on faintly tinted paper.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "contrast",
+      "on": "image",
+      "amount": 1.11
+    },
+    {
+      "filter": "color",
+      "on": "image",
+      "amount": 1.24
+    },
+    {
+      "filter": "posterize",
+      "on": "image",
+      "levels": 6,
+      "smooth": 3
+    },
+    {
+      "filter": "halftone",
+      "on": "image",
+      "mode": "cmyk",
+      "cell": 0.0078,
+      "mix": 0.25,
+      "gcr": 0.5
+    },
+    {
+      "filter": "ink_edges",
+      "on": "image",
+      "detail": 0.0025,
+      "threshold": 7,
+      "thickness": 0.0014,
+      "opacity": 0.74
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0.07,
+      "grain": 0.03,
+      "stains": 0.0
+    }
+  ]
+}

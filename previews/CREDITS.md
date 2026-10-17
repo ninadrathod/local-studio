@@ -54,3 +54,24 @@ Attribution is required where the license says so.
 - **Photographer:** [Jarek Tuszyński](https://commons.wikimedia.org/wiki/User:Jarekt)
 - **License:** [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 - **Files:** `pre-edit/doodle_halo_rings.jpg` → `post-edit/doodle_halo_rings.png` (preset `doodle_halo_rings`)
+
+## `comic_pop`
+
+- **Photograph:** [Skateboarder in front of couch (Unsplash)](https://commons.wikimedia.org/wiki/File:Skateboarder_in_front_of_couch_(Unsplash).jpg)
+- **Photographer:** [Jeremy Thomas](https://unsplash.com/@jeremythomasphoto) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/comic_pop.jpg` → `post-edit/comic_pop.png` (preset `comic_pop`)
+
+## `old_newspaper`
+
+- **Photograph:** [Vintage car driving in Centro Havana (Unsplash)](https://commons.wikimedia.org/wiki/File:Vintage_car_driving_in_Centro_Havana_(Unsplash).jpg)
+- **Photographer:** [Eva Blue](https://unsplash.com/@evablue) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/old_newspaper.jpg` → `post-edit/old_newspaper.png` (preset `old_newspaper`)
+
+## `vintage_comic`
+
+- **Photograph:** [Yellow vintage car Havana (Unsplash)](https://commons.wikimedia.org/wiki/File:Yellow_vintage_car_Havana_(Unsplash).jpg)
+- **Photographer:** [Wolf Schram](https://unsplash.com/@wolfbroadcast) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/vintage_comic.jpg` → `post-edit/vintage_comic.png` (preset `vintage_comic`)
