@@ -1,0 +1,35 @@
+{
+  "name": "blue_hour_noir",
+  "label": "Blue hour noir",
+  "description": "HD pass, then a cold night grade: deep blue shadows, steel highlights, lowered exposure, strong contrast, and a heavy vignette.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "temperature": -0.45,
+      "exposure": -0.2,
+      "contrast": 0.4,
+      "black_lift": 0.02,
+      "shadows": [10, 40, 110],
+      "highlights": [200, 220, 255],
+      "split": 0.55,
+      "balance": -0.3,
+      "saturation": 0.75
+    },
+    {
+      "filter": "vignette",
+      "on": "image",
+      "amount": 0.4
+    }
+  ]
+}

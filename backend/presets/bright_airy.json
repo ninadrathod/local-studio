@@ -1,0 +1,30 @@
+{
+  "name": "bright_airy",
+  "label": "Bright & airy",
+  "description": "HD pass, then a clean high-key grade: lifted exposure, soft contrast, smooth highlight roll-off, and gentle vibrance.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "temperature": -0.05,
+      "exposure": 0.4,
+      "contrast": -0.25,
+      "black_lift": 0.05,
+      "white_rolloff": 0.7,
+      "highlights": [245, 245, 255],
+      "split": 0.1,
+      "saturation": 0.9,
+      "vibrance": 0.3
+    }
+  ]
+}

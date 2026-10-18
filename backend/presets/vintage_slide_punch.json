@@ -1,0 +1,34 @@
+{
+  "name": "vintage_slide_punch",
+  "label": "Vintage slide punch",
+  "description": "HD pass, then a retro slide-film grade: saturated reds and blues, deep contrast, warm highlights, cool shadows, and a light vignette.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "temperature": 0.15,
+      "contrast": 0.4,
+      "white_rolloff": 0.3,
+      "shadows": [40, 50, 90],
+      "highlights": [255, 220, 170],
+      "split": 0.3,
+      "saturation": 1.2,
+      "vibrance": 0.2
+    },
+    {
+      "filter": "vignette",
+      "on": "image",
+      "amount": 0.15
+    }
+  ]
+}

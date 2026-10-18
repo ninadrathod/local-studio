@@ -1,0 +1,35 @@
+{
+  "name": "cinematic_teal_orange",
+  "label": "Cinematic teal & orange",
+  "description": "HD pass, then a film-poster grade: teal shadows, warm orange highlights, S-curve contrast with a soft highlight shoulder, and a gentle vignette.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "temperature": 0.1,
+      "contrast": 0.35,
+      "black_lift": 0.03,
+      "white_rolloff": 0.4,
+      "shadows": [20, 110, 130],
+      "highlights": [255, 170, 90],
+      "split": 0.55,
+      "saturation": 0.95,
+      "vibrance": 0.2
+    },
+    {
+      "filter": "vignette",
+      "on": "image",
+      "amount": 0.25
+    }
+  ]
+}

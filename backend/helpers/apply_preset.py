@@ -280,6 +280,8 @@ FILTERS: dict[str, FilterHandler] = {
     "ink_edges": _run_simple(F.ink_edges),
     "halftone": _run_simple(F.halftone),
     "paper_texture": _run_simple(F.paper_texture),
+    "color_grade": _run_simple(F.color_grade),
+    "vignette": _run_simple(F.vignette),
     "draw_text": _run_simple(F.draw_text),
     "place_on_canvas": _run_simple(F.place_on_canvas),
     "upscale": _run_simple(F.upscale),

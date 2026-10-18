@@ -1,8 +1,14 @@
 # Preview image credits
 
-Files under `pre-edit/` are openly licensed source photographs.
-Matching files under `post-edit/` are the same photo after the named preset is applied.
-Attribution is required where the license says so.
+Files under `pre-edit/` are openly licensed source photographs, **modified**:
+square-cropped and resized to 720×720 px from the linked original.
+Matching files under `post-edit/` are **adaptations**: that same crop after the
+named preset is applied (colour grading, effects, overlays).
+
+Each `pre-edit/` and `post-edit/` file is shared under the **same license as its
+source photograph** listed below — in particular, files derived from CC BY-SA
+photos are themselves CC BY-SA. Attribution (photographer, source link, license)
+is required where the license says so; CC0 and public-domain sources need none.
 
 ## `bw_bg_glowing_subject`
 
@@ -75,3 +81,73 @@ Attribution is required where the license says so.
 - **Photographer:** [Wolf Schram](https://unsplash.com/@wolfbroadcast) (via Wikimedia Commons Unsplash CC0 archive)
 - **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
 - **Files:** `pre-edit/vintage_comic.jpg` → `post-edit/vintage_comic.png` (preset `vintage_comic`)
+
+## `cinematic_teal_orange`
+
+- **Photograph:** [Street photography in Montreal 007](https://commons.wikimedia.org/wiki/File:Street_photography_in_Montreal_007.jpg)
+- **Photographer:** Wilfredor
+- **License:** [CC0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/cinematic_teal_orange.jpg` → `post-edit/cinematic_teal_orange.png` (preset `cinematic_teal_orange`)
+
+## `warm_portrait_film`
+
+- **Photograph:** [DSCF0867 A street-musician duo performs outdoors as the sun sets - a singer with a handheld mic and a guitarist singing into a stand mic beside palm trees and market stalls](https://commons.wikimedia.org/wiki/File:DSCF0867_A_street-musician_duo_performs_outdoors_as_the_sun_sets_-_a_singer_with_a_handheld_mic_and_a_guitarist_singing_into_a_stand_mic_beside_palm_trees_and_market_stalls.jpg)
+- **Photographer:** PattayaPatrol
+- **License:** [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+- **Files:** `pre-edit/warm_portrait_film.jpg` → `post-edit/warm_portrait_film.png` (preset `warm_portrait_film`)
+
+## `nordic_cool_matte`
+
+- **Photograph:** [DFC 4170 Sunset market buzz stalls shoppers and the Thai flag waving as evening lights come alive](https://commons.wikimedia.org/wiki/File:DFC_4170_Sunset_market_buzz_stalls_shoppers_and_the_Thai_flag_waving_as_evening_lights_come_alive.jpg)
+- **Photographer:** PattayaPatrol
+- **License:** [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+- **Files:** `pre-edit/nordic_cool_matte.jpg` → `post-edit/nordic_cool_matte.png` (preset `nordic_cool_matte`)
+
+## `golden_hour_glow`
+
+- **Photograph:** [Edinburgh tram, Princes Street, 13 September 2014](https://commons.wikimedia.org/wiki/File:Edinburgh_tram,_Princes_Street,_13_September_2014.jpg)
+- **Photographer:** Dr Neil Clifton
+- **License:** [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0/)
+- **Files:** `pre-edit/golden_hour_glow.jpg` → `post-edit/golden_hour_glow.png` (preset `golden_hour_glow`)
+
+## `emerald_moody`
+
+- **Photograph:** [My Favourite Portrait - EVER! (that Ive ever taken). (8738696326)](https://commons.wikimedia.org/wiki/File:My_Favourite_Portrait_-_EVER!_(that_Ive_ever_taken)._(8738696326).jpg)
+- **Photographer:** Lies Thru a Lens
+- **License:** [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/)
+- **Files:** `pre-edit/emerald_moody.jpg` → `post-edit/emerald_moody.png` (preset `emerald_moody`)
+
+## `fine_art_mono`
+
+- **Photograph:** [Cape Town (ZA), Wale Street -- 2024 -- 3536](https://commons.wikimedia.org/wiki/File:Cape_Town_(ZA),_Wale_Street_--_2024_--_3536.jpg)
+- **Photographer:** Dietmar Rabich
+- **License:** [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+- **Files:** `pre-edit/fine_art_mono.jpg` → `post-edit/fine_art_mono.png` (preset `fine_art_mono`)
+
+## `bright_airy`
+
+- **Photograph:** [Human–canine friendship - smiling girl hugging her dog at golden hour in Laos](https://commons.wikimedia.org/wiki/File:Human%E2%80%93canine_friendship_-_smiling_girl_hugging_her_dog_at_golden_hour_in_Laos.jpg)
+- **Photographer:** Basile Morin
+- **License:** [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+- **Files:** `pre-edit/bright_airy.jpg` → `post-edit/bright_airy.png` (preset `bright_airy`)
+
+## `vintage_slide_punch`
+
+- **Photograph:** [Street musician in Montmartre - harp 3, Paris 20161030 (2)](https://commons.wikimedia.org/wiki/File:Street_musician_in_Montmartre_-_harp_3,_Paris_20161030_(2).jpg)
+- **Photographer:** Maria  Eklind
+- **License:** [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0/)
+- **Files:** `pre-edit/vintage_slide_punch.jpg` → `post-edit/vintage_slide_punch.png` (preset `vintage_slide_punch`)
+
+## `blush_rose_pastel`
+
+- **Photograph:** [Alfresco dining at blue hour on Smith Street, Brooklyn, New York - 20200906](https://commons.wikimedia.org/wiki/File:Alfresco_dining_at_blue_hour_on_Smith_Street,_Brooklyn,_New_York_-_20200906.jpg)
+- **Photographer:** Andre Carrotflower
+- **License:** [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+- **Files:** `pre-edit/blush_rose_pastel.jpg` → `post-edit/blush_rose_pastel.png` (preset `blush_rose_pastel`)
+
+## `blue_hour_noir`
+
+- **Photograph:** [Bench, Hyde Park in Autumn 5146065000](https://commons.wikimedia.org/wiki/File:Bench,_Hyde_Park_in_Autumn_5146065000.jpg)
+- **Photographer:** Suvodeb Banerjee
+- **License:** [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/)
+- **Files:** `pre-edit/blue_hour_noir.jpg` → `post-edit/blue_hour_noir.png` (preset `blue_hour_noir`)

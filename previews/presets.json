@@ -1,5 +1,95 @@
 [
   {
+    "preset_name": "blue_hour_noir",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/blue_hour_noir.jpg",
+    "post_edit_image": "previews/post-edit/blue_hour_noir.png"
+  },
+  {
+    "preset_name": "blush_rose_pastel",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/blush_rose_pastel.jpg",
+    "post_edit_image": "previews/post-edit/blush_rose_pastel.png"
+  },
+  {
+    "preset_name": "vintage_slide_punch",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/vintage_slide_punch.jpg",
+    "post_edit_image": "previews/post-edit/vintage_slide_punch.png"
+  },
+  {
+    "preset_name": "bright_airy",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/bright_airy.jpg",
+    "post_edit_image": "previews/post-edit/bright_airy.png"
+  },
+  {
+    "preset_name": "fine_art_mono",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/fine_art_mono.jpg",
+    "post_edit_image": "previews/post-edit/fine_art_mono.png"
+  },
+  {
+    "preset_name": "emerald_moody",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/emerald_moody.jpg",
+    "post_edit_image": "previews/post-edit/emerald_moody.png"
+  },
+  {
+    "preset_name": "golden_hour_glow",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/golden_hour_glow.jpg",
+    "post_edit_image": "previews/post-edit/golden_hour_glow.png"
+  },
+  {
+    "preset_name": "nordic_cool_matte",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/nordic_cool_matte.jpg",
+    "post_edit_image": "previews/post-edit/nordic_cool_matte.png"
+  },
+  {
+    "preset_name": "warm_portrait_film",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/warm_portrait_film.jpg",
+    "post_edit_image": "previews/post-edit/warm_portrait_film.png"
+  },
+  {
+    "preset_name": "cinematic_teal_orange",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/cinematic_teal_orange.jpg",
+    "post_edit_image": "previews/post-edit/cinematic_teal_orange.png"
+  },
+  {
     "preset_name": "vintage_comic",
     "ar": "non-square",
     "text_input": "no",

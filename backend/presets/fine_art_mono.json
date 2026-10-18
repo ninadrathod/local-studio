@@ -1,0 +1,45 @@
+{
+  "name": "fine_art_mono",
+  "label": "Fine-art mono",
+  "description": "HD pass, then contrasty black and white with a subtle split tone (cool shadows, warm highlights), fine grain, and a vignette.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "grayscale",
+      "on": "image"
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "contrast": 0.45,
+      "black_lift": 0.02,
+      "white_rolloff": 0.3,
+      "shadows": [60, 70, 95],
+      "highlights": [235, 225, 205],
+      "split": 0.25
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0,
+      "stains": 0,
+      "fade": 0,
+      "grain": 0.06,
+      "seed": 7
+    },
+    {
+      "filter": "vignette",
+      "on": "image",
+      "amount": 0.3
+    }
+  ]
+}

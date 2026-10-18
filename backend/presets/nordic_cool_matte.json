@@ -1,0 +1,30 @@
+{
+  "name": "nordic_cool_matte",
+  "label": "Nordic cool matte",
+  "description": "HD pass, then a cool, muted Scandinavian grade: blue white balance, faded matte blacks, icy highlights, and restrained colour.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "temperature": -0.45,
+      "exposure": 0.05,
+      "contrast": -0.1,
+      "black_lift": 0.1,
+      "white_rolloff": 0.5,
+      "shadows": [60, 100, 140],
+      "highlights": [220, 235, 245],
+      "split": 0.4,
+      "saturation": 0.7
+    }
+  ]
+}
