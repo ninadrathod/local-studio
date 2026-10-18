@@ -8,7 +8,7 @@ import math
 from functools import lru_cache
 from typing import Sequence
 
-from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageStat
 
 
 def _as_rgba(image: Image.Image) -> Image.Image:
@@ -119,8 +119,74 @@ def is_reliable_cutout(subject: Image.Image) -> bool:
     return stray / solid <= MAX_STRAY_SOFT_TO_SOLID
 
 
+# rembg can return several solid islands (a person *and* a framed picture on the
+# wall). Single-subject presets keep every island that touches the bottom edge
+# and is at least this fraction of the largest island (people in a portrait are
+# cropped by the bottom; frames and signs on the wall aren't), else just the
+# largest — with pieces within a small gap of them and the soft edges hugging them.
+MAIN_SUBJECT_GROUNDED_MIN = 0.25
+# Working mask: short side ≤ 256 px and long side ≤ 1024 px, so labelling cost
+# stays bounded for panoramas.
+MAIN_SUBJECT_WORK_SIDE = 256
+MAIN_SUBJECT_WORK_LONG_SIDE = 1024
+MAIN_SUBJECT_MERGE_GAP = 0.015
+MAIN_SUBJECT_EDGE_BAND = 0.03
+_MAIN_SUBJECT_MAX_LABELS = 253
+
+
+def keep_main_subject(alpha: Image.Image) -> Image.Image:
+    """Return `alpha` with every solid island except the main one(s) (and near neighbours) cleared."""
+    width, height = alpha.size
+    scale = min(
+        1.0,
+        MAIN_SUBJECT_WORK_SIDE / max(1, min(width, height)),
+        MAIN_SUBJECT_WORK_LONG_SIDE / max(1, width, height),
+    )
+    small_size = (max(1, round(width * scale)), max(1, round(height * scale)))
+    solid = alpha.point(lambda v: 255 if v >= 128 else 0)
+    small = solid.resize(small_size, Image.Resampling.BOX).point(lambda v: 255 if v >= 128 else 0)
+    if not small.getbbox():
+        return alpha.copy()
+    gap = MAIN_SUBJECT_MERGE_GAP * min(small_size)
+    labels = _dilate(small, gap) if gap >= 1 else small
+
+    # Label islands 1..253 by flood fill, seeding each from the first unlabelled
+    # pixel (found with C-speed getbbox). A mask with more islands than that is
+    # noise we can't rank safely, so it is returned unchanged.
+    islands: list[int] = []
+    for value in range(1, _MAIN_SUBJECT_MAX_LABELS + 2):
+        remaining = labels.point(lambda v: 255 if v == 255 else 0).getbbox()
+        if not remaining:
+            break
+        if value > _MAIN_SUBJECT_MAX_LABELS:
+            return alpha.copy()
+        x0, y0, x1, _ = remaining
+        row = labels.crop((x0, y0, x1, y0 + 1)).tobytes()
+        ImageDraw.floodfill(labels, (x0 + row.index(255), y0), value)
+        islands.append(value)
+    if len(islands) < 2:
+        return alpha.copy()
+    hist = labels.histogram()
+    largest = max(islands, key=lambda v: hist[v])
+    bottom_row = set(labels.crop((0, small_size[1] - 1, small_size[0], small_size[1])).getdata())
+    chosen = {
+        v for v in islands
+        if v in bottom_row and hist[v] >= MAIN_SUBJECT_GROUNDED_MIN * hist[largest]
+    } or {largest}
+
+    keep = labels.point(lambda v: 255 if v in chosen else 0)
+    keep = keep.resize(alpha.size, Image.Resampling.BILINEAR).point(lambda v: 255 if v > 0 else 0)
+    # Soft edges (hair) may sit further out than the merge gap; keep a wider
+    # band around the body, minus the solid pixels of the dropped islands.
+    near = _dilate(keep, MAIN_SUBJECT_EDGE_BAND * min(width, height))
+    others = ImageChops.subtract(solid, keep)
+    return ImageChops.multiply(alpha, ImageChops.subtract(near, others))
+
+
 def extract_subject_layers(
-    image: Image.Image, require_clear_subject: bool = False
+    image: Image.Image,
+    require_clear_subject: bool = False,
+    single_subject: bool = False,
 ) -> tuple[Image.Image, Image.Image]:
     """
     Return (subject_rgba, background_rgb).
@@ -130,7 +196,10 @@ def extract_subject_layers(
     `require_clear_subject`, an unreliable rembg mask (`is_reliable_cutout`
     False) yields a fully transparent subject and the untouched original as
     background, so later steps degrade to "no cutout" instead of drawing a
-    smeared shape. Off by default so existing presets keep their behavior.
+    smeared shape. With `single_subject`, only the main solid island is kept
+    (`keep_main_subject`), so a second salient object such as a wall frame is
+    left in the background. Both off by default so existing presets keep their
+    behavior.
     """
     from extract_subject import extract_subject as rembg_extract_subject
 
@@ -138,6 +207,8 @@ def extract_subject_layers(
     subject = rembg_extract_subject(original)
     if require_clear_subject and not is_reliable_cutout(subject):
         return Image.new("RGBA", original.size, (0, 0, 0, 0)), original
+    if single_subject:
+        subject.putalpha(keep_main_subject(subject.getchannel("A")))
     mask = subject.getchannel("A")
     blurred = original.filter(ImageFilter.GaussianBlur(radius=40))
     background = Image.composite(blurred, original, mask)
@@ -195,24 +266,55 @@ def grayscale(image: Image.Image) -> Image.Image:
     return gray
 
 
+def _ratio_px(ratio: float | None, size: tuple[int, int], fallback: float, minimum: float = 0.0) -> float:
+    """`ratio` × the short side when given (scales with resolution), else the fixed `fallback` px."""
+    if ratio is None:
+        return float(fallback)
+    value = float(ratio)
+    if value < 0:
+        raise ValueError("ratio params must be >= 0")
+    return max(minimum, value * min(size))
+
+
+def _grow_alpha(alpha: Image.Image, width: float, scaled: bool) -> Image.Image:
+    """
+    Grow an alpha mask outward by ~`width` px. Fixed-px params keep the original
+    MaxFilter (soft edges preserved); ratio params use the flat-cost blur+threshold
+    dilation, since a MaxFilter's cost grows with width² and a DSLR-scale width
+    would take minutes.
+    """
+    if scaled:
+        return _dilate(alpha, width)
+    size = max(3, int(width) * 2 + 1)  # MaxFilter size must be odd
+    if size % 2 == 0:
+        size += 1
+    return alpha.filter(ImageFilter.MaxFilter(size=size))
+
+
 def glow_border(
     image: Image.Image,
     rgb: Sequence[int] = (0, 255, 200),
     width: int = 8,
     blur: float = 12.0,
     color: Sequence[int] | None = None,
+    width_ratio: float | None = None,
+    blur_ratio: float | None = None,
 ) -> Image.Image:
-    """Add a soft colored glow around an RGBA subject's alpha edge."""
+    """
+    Add a soft colored glow around an RGBA subject's alpha edge.
+
+    `width` / `blur` are px; `width_ratio` / `blur_ratio` (fractions of the short
+    side) override them so the glow looks the same from phone to DSLR size.
+    """
     subject = _as_rgba(image)
     alpha = subject.getchannel("A")
     tint = _rgb_tint(color, rgb, (0, 255, 200))
 
-    # MaxFilter size must be odd
-    dilate = max(3, int(width) * 2 + 1)
-    if dilate % 2 == 0:
-        dilate += 1
-    glow_mask = alpha.filter(ImageFilter.MaxFilter(size=dilate))
-    glow_mask = glow_mask.filter(ImageFilter.GaussianBlur(radius=float(blur)))
+    grow = _ratio_px(width_ratio, subject.size, width, 1.0)
+    glow_mask = _grow_alpha(alpha, grow, width_ratio is not None)
+    glow_mask = glow_mask.filter(
+        ImageFilter.GaussianBlur(radius=_ratio_px(blur_ratio, subject.size, blur))
+    )
 
     glow = Image.new("RGBA", subject.size, (*tint, 0))
     glow.putalpha(glow_mask)
@@ -256,25 +358,28 @@ def glow_line_border(
     rgb: Sequence[int] | None = None,
     width: int = 4,
     blur: float = 1.5,
+    width_ratio: float | None = None,
+    blur_ratio: float | None = None,
 ) -> Image.Image:
     """
     Draw a glowing outline around the subject only (ring), without filling the body.
 
-    Accepts `color` or `rgb` as [R, G, B].
+    Accepts `color` or `rgb` as [R, G, B]. `width` / `blur` are px;
+    `width_ratio` / `blur_ratio` (fractions of the short side) override them so
+    the line looks the same from phone to DSLR size.
     """
     subject = _as_rgba(image)
     tint_rgb = _rgb_tint(color, rgb, (0, 255, 200))
 
     alpha = subject.getchannel("A")
-    dilate = max(3, int(width) * 2 + 1)
-    if dilate % 2 == 0:
-        dilate += 1
+    grow = _ratio_px(width_ratio, subject.size, width, 1.0)
 
     # Outer silhouette minus subject fill → border ring only
-    outer = alpha.filter(ImageFilter.MaxFilter(size=dilate))
+    outer = _grow_alpha(alpha, grow, width_ratio is not None)
     ring = ImageChops.subtract(outer, alpha)
-    if float(blur) > 0:
-        ring = ring.filter(ImageFilter.GaussianBlur(radius=float(blur)))
+    blur_px = _ratio_px(blur_ratio, subject.size, blur)
+    if blur_px > 0:
+        ring = ring.filter(ImageFilter.GaussianBlur(radius=blur_px))
 
     line = Image.new("RGBA", subject.size, (*tint_rgb, 0))
     line.putalpha(ring)
@@ -415,6 +520,77 @@ _DOODLE_SUPERSAMPLE = 2
 # supersampling adds little and 2× would quadruple memory.
 _DOODLE_SUPERSAMPLE_MAX_PIXELS = 4_000_000
 DOODLE_MAX_COUNT = 12
+# `color: "auto"` inks dark on light backgrounds (mean luma above the threshold),
+# white otherwise, so a white marker never vanishes on a pale wall.
+DOODLE_AUTO_LUMA_THRESHOLD = 150
+DOODLE_DARK_INK = (34, 34, 34)
+# `avoid_subject` moves a corner/edge doodle when the `around` layer covers more
+# than this fraction of its box, trying the mirrored anchors in order.
+DOODLE_AVOID_MAX_OVERLAP = 0.08
+# `avoid_busy` also moves it off cluttered background (a framed picture, a
+# sign). Busyness = mean edge strength on a blurred ≤128 px copy, so fine
+# texture (stucco, grain) washes out and only structure counts; plain wall
+# scores ~2, a gilded frame ~13.
+DOODLE_BUSY_WORK_SIDE = 128
+DOODLE_BUSY_MAX_EDGE = 8.0
+
+
+def _mirror_anchors(anchor: str) -> list[str]:
+    swap_x = {"left": "right", "right": "left"}
+    swap_y = {"top": "bottom", "bottom": "top"}
+    parts = anchor.split("_")
+    flip_x = "_".join(swap_x.get(p, p) for p in parts)
+    flip_y = "_".join(swap_y.get(p, p) for p in parts)
+    flip_xy = "_".join(swap_y.get(swap_x.get(p, p), swap_x.get(p, p)) for p in parts)
+    out: list[str] = []
+    for name in (anchor, flip_x, flip_y, flip_xy):
+        if name not in out:
+            out.append(name)
+    return out
+
+
+def _clear_anchor(
+    base: Image.Image,
+    anchor: str,
+    half: float,
+    around: Image.Image | None,
+    avoid_busy: bool,
+) -> str:
+    """
+    Pick the first of `anchor` and its mirrors whose doodle box the subject
+    barely covers (and, with `avoid_busy`, whose background is calm); if none
+    qualifies, the one with the lowest combined score.
+    """
+    width, height = base.size
+    alpha = around.getchannel("A") if around is not None else None
+    edges = None
+    scale = 1.0
+    if avoid_busy:
+        scale = min(1.0, DOODLE_BUSY_WORK_SIDE / max(1, min(width, height)))
+        small = base.convert("L").resize(
+            (max(1, round(width * scale)), max(1, round(height * scale))), Image.Resampling.BOX
+        )
+        edges = small.filter(ImageFilter.GaussianBlur(1)).filter(ImageFilter.FIND_EDGES)
+    best, best_score = anchor, float("inf")
+    for name in _mirror_anchors(anchor):
+        fx, fy = _DOODLE_ANCHORS[name]
+        cx, cy = fx * width, fy * height
+        box = (max(0, int(cx - half)), max(0, int(cy - half)),
+               min(width, int(cx + half)), min(height, int(cy + half)))
+        if box[2] <= box[0] or box[3] <= box[1]:
+            continue
+        overlap = ImageStat.Stat(alpha.crop(box)).mean[0] / 255 if alpha is not None else 0.0
+        busy = 0.0
+        if edges is not None:
+            small_box = tuple(int(round(v * scale)) for v in box)
+            if small_box[2] > small_box[0] and small_box[3] > small_box[1]:
+                busy = ImageStat.Stat(edges.crop(small_box)).mean[0]
+        if overlap <= DOODLE_AVOID_MAX_OVERLAP and busy <= DOODLE_BUSY_MAX_EDGE:
+            return name
+        score = overlap / DOODLE_AVOID_MAX_OVERLAP + busy / DOODLE_BUSY_MAX_EDGE
+        if score < best_score:
+            best, best_score = name, score
+    return best
 
 
 def _doodle_center(
@@ -486,7 +662,7 @@ def _wobble_circle(rng, cx: float, cy: float, radius: float, jitter: float) -> l
 def doodle(
     image: Image.Image,
     style: str = "xo",
-    color: Sequence[int] | None = None,
+    color: Sequence[int] | str | None = None,
     rgb: Sequence[int] | None = None,
     anchor: str = "top_right",
     x: float | None = None,
@@ -499,6 +675,8 @@ def doodle(
     jitter: float = 0.12,
     seed: int = 7,
     around: Image.Image | None = None,
+    avoid_subject: bool = False,
+    avoid_busy: bool = False,
 ) -> Image.Image:
     """
     Draw one hand-drawn doodle onto `image`.
@@ -510,6 +688,10 @@ def doodle(
     `around` layer's alpha bbox) or explicit `x` / `y` fractions (0–1).
     `size` and `stroke` are fractions of the image's short side, so the look
     scales with resolution. `jitter` (fraction of stroke spacing) controls wobble.
+    `color: "auto"` picks dark ink on light backgrounds and white on dark ones.
+    `avoid_subject` (with `around`) moves a corner/edge anchor to its first
+    mirror the subject doesn't cover, so the doodle isn't hidden behind it.
+    `avoid_busy` also skips mirrors over cluttered background (frames, signs).
     """
     import math
     import random
@@ -525,11 +707,21 @@ def doodle(
     w, h = base.size
     span_px = max(4.0, float(size) * min(w, h))
     stroke_px = max(1.0, float(stroke) * min(w, h))
-    center_x, center_y = _doodle_center(base.size, anchor, x, y, around)
-
     # Draw only the doodle's neighbourhood (generous pad covers wobble, wiggle
     # amplitude/offsets and star arms), not a full-frame layer.
     half = span_px * 0.7 + stroke_px * (4 + 2 * n)
+    mode_anchor = (anchor or "center").strip().lower()
+    avoid_around = avoid_subject and around is not None and around.mode == "RGBA"
+    if (
+        (avoid_around or avoid_busy)
+        and (x is None or y is None)
+        and mode_anchor in _DOODLE_ANCHORS
+        and mode_anchor != "center"
+    ):
+        anchor = _clear_anchor(
+            base, mode_anchor, span_px / 2, around if avoid_around else None, bool(avoid_busy)
+        )
+    center_x, center_y = _doodle_center(base.size, anchor, x, y, around)
     rx0, ry0 = max(0, int(center_x - half)), max(0, int(center_y - half))
     rx1, ry1 = min(w, int(math.ceil(center_x + half))), min(h, int(math.ceil(center_y + half)))
     if rx1 <= rx0 or ry1 <= ry0:
@@ -540,7 +732,14 @@ def doodle(
     span = span_px * ss
     line_w = max(2, int(round(stroke_px * ss)))
     alpha = int(round(255 * max(0.0, min(1.0, float(opacity)))))
-    fill = (*_rgb_tint(color, rgb, (255, 255, 255)), alpha)
+    if isinstance(color, str):
+        if color.strip().lower() != "auto":
+            raise ValueError("color must be an [r, g, b] list or 'auto'")
+        luma = ImageStat.Stat(base.convert("L").crop((rx0, ry0, rx1, ry1))).mean[0]
+        ink = DOODLE_DARK_INK if luma > DOODLE_AUTO_LUMA_THRESHOLD else (255, 255, 255)
+    else:
+        ink = _rgb_tint(color, rgb, (255, 255, 255))
+    fill = (*ink, alpha)
     cx, cy = (center_x - rx0) * ss, (center_y - ry0) * ss
     rng = random.Random(int(seed))
     wob = float(jitter)
@@ -946,9 +1145,16 @@ def draw_text(
     stroke_width: int = 0,
     stroke_color: Sequence[int] | None = None,
     margin: int = 16,
+    font_size_ratio: float | None = None,
+    stroke_ratio: float | None = None,
+    margin_ratio: float | None = None,
 ) -> Image.Image:
     """
     Draw `text` onto an image.
+
+    `font_size` / `stroke_width` / `margin` are px; the matching `*_ratio`
+    params (fractions of the short side) override them so text keeps its
+    proportions from phone to DSLR size.
 
     `align`: `center`, `top`, `bottom`, `top_right`, `top_left`, `bottom_center`
     (ignored when both `x` and `y` are set — then those are top-left).
@@ -963,13 +1169,13 @@ def draw_text(
     canvas = _as_rgba(image)
     tint = _rgb_tint(color, rgb, (255, 255, 255))
     fill_rgba = (*tint, 255)
-    stroke = int(stroke_width)
+    stroke = int(round(_ratio_px(stroke_ratio, canvas.size, stroke_width, 1.0 if stroke_ratio else 0.0)))
     stroke_fill = None
     if stroke > 0:
         stroke_rgb = _rgb_tint(stroke_color, None, (0, 0, 0))
         stroke_fill = (*stroke_rgb, 255)
 
-    size = max(8, int(font_size))
+    size = max(8, int(round(_ratio_px(font_size_ratio, canvas.size, font_size))))
     style = (font_style or "sans").strip().lower()
     path = str(font_path).strip() if font_path else None
     font = _load_font(size, style, path or None)
@@ -980,7 +1186,9 @@ def draw_text(
         text_w = bbox[2] - bbox[0]
         if text_w <= max_width or size <= 8:
             break
-        size = max(8, size - 4)
+        # Jump to the size that should fit (text width ~ font size), so a
+        # DSLR-scale font converges in a step or two; -1 guarantees progress.
+        size = max(8, min(size - 1, int(size * max_width / max(1, text_w))))
         font = _load_font(size, style, path or None)
 
     draw_kwargs: dict = {
@@ -995,7 +1203,7 @@ def draw_text(
         draw.text((int(x), int(y)), value, **draw_kwargs)
         return canvas
 
-    pad = max(0, int(margin))
+    pad = max(0, int(round(_ratio_px(margin_ratio, canvas.size, margin))))
     mode = (align or "center").strip().lower()
     bbox = draw.textbbox((0, 0), value, font=font, stroke_width=stroke)
     text_w = bbox[2] - bbox[0]

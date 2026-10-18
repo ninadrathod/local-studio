@@ -18,6 +18,7 @@ from app.services.preset import (
     PresetPathUnsafeError,
     PresetTextError,
     apply_named_preset,
+    preset_job_slot,
     resolve_preset_file,
     run_preset_job,
 )
@@ -163,6 +164,28 @@ def test_preset_job_limiter_rejects_when_full() -> None:
         await limiter.release()
 
     asyncio.run(_run())
+
+
+def test_preset_job_slot_rejects_before_running_and_always_releases() -> None:
+    limiter = PresetJobLimiter(limit=1)
+    ran: list[str] = []
+
+    async def _run() -> None:
+        async with preset_job_slot(limiter):
+            assert limiter.in_use == 1
+            # A second request is refused before its block (upload read/decode) runs.
+            with pytest.raises(PresetBusyError):
+                async with preset_job_slot(limiter):
+                    ran.append("second")
+        assert limiter.in_use == 0
+        # The slot is released even when the work inside fails.
+        with pytest.raises(ValueError):
+            async with preset_job_slot(limiter):
+                raise ValueError("decode failed")
+        assert limiter.in_use == 0
+
+    asyncio.run(_run())
+    assert ran == []
 
 
 def test_run_preset_job_raises_busy_when_slot_taken(tmp_path: Path) -> None:

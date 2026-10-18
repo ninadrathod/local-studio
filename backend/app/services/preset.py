@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import asyncio
 import sys
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from PIL import Image
@@ -75,8 +77,25 @@ class PresetJobLimiter:
                 self._in_use -= 1
 
 
-# Process-wide limiter shared by the HTTP route.
+# Process-wide limiter shared by the HTTP routes (apply-preset and blur): it
+# bounds image memory, not just rembg, so it covers upload read → decode →
+# filters → encode.
 preset_job_limiter = PresetJobLimiter()
+
+
+@asynccontextmanager
+async def preset_job_slot(limiter: PresetJobLimiter | None = None) -> AsyncIterator[None]:
+    """
+    Hold one job slot for the duration of the block; raise PresetBusyError
+    straight away (nothing read or decoded yet) when none is free.
+    """
+    gate = limiter if limiter is not None else preset_job_limiter
+    if not await gate.try_acquire():
+        raise PresetBusyError("Preset processing is busy; try again shortly.")
+    try:
+        yield
+    finally:
+        await gate.release()
 
 
 def _helpers_apply_preset():
@@ -195,10 +214,7 @@ async def run_preset_job(
     Apply a named preset off the event loop, respecting the concurrency gate.
     Raises PresetBusyError if another job already holds the slot.
     """
-    gate = limiter if limiter is not None else preset_job_limiter
-    if not await gate.try_acquire():
-        raise PresetBusyError("Preset processing is busy; try again shortly.")
-    try:
+    async with preset_job_slot(limiter):
         return await asyncio.to_thread(
             apply_named_preset,
             image,
@@ -208,5 +224,3 @@ async def run_preset_job(
             repo_root=repo_root,
             presets_dir=presets_dir,
         )
-    finally:
-        await gate.release()

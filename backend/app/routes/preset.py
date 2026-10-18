@@ -2,6 +2,8 @@
 POST /api/apply-preset — apply a DB-named preset to an uploaded image.
 """
 
+import asyncio
+
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
 from PIL import Image
@@ -9,9 +11,9 @@ from PIL import Image
 from app.services.blur import is_allowed_image
 from app.services.image_io import (
     ImageTooLargeError,
-    load_image,
+    encode_result,
+    load_image_with_format,
     read_upload_capped,
-    save_png_bytes,
 )
 from app.services.preset import (
     PresetAspectRatioError,
@@ -20,7 +22,8 @@ from app.services.preset import (
     PresetNotFoundError,
     PresetPathUnsafeError,
     PresetTextError,
-    run_preset_job,
+    apply_named_preset,
+    preset_job_slot,
 )
 
 router = APIRouter(tags=["preset"])
@@ -34,7 +37,8 @@ async def apply_preset_endpoint(
 ):
     """
     Accept a preset name (presets.preset_name), image upload, and optional
-    `text` (used only when the preset JSON has text_input=yes); return PNG bytes.
+    `text` (used only when the preset JSON has text_input=yes); return JPEG bytes
+    for a JPEG upload (opaque result), else PNG.
     """
     name = (preset_name or "").strip()
     if not name:
@@ -46,6 +50,17 @@ async def apply_preset_endpoint(
             detail="File must be an image (JPEG, PNG, WEBP, GIF, BMP, or TIFF).",
         )
 
+    # Take the job slot before reading the upload into memory, and hold it
+    # through encode: a busy server answers 503 without buffering or decoding
+    # (Starlette has already spooled the body to a temp file).
+    try:
+        async with preset_job_slot():
+            return await _apply_preset_upload(file, name, text)
+    except PresetBusyError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+async def _apply_preset_upload(file: UploadFile, name: str, text: str | None) -> Response:
     try:
         raw = await read_upload_capped(file)
     except ImageTooLargeError as exc:
@@ -55,11 +70,11 @@ async def apply_preset_endpoint(
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
     try:
-        image = load_image(raw)
-        result = await run_preset_job(image, name, text=text)
-        png_bytes = save_png_bytes(result)
-    except PresetBusyError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        # Decode / filters / encode off the event loop: a DSLR-size file takes seconds.
+        image, source_format = await asyncio.to_thread(load_image_with_format, raw)
+        del raw  # up to 100 MiB; not needed once decoded
+        result = await asyncio.to_thread(apply_named_preset, image, name, text=text)
+        body, media_type = await asyncio.to_thread(encode_result, result, source_format)
     except PresetNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except PresetFileMissingError as exc:
@@ -83,4 +98,4 @@ async def apply_preset_endpoint(
             detail=f"Could not apply preset: {exc}",
         ) from exc
 
-    return Response(content=png_bytes, media_type="image/png")
+    return Response(content=body, media_type=media_type)
