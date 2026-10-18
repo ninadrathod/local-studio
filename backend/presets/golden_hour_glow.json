@@ -1,0 +1,37 @@
+{
+  "name": "golden_hour_glow",
+  "label": "Golden hour glow",
+  "description": "HD pass, then a sunset grade: strong amber warmth, glowing golden highlights, warm shadows, extra vibrance, and a warm-brown vignette.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "temperature": 0.5,
+      "tint": 0.08,
+      "exposure": 0.1,
+      "contrast": 0.15,
+      "white_rolloff": 0.5,
+      "shadows": [120, 70, 60],
+      "highlights": [255, 190, 90],
+      "split": 0.45,
+      "balance": 0.2,
+      "vibrance": 0.35
+    },
+    {
+      "filter": "vignette",
+      "on": "image",
+      "amount": 0.2,
+      "color": [40, 20, 0]
+    }
+  ]
+}

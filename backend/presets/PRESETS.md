@@ -127,6 +127,71 @@ Only one apply-preset job runs at a time; concurrent extras get HTTP **503**.
 - **Text input:** `no`
 - **DB:** seeded via `seed_default_presets()` / setup
 
+### Professional colour grades
+
+Ten grades for professional photographs (model shoots, street, travel, weddings). Each starts with the HD pass `{ "filter": "ai_upscale", "long_edge": 1920, "denoise": 0.3 }` (a no-op on files already ≥ 1920 px, e.g. DSLR), then grades with `color_grade`. All are `ar: non-square`, `text_input: no`, seeded via `seed_default_presets()` / setup, and run in ~3–4 s at 61 MP (~1.6 GiB peak).
+
+#### `cinematic_teal_orange` — Cinematic teal & orange
+
+- **Idea:** HD pass, then a film-poster grade: teal shadows, warm orange highlights, S-curve contrast with a soft highlight shoulder, and a gentle vignette.
+- **Steps:** HD → `color_grade` (temperature 0.1, contrast 0.35, black_lift 0.03, white_rolloff 0.4, split 0.55, saturation 0.95, vibrance 0.2, shadows [20, 110, 130] / highlights [255, 170, 90]) → `vignette` 0.25
+- **File:** `backend/presets/cinematic_teal_orange.json`
+
+#### `warm_portrait_film` — Warm portrait film
+
+- **Idea:** HD pass, then a flattering warm film grade: soft contrast, lifted blacks, creamy highlights, gentle vibrance for skin, and fine grain.
+- **Steps:** HD → `color_grade` (temperature 0.45, tint 0.06, exposure 0.12, contrast -0.1, black_lift 0.07, white_rolloff 0.6, split 0.45, saturation 0.9, vibrance 0.35, shadows [70, 105, 125] / highlights [255, 200, 150]) → grain 0.05 (`paper_texture`, tint/stains/fade 0)
+- **File:** `backend/presets/warm_portrait_film.json`
+
+#### `nordic_cool_matte` — Nordic cool matte
+
+- **Idea:** HD pass, then a cool, muted Scandinavian grade: blue white balance, faded matte blacks, icy highlights, and restrained colour.
+- **Steps:** HD → `color_grade` (temperature -0.45, exposure 0.05, contrast -0.1, black_lift 0.1, white_rolloff 0.5, split 0.4, saturation 0.7, shadows [60, 100, 140] / highlights [220, 235, 245])
+- **File:** `backend/presets/nordic_cool_matte.json`
+
+#### `golden_hour_glow` — Golden hour glow
+
+- **Idea:** HD pass, then a sunset grade: strong amber warmth, glowing golden highlights, warm shadows, extra vibrance, and a warm-brown vignette.
+- **Steps:** HD → `color_grade` (temperature 0.5, tint 0.08, exposure 0.1, contrast 0.15, white_rolloff 0.5, split 0.45, balance 0.2, vibrance 0.35, shadows [120, 70, 60] / highlights [255, 190, 90]) → `vignette` 0.2 toward [40, 20, 0]
+- **File:** `backend/presets/golden_hour_glow.json`
+
+#### `emerald_moody` — Emerald moody
+
+- **Idea:** HD pass, then a dark, cinematic green grade: deep emerald shadows, warm muted highlights, lowered exposure, punchy contrast, and a vignette.
+- **Steps:** HD → `color_grade` (temperature -0.05, tint -0.3, exposure -0.15, contrast 0.3, black_lift 0.04, split 0.65, balance -0.2, saturation 0.85, vibrance 0.1, shadows [0, 90, 60] / highlights [235, 215, 160]) → `vignette` 0.35
+- **File:** `backend/presets/emerald_moody.json`
+
+#### `fine_art_mono` — Fine-art mono
+
+- **Idea:** HD pass, then contrasty black and white with a subtle split tone (cool shadows, warm highlights), fine grain, and a vignette.
+- **Steps:** HD → `grayscale` → `color_grade` (contrast 0.45, black_lift 0.02, white_rolloff 0.3, split 0.25, shadows [60, 70, 95] / highlights [235, 225, 205]) → grain 0.06 (`paper_texture`, tint/stains/fade 0) → `vignette` 0.3
+- **File:** `backend/presets/fine_art_mono.json`
+
+#### `bright_airy` — Bright & airy
+
+- **Idea:** HD pass, then a clean high-key grade: lifted exposure, soft contrast, smooth highlight roll-off, and gentle vibrance.
+- **Steps:** HD → `color_grade` (temperature -0.05, exposure 0.4, contrast -0.25, black_lift 0.05, white_rolloff 0.7, split 0.1, saturation 0.9, vibrance 0.3)
+- **File:** `backend/presets/bright_airy.json`
+
+#### `vintage_slide_punch` — Vintage slide punch
+
+- **Idea:** HD pass, then a retro slide-film grade: saturated reds and blues, deep contrast, warm highlights, cool shadows, and a light vignette.
+- **Steps:** HD → `color_grade` (temperature 0.15, contrast 0.4, white_rolloff 0.3, split 0.3, saturation 1.2, vibrance 0.2, shadows [40, 50, 90] / highlights [255, 220, 170]) → `vignette` 0.15
+- **File:** `backend/presets/vintage_slide_punch.json`
+
+#### `blush_rose_pastel` — Blush rose pastel
+
+- **Idea:** HD pass, then a soft romantic grade: rose-magenta cast, pink highlights, lifted blacks, and low contrast.
+- **Steps:** HD → `color_grade` (temperature 0.1, tint 0.5, exposure 0.15, contrast -0.3, black_lift 0.08, white_rolloff 0.6, split 0.6, saturation 0.8, vibrance 0.15, shadows [150, 100, 140] / highlights [255, 200, 215])
+- **File:** `backend/presets/blush_rose_pastel.json`
+
+#### `blue_hour_noir` — Blue hour noir
+
+- **Idea:** HD pass, then a cold night grade: deep blue shadows, steel highlights, lowered exposure, strong contrast, and a heavy vignette.
+- **Steps:** HD → `color_grade` (temperature -0.45, exposure -0.2, contrast 0.4, black_lift 0.02, split 0.55, balance -0.3, saturation 0.75, shadows [10, 40, 110] / highlights [200, 220, 255]) → `vignette` 0.4
+- **File:** `backend/presets/blue_hour_noir.json`
+
+
 ## Built-in filters
 
 | Filter | What it does | Common params |
@@ -151,6 +216,8 @@ Only one apply-preset job runs at a time; concurrent extras get HTTP **503**.
 | `ink_edges` | Comic ink outlines via difference of Gaussians on luminance; scales with resolution; RGBA is flattened on white first so hidden pixels don't create edges | `on`, `detail` (blur, fraction of short side), `threshold` (lower = more lines), `thickness` (fraction of short side), `color`/`rgb`, `opacity` |
 | `halftone` | Printed dot screen: `mono` (one ink at `angle`) or `cmyk` (process inks at 15/75/0/45° with grey-component replacement); dot area ≈ ink coverage; processed at ≤ 2400 px long edge then resized back; pitch auto-enlarges if a screen would need > 160k dots; transparent pixels print as paper | `on`, `mode`, `cell` (dot pitch, 0.002–0.1 of short side), `angle`, `paper`, `ink`, `mix` (blend back over original), `gcr` (0–1, share of grey on black plate) |
 | `paper_texture` | Age onto paper: multiply tint, seeded fine grain (scales with resolution), low-frequency stains (grid follows aspect ratio), fade toward paper; tone steps run as point tables, grain is applied tile by tile | `on`, `color`/`rgb`, `tint`, `grain`, `stains`, `fade` (0–1 each), `seed` |
+| `color_grade` | Photographic grade in one pass: white balance, exposure, contrast S-curve (or flatten), matte black lift, soft highlight shoulder (per-channel point tables, flat cost); luminance-preserving split toning, saturation and vibrance (numpy in ≤ 4 MP strips); out-of-gamut pixels are pulled back along their own luma so highlights don't clip or shift hue; neutral params are an exact no-op | `on`, `temperature` (−1 cool…1 warm), `tint` (−1 green…1 magenta), `exposure` (stops), `contrast` (−1…1), `pivot`, `black_lift` (0–0.3), `white_rolloff` (0–1), `shadows` / `highlights` ([r,g,b]), `split` (0–1), `balance` (−1…1 crossover), `saturation`, `vibrance` (0–1) |
+| `vignette` | Edge falloff toward black (or `color`); mask built at ≤ 256 px and scaled up, so it is resolution-independent | `on`, `amount` (0–1), `midpoint` (0–1), `feather`, `roundness` (0 frame-shaped…1 circle), `color`/`rgb` |
 | `draw_text` | Paint a string onto a layer | `on`, `text` (`$text` / `$datetime` / `$date` / `$time`), `font_size`, `color`/`rgb`, `align` (`center`/`top`/`bottom`/`top_right`/…), `font_style` (`sans`/`flow`), `font_path` (optional TTF/OTF/TTC; overrides `font_style`), `margin`, `x`, `y`, `stroke_width` (px), or `font_size_ratio` / `margin_ratio` / `stroke_ratio` (fractions of the short side — prefer these); too-wide text shrinks to fit |
 
 Layers are named images in memory. Typical keys: `image`, `subject`, `background`.
@@ -212,7 +279,7 @@ Rules of thumb:
 
 1. Always end with a `composite` (or other step) that writes `as: "image"`.
 2. Apply background edits with `"on": "background"`; subject edits with `"on": "subject"`.
-3. Prefer `glow_line_border` for a glow ring and `sticker_outline` for a solid outline. **Size everything as a fraction of the short side** (`width_ratio`, `blur_ratio`, `font_size_ratio`, `margin_ratio`, `stroke_ratio`, doodle `size`/`stroke`) so the look is identical from a 720 px phone shot to a 61 MP DSLR file; px params only stay for backward compatibility. To convert a value tuned on a 720 px sample: ratio = px / 720 (for a step after `place_on_canvas`, divide by the canvas short side instead, e.g. 1008 at 1.4×).
+3. For colour looks, prefer `color_grade` (+ `vignette`, grain via `paper_texture` with tint/stains/fade 0) over flat `overlay` tints, which wash out blacks. Prefer `glow_line_border` for a glow ring and `sticker_outline` for a solid outline. **Size everything as a fraction of the short side** (`width_ratio`, `blur_ratio`, `font_size_ratio`, `margin_ratio`, `stroke_ratio`, doodle `size`/`stroke`) so the look is identical from a 720 px phone shot to a 61 MP DSLR file; px params only stay for backward compatibility. To convert a value tuned on a 720 px sample: ratio = px / 720 (for a step after `place_on_canvas`, divide by the canvas short side instead, e.g. 1008 at 1.4×).
 4. Set `"ar": "square"` when the recipe only works on square images; `"ar": "non-square"` (default) works on any aspect ratio. A square-only preset applied to a non-square image raises `PresetAspectRatioError`.
 5. Set `"text_input": "yes"` only when a step uses `$text`. Then `text_character_limit` must be 1–200. `"no"` (default) ignores submitted text.
 6. Doodles: apply `doodle` steps `"on": "background"` before the final `composite` so the subject covers them; use `"anchor": "subject", "around": "subject"` to centre rings behind the cutout. Prefer `"color": "auto"` over fixed white, add `"around": "subject", "avoid_subject": true` to corner doodles so they aren't hidden (plus `"avoid_busy": true` on dense ones like `xo`), and set `"single_subject": true` on `extract_subject` for one-subject looks.

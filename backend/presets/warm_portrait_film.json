@@ -1,0 +1,41 @@
+{
+  "name": "warm_portrait_film",
+  "label": "Warm portrait film",
+  "description": "HD pass, then a flattering warm film grade: soft contrast, lifted blacks, creamy highlights, gentle vibrance for skin, and fine grain.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "temperature": 0.45,
+      "tint": 0.06,
+      "exposure": 0.12,
+      "contrast": -0.1,
+      "black_lift": 0.07,
+      "white_rolloff": 0.6,
+      "shadows": [70, 105, 125],
+      "highlights": [255, 200, 150],
+      "split": 0.45,
+      "saturation": 0.9,
+      "vibrance": 0.35
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0,
+      "stains": 0,
+      "fade": 0,
+      "grain": 0.05,
+      "seed": 7
+    }
+  ]
+}

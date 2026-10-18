@@ -1000,3 +1000,155 @@ def test_shipped_presets_use_resolution_relative_sizes() -> None:
         steps = [s for s in data["steps"] if s["filter"] == filt]
         assert steps and all(all(k in s for k in keys) for s in steps)
         assert all("width" not in s and "font_size" not in s for s in steps)
+
+
+PRO_GRADE_PRESETS = [
+    "cinematic_teal_orange",
+    "warm_portrait_film",
+    "nordic_cool_matte",
+    "golden_hour_glow",
+    "emerald_moody",
+    "fine_art_mono",
+    "bright_airy",
+    "vintage_slide_punch",
+    "blush_rose_pastel",
+    "blue_hour_noir",
+]
+
+
+def _ramp(width: int = 64, height: int = 16) -> Image.Image:
+    """Neutral grey ramp, black → white left to right, plus one saturated and one muted strip."""
+    img = Image.new("RGB", (width, height))
+    for x in range(width):
+        v = round(255 * x / (width - 1))
+        for y in range(height):
+            img.putpixel((x, y), (v, v, v))
+    return img
+
+
+def test_color_grade_neutral_is_identity_and_keeps_alpha() -> None:
+    base = _gradient()
+    assert F.color_grade(base).tobytes() == base.tobytes()
+    rgba = base.convert("RGBA")
+    rgba.putalpha(77)
+    out = F.color_grade(rgba, temperature=0.5, split=0.4, shadows=[0, 80, 120])
+    assert out.mode == "RGBA" and out.getchannel("A").getextrema() == (77, 77)
+
+
+def test_color_grade_white_balance_and_exposure() -> None:
+    grey = Image.new("RGB", (8, 8), (128, 128, 128))
+    r, g, b = F.color_grade(grey, temperature=0.6).getpixel((0, 0))
+    assert r > 128 > b
+    r, g, b = F.color_grade(grey, temperature=-0.6).getpixel((0, 0))
+    assert b > 128 > r
+    assert F.color_grade(grey, tint=0.8).getpixel((0, 0))[1] < 128  # magenta = less green
+    assert F.color_grade(grey, exposure=1.0).getpixel((0, 0))[0] > 240
+    assert F.color_grade(grey, exposure=-1.0).getpixel((0, 0))[0] < 70
+
+
+def test_color_grade_tone_curve_shapes() -> None:
+    ramp = _ramp()
+    def value(img: Image.Image, x: int) -> int:
+        return img.getpixel((x, 0))[0]
+
+    punchy = F.color_grade(ramp, contrast=0.8)
+    assert value(punchy, 10) < value(ramp, 10) and value(punchy, 55) > value(ramp, 55)
+    flat = F.color_grade(ramp, contrast=-0.8)
+    assert value(flat, 5) > value(ramp, 5) and value(flat, 60) < value(ramp, 60)
+    matte = F.color_grade(ramp, black_lift=0.2)
+    assert value(matte, 0) >= 50  # blacks fade, no true black
+    rolled = F.color_grade(ramp, white_rolloff=1.0)
+    assert value(rolled, 63) < 255 and value(rolled, 20) == value(ramp, 20)
+    # Every curve stays monotonic, so gradients never band or invert.
+    for img in (punchy, flat, matte, rolled):
+        values = [value(img, x) for x in range(64)]
+        assert values == sorted(values)
+
+
+def test_color_grade_split_tone_keeps_luminance_and_targets_range() -> None:
+    ramp = _ramp()
+    out = F.color_grade(ramp, shadows=[0, 90, 140], highlights=[255, 160, 60], split=1.0)
+    dark, light = out.getpixel((8, 0)), out.getpixel((58, 0))
+    assert dark[2] > dark[0]  # shadows lean blue/teal
+    assert light[0] > light[2]  # highlights lean orange
+    middle_in, middle_out = ramp.getpixel((32, 0)), out.getpixel((32, 0))
+    assert max(abs(a - b) for a, b in zip(middle_in, middle_out)) <= 6  # crossover barely touched
+
+    def luma(px: tuple[int, int, int]) -> float:
+        return 0.2126 * px[0] + 0.7152 * px[1] + 0.0722 * px[2]
+
+    for x in (8, 58, 62):  # 62 ≈ 248: near white, where naive clipping would lose brightness
+        assert abs(luma(out.getpixel((x, 0))) - luma(ramp.getpixel((x, 0)))) < 4
+    assert all(0 <= c <= 255 for c in out.getpixel((62, 0)))
+
+
+def test_color_grade_vibrance_favours_muted_colours() -> None:
+    img = Image.new("RGB", (2, 1))
+    img.putpixel((0, 0), (140, 120, 110))  # muted skin-like
+    img.putpixel((1, 0), (230, 30, 30))  # already saturated red
+    out = F.color_grade(img, vibrance=1.0)
+
+    def spread(px: tuple[int, int, int]) -> int:
+        return max(px) - min(px)
+
+    muted_gain = spread(out.getpixel((0, 0))) / spread(img.getpixel((0, 0)))
+    vivid_gain = spread(out.getpixel((1, 0))) / spread(img.getpixel((1, 0)))
+    assert muted_gain > 1.3 and vivid_gain < 1.1
+    grey = F.color_grade(img, saturation=0.0).getpixel((1, 0))
+    assert max(grey) - min(grey) <= 1
+
+
+def test_color_grade_strips_match_single_pass(monkeypatch: pytest.MonkeyPatch) -> None:
+    base = _gradient(120, 80)
+    kw = dict(split=0.6, shadows=[0, 90, 140], highlights=[255, 170, 90], vibrance=0.4)
+    whole = F.color_grade(base, **kw)
+    monkeypatch.setattr(F, "_GRADE_STRIP_PIXELS", 120 * 7)  # 7-row strips
+    assert F.color_grade(base, **kw).tobytes() == whole.tobytes()
+
+
+def test_vignette_darkens_edges_not_centre_and_scales() -> None:
+    for size in ((300, 200), (200, 300), (900, 600)):
+        white = Image.new("RGB", size, (255, 255, 255))
+        out = F.vignette(white, amount=0.6, midpoint=0.3, feather=0.5)
+        w, h = size
+        assert out.getpixel((w // 2, h // 2)) == (255, 255, 255)
+        assert out.getpixel((1, 1))[0] < 150
+        assert out.getpixel((w - 2, h - 2))[0] < 150
+    tinted = F.vignette(Image.new("RGB", (100, 100), (255, 255, 255)), amount=1.0, midpoint=0.2, color=[200, 0, 0])
+    corner = tinted.getpixel((0, 0))
+    assert corner[0] > corner[1] + 100  # pulls toward the tint, not black
+    same = Image.new("RGB", (10, 10), (9, 9, 9))
+    assert F.vignette(same, amount=0).tobytes() == same.tobytes()
+
+
+def test_vignette_roundness_makes_circle_on_wide_frames() -> None:
+    wide = Image.new("RGB", (400, 100), (255, 255, 255))
+    frame = F.vignette(wide, amount=1.0, midpoint=0.5, feather=0.2, roundness=0.0)
+    circle = F.vignette(wide, amount=1.0, midpoint=0.5, feather=0.2, roundness=1.0)
+    # A circular falloff reaches the far left/right edges harder than a frame-shaped one.
+    assert circle.getpixel((5, 50))[0] < frame.getpixel((5, 50))[0]
+
+
+@pytest.mark.parametrize("name", PRO_GRADE_PRESETS)
+def test_pro_grade_preset_files(name: str) -> None:
+    data = load_preset(PRESETS / f"{name}.json")
+    assert data["name"] == name
+    assert data["ar"] == "non-square" and data["text_input"] == "no"
+    assert data["default_text"] == "" and data["text_character_limit"] == 0
+    steps = data["steps"]
+    assert steps[0] == {"filter": "ai_upscale", "on": "image", "long_edge": 1920, "denoise": 0.3}
+    assert any(s["filter"] == "color_grade" for s in steps)
+    assert all(s["filter"] in FILTERS for s in steps)
+
+
+@pytest.mark.parametrize("name", PRO_GRADE_PRESETS)
+def test_pro_grade_presets_apply_without_upscale(name: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    # Skip the ONNX model: stub ai_upscale to a plain resize so the grade steps run fast.
+    monkeypatch.setattr(F, "ai_upscale", lambda image, **kw: F.upscale(image, long_edge=kw.get("long_edge", 1920)))
+    from apply_preset import FILTERS as REG, _run_simple
+
+    monkeypatch.setitem(REG, "ai_upscale", _run_simple(F.ai_upscale))
+    source = _gradient(640, 480)
+    out = apply_preset(source, PRESETS / f"{name}.json")
+    assert out.size == (1920, 1440)  # HD step 0 ran first
+    assert out.tobytes() != F.upscale(source, long_edge=1920).convert(out.mode).tobytes()

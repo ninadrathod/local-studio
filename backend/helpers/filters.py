@@ -1084,6 +1084,190 @@ def paper_texture(
     return _keep_alpha(out, image)
 
 
+# Per-pixel grading (split tone, vibrance) runs in horizontal strips so a
+# 61 MP frame never needs more than one strip of float32 working memory.
+_GRADE_STRIP_PIXELS = 4_000_000
+# Rec. 709 luma weights.
+_LUMA = (0.2126, 0.7152, 0.0722)
+
+
+def _grade_curve(
+    v: float,
+    exposure_gain: float,
+    contrast: float,
+    pivot: float,
+    black_lift: float,
+    white_rolloff: float,
+) -> float:
+    """One channel value 0–1 through exposure → contrast curve → highlight shoulder → matte lift."""
+    x = min(1.0, max(0.0, v * exposure_gain))
+    if contrast > 0:
+        # Blend toward an S-curve pivoted at `pivot`: deeper shadows, brighter highlights.
+        if x < pivot:
+            s_curve = pivot * (x / pivot) ** 1.6
+        else:
+            s_curve = pivot + (1 - pivot) * (1 - (1 - (x - pivot) / (1 - pivot)) ** 1.6)
+        x += contrast * (s_curve - x)
+    elif contrast < 0:
+        # Flatten toward the pivot (soft, low-contrast look).
+        x += -contrast * 0.6 * (pivot - x)
+    if white_rolloff > 0:
+        # Shoulder above the knee: slope 1 at the knee easing to 1 − rolloff at white,
+        # so highlights compress smoothly instead of clipping.
+        knee = 1 - 0.5 * white_rolloff
+        if x > knee:
+            span = 1 - knee
+            u = (x - knee) / span
+            x = knee + span * (u - 0.5 * white_rolloff * u * u)
+    return black_lift + x * (1 - black_lift)
+
+
+def color_grade(
+    image: Image.Image,
+    temperature: float = 0.0,
+    tint: float = 0.0,
+    exposure: float = 0.0,
+    contrast: float = 0.0,
+    pivot: float = 0.45,
+    black_lift: float = 0.0,
+    white_rolloff: float = 0.0,
+    saturation: float = 1.0,
+    vibrance: float = 0.0,
+    shadows: Sequence[int] | None = None,
+    highlights: Sequence[int] | None = None,
+    split: float = 0.0,
+    balance: float = 0.0,
+) -> Image.Image:
+    """
+    Photographic colour grade in one pass.
+
+    - `temperature` (−1 cool … 1 warm) and `tint` (−1 green … 1 magenta): white balance.
+    - `exposure` (stops), `contrast` (−1 flat … 1 punchy S-curve around `pivot`),
+      `black_lift` (0–0.3 matte / faded blacks), `white_rolloff` (0–1 soft highlight
+      shoulder instead of clipping). These fold into per-channel point tables, so
+      they cost the same at any resolution.
+    - `shadows` / `highlights` ([r, g, b]) with `split` (0–1) split-tone the image:
+      each tint shifts hue in its tonal range while keeping luminance; `balance`
+      (−1 … 1) moves the crossover toward shadows (−) or highlights (+).
+    - `saturation` (1 = unchanged) and `vibrance` (0–1, boosts muted colours more
+      than already-saturated ones, so skin doesn't go orange).
+    """
+    import numpy as np
+
+    out = _as_rgb(image)
+    temp, tnt = float(temperature), float(tint)
+    gains = (1 + 0.10 * temp, 1 - 0.06 * tnt, 1 - 0.10 * temp)
+    exposure_gain = 2.0 ** float(exposure)
+    c = max(-1.0, min(1.0, float(contrast)))
+    pv = max(0.05, min(0.95, float(pivot)))
+    lift = max(0.0, min(0.3, float(black_lift)))
+    roll = max(0.0, min(1.0, float(white_rolloff)))
+    out = out.point(
+        _band_lut(lambda v, b: 255 * _grade_curve(v * gains[b] / 255, exposure_gain, c, pv, lift, roll))
+    )
+
+    amount = max(0.0, min(1.0, float(split)))
+    vib = max(0.0, min(1.0, float(vibrance)))
+    sat = max(0.0, float(saturation))
+    if amount == 0 and vib == 0 and sat == 1.0:
+        return _keep_alpha(out, image)
+
+    luma = np.array(_LUMA, dtype=np.float32)
+
+    def _hue_shift(rgb: Sequence[int] | None) -> "np.ndarray":
+        # Tint minus its own luma: pure hue offset, zero brightness change.
+        if rgb is None:
+            return np.zeros(3, dtype=np.float32)
+        t = np.array([float(v) for v in rgb], dtype=np.float32) / 255
+        return t - float(t @ luma)
+
+    shadow_shift, highlight_shift = _hue_shift(shadows), _hue_shift(highlights)
+    crossover = 0.5 + 0.35 * max(-1.0, min(1.0, float(balance)))
+
+    w, h = out.size
+    rows = max(1, _GRADE_STRIP_PIXELS // max(1, w))
+    graded = Image.new("RGB", out.size)
+    for top in range(0, h, rows):
+        box = (0, top, w, min(h, top + rows))
+        px = np.asarray(out.crop(box), dtype=np.float32) / 255
+        y = px @ luma
+        if amount > 0:
+            # Smooth weights: shadows fade out by the crossover, highlights fade in from it.
+            ws = np.clip(1 - y / crossover, 0, 1) ** 1.5
+            wh = np.clip((y - crossover) / (1 - crossover), 0, 1) ** 1.5
+            px += amount * (ws[..., None] * shadow_shift + wh[..., None] * highlight_shift)
+        if sat != 1.0 or vib > 0:
+            yy = (px @ luma)[..., None]
+            chroma = px - yy
+            factor = sat
+            if vib > 0:
+                current = np.max(np.abs(chroma), axis=-1, keepdims=True)
+                factor = factor * (1 + vib * np.clip(1 - current * 3, 0, 1))
+            px = yy + chroma * factor
+        # Bring out-of-range pixels back by shrinking chroma toward their own luma
+        # (hue and brightness kept) instead of clipping channels one by one, which
+        # would shift hue and dull bright split-toned highlights.
+        y = np.clip(px @ luma, 0, 1)[..., None]
+        chroma = px - y
+        over = np.max(chroma, axis=-1, keepdims=True)
+        under = np.min(chroma, axis=-1, keepdims=True)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            fit_hi = np.where(over > 0, (1 - y) / over, 1.0)
+            fit_lo = np.where(under < 0, -y / under, 1.0)
+        px = y + chroma * np.clip(np.minimum(fit_hi, fit_lo), 0, 1)
+        graded.paste(Image.fromarray(np.clip(px * 255 + 0.5, 0, 255).astype(np.uint8), "RGB"), box[:2])
+    return _keep_alpha(graded, image)
+
+
+def vignette(
+    image: Image.Image,
+    amount: float = 0.25,
+    midpoint: float = 0.55,
+    feather: float = 0.6,
+    roundness: float = 0.0,
+    color: Sequence[int] | None = None,
+    rgb: Sequence[int] | None = None,
+) -> Image.Image:
+    """
+    Darken (or tint toward `color`) the frame edges.
+
+    `amount` 0–1 strength, `midpoint` 0–1 how far from the centre the falloff
+    starts, `feather` 0–1 how gradual it is, `roundness` 0 follows the frame's
+    aspect ratio … 1 perfect circle. The mask is computed at ≤ 256 px and
+    smoothly scaled up, so cost is flat at any resolution.
+    """
+    import math
+
+    out = _as_rgb(image)
+    w, h = out.size
+    strength = max(0.0, min(1.0, float(amount)))
+    if strength == 0:
+        return _keep_alpha(out, image)
+    scale = min(1.0, 256 / max(w, h))
+    sw, sh = max(2, round(w * scale)), max(2, round(h * scale))
+    rnd = max(0.0, min(1.0, float(roundness)))
+    # Axis weights: 1/1 follows the frame (corners = 1, edge midpoints ≈ 0.71);
+    # true pixel aspect at roundness 1 gives a circle.
+    kx = 1 + rnd * (max(1.0, w / h) - 1)
+    ky = 1 + rnd * (max(1.0, h / w) - 1)
+    norm = math.hypot(kx, ky)
+    start = max(0.0, min(1.0, float(midpoint)))
+    soft = max(0.05, float(feather))
+    values = []
+    for yy in range(sh):
+        ny = ((yy + 0.5) / sh * 2 - 1) * ky
+        for xx in range(sw):
+            nx = ((xx + 0.5) / sw * 2 - 1) * kx
+            t = min(1.0, max(0.0, (math.hypot(nx, ny) / norm - start) / soft))
+            values.append(round(255 * strength * t * t * (3 - 2 * t)))
+    mask = Image.new("L", (sw, sh))
+    mask.putdata(values)
+    mask = mask.resize((w, h), Image.Resampling.BICUBIC)
+    edge = Image.new("RGB", out.size, _rgb_tint(color, rgb, (0, 0, 0)))
+    out = Image.composite(edge, out, mask)
+    return _keep_alpha(out, image)
+
+
 def composite(base: Image.Image, overlay: Image.Image) -> Image.Image:
     """Paste overlay (with alpha) on top of base."""
     bottom = _as_rgba(base)

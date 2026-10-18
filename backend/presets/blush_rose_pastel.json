@@ -1,0 +1,32 @@
+{
+  "name": "blush_rose_pastel",
+  "label": "Blush rose pastel",
+  "description": "HD pass, then a soft romantic grade: rose-magenta cast, pink highlights, lifted blacks, and low contrast.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "temperature": 0.1,
+      "tint": 0.5,
+      "exposure": 0.15,
+      "contrast": -0.3,
+      "black_lift": 0.08,
+      "white_rolloff": 0.6,
+      "shadows": [150, 100, 140],
+      "highlights": [255, 200, 215],
+      "split": 0.6,
+      "saturation": 0.8,
+      "vibrance": 0.15
+    }
+  ]
+}
