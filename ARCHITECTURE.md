@@ -34,7 +34,7 @@ Detailed architecture for the preset-based local image editor.
 │    services/preset.py → DB name → JSON path → apply_preset   │
 │    services/preset_search.py → DB name + keyword match       │
 │    services/preset_popular.py → increment popular.used_count │
-│    services/image_io.py → decode bytes ↔ Pillow / PNG encode │
+│    services/image_io.py → decode bytes ↔ Pillow / JPEG·PNG   │
 │    helpers/apply_preset.py + filters.py → filter pipeline    │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -84,7 +84,7 @@ Detailed architecture for the preset-based local image editor.
 
 - **Python 3.12**
 - **FastAPI** — HTTP API
-- **Pillow** — image decode / Gaussian blur / PNG encode
+- **Pillow** — image decode (EXIF orientation, ICC → sRGB via `ImageCms`) / Gaussian blur / JPEG·PNG encode
 - **uvicorn** — ASGI server
 - **python-multipart** — file uploads
 
@@ -143,17 +143,17 @@ test-suite/              # pytest unit tests for services only (not routes/HTTP)
 | GET | `/api/presets/search` | query `q` (name/keyword substring, max 64) | JSON `[{ "preset_name", "keywords", "ar", "text_input", "default_text", "text_character_limit" }, …]` newest `preset_id` first |
 | GET | `/api/presets/popular` | — | JSON `[{ "preset_id", "preset_name", "used_count" }, …]` sorted by `used_count` descending |
 | POST | `/api/presets/use` | `application/x-www-form-urlencoded` field `preset_name` (max 64) | JSON `{ "preset_id", "used_count" }` |
-| POST | `/api/blur` | `multipart/form-data` field `file` | `image/png` bytes |
-| POST | `/api/apply-preset` | `multipart/form-data` fields `preset_name`, `file`, optional `text` (max 200) | `image/png` bytes |
+| POST | `/api/blur` | `multipart/form-data` field `file` | `image/jpeg` for a JPEG upload, else `image/png` |
+| POST | `/api/apply-preset` | `multipart/form-data` fields `preset_name`, `file`, optional `text` (max 200) | `image/jpeg` for a JPEG upload with an opaque result, else `image/png` |
 
 Error responses use FastAPI `HTTPException` with JSON `detail` (e.g. non-image, empty file, unknown preset, decode failure, square-only preset on a non-square image). Oversized uploads/images return **413**. Apply-preset returns **503** when the concurrency gate is full. `POST /api/presets/use` returns **404** for an unknown `preset_name`.
 
-Upload guards (`services/image_io.py`): max **20 MiB** body (`MAX_UPLOAD_BYTES`), max side **8000** px, max **25M** pixels. Preset JSON paths from the DB must resolve under `backend/presets/` (`PresetPathUnsafeError` otherwise). Apply-preset runs off the event loop via `asyncio.to_thread` and allows only **1** concurrent job (`MAX_CONCURRENT_PRESET_JOBS`) so rembg cannot pile up.
+Upload guards (`services/image_io.py`): max **100 MiB** body (`MAX_UPLOAD_BYTES`, full-quality DSLR JPEG/TIFF); images over the working size (max side **12000** px / **64M** pixels — full-frame DSLR files up to 61 MP stay native) are **downscaled to fit** (LANCZOS, aspect kept; JPEGs decode at reduced scale via `draft` first), not rejected; images over **120M** pixels (`MAX_DECODE_PIXELS`) are rejected from the header before decoding. At 61 MP the heaviest (cut-out) presets take ~5–10 s and peak at ~3.8 GiB, of which ~1.75 GiB is the fixed rembg/ONNX model. Decode and encode run via `asyncio.to_thread` so a large file doesn't stall the event loop. Preset JSON paths from the DB must resolve under `backend/presets/` (`PresetPathUnsafeError` otherwise). Apply-preset runs off the event loop via `asyncio.to_thread` and allows only **1** concurrent job (`MAX_CONCURRENT_PRESET_JOBS`) so rembg cannot pile up. Both `/api/apply-preset` and `/api/blur` take that slot (`preset_job_slot`) **before** reading the upload into memory and hold it through decode → filters → encode, so extra requests get **503** immediately without buffering or decoding (the multipart body is already spooled to a temp file).
 
 ### Blur algorithm
 
 - Pillow `ImageFilter.GaussianBlur` with default radius **12** (`DEFAULT_BLUR_RADIUS` in `services/blur.py`).
-- Non-RGB(A) modes are converted to RGBA before filtering for stable PNG output.
+- `load_image_with_format` applies EXIF orientation (camera portrait shots), converts an embedded ICC profile (Adobe RGB, ProPhoto, CMYK) to sRGB, and normalises 16-bit / float / grey / CMYK / palette input to 8-bit `RGB`/`RGBA` (`to_working_mode`; 16-bit is scaled, not clipped). `encode_result` returns JPEG (quality 95, 4:4:4, sRGB-tagged) for a JPEG upload with an opaque result, else PNG (sRGB-tagged); camera EXIF (GPS, serials) is not carried over.
 
 ### Subject extraction helper (CLI only)
 
@@ -177,15 +177,15 @@ Upload guards (`services/image_io.py`): max **20 MiB** body (`MAX_UPLOAD_BYTES`)
 - Runner: `backend/helpers/apply_preset.py` (uses `filters.py`).
 - HTTP: `POST /api/apply-preset` looks up `preset_name` in `presets.db`, loads that JSON path, runs the same runner, returns PNG (`app/services/preset.py` + `app/routes/preset.py`). The route does not choose filters; it passes `preset_name`, the image, and optional `text`. Presets with `"ar": "square"` reject non-square input images (`PresetAspectRatioError` → HTTP **400**). Presets with `"text_input": "yes"` validate `text` against `text_character_limit` (`PresetTextError` → HTTP **400**); omitted text uses `default_text`.
 - Built-in filters: `extract_subject`, `brightness`, `color`, `contrast`, `overlay`, `grayscale`, `glow_border`, `glow_line_border`, `composite`, `draw_text`, `place_on_canvas`, `upscale`, `sharpen`, `denoise`, `ai_upscale`, `doodle`, `sticker_outline`, `posterize`, `ink_edges`, `halftone`, `paper_texture`.
-- `glow_line_border` draws a colored outline ring only (does not fill/glow the subject body). Pass `"color": [R,G,B]` (or `"rgb"`).
+- `glow_line_border` draws a colored outline ring only (does not fill/glow the subject body). Pass `"color": [R,G,B]` (or `"rgb"`). `glow_border` / `glow_line_border` take px `width`/`blur` or `width_ratio`/`blur_ratio` (fractions of the short side; the ratio path grows the mask with flat-cost blur+threshold, since `MaxFilter` cost grows with width²).
 - `posterize` flattens channels to N levels; `ink_edges` draws comic outlines from a difference of Gaussians; `halftone` renders a mono or CMYK dot screen (own grey-component-replacement separation, since Pillow's RGB→CMYK leaves K empty; processed at ≤ 2400 px long edge and resized back, pitch enlarged when a screen would exceed 160k dots); `paper_texture` adds seeded grain, stains and fade (tone steps as point tables, grain tiled in place, stain grid follows aspect ratio). `halftone`/`ink_edges` flatten RGBA onto paper/white before analysing tone, so pixels under transparency never print. All sizes are fractions of the short side; at 25 MP these presets peak at ~0.5–0.65 GB.
 - `sticker_outline` draws a solid outline sized by `width_ratio` × short side via blur + threshold (cost independent of width; round corners).
-- `extract_subject` with `"require_clear_subject": true` (opt-in; the doodle presets use it) falls back to an empty subject + untouched background when `is_reliable_cutout` rejects the rembg mask, so the preset degrades to "no cutout" instead of a smeared shape. Rejected when solid alpha is < 0.3% of pixels, or when soft pixels *outside* a band around the solid body outnumber solid pixels (band = max(4% of short side, 0.75 × body equivalent radius)), so hair/fur hugging the body is accepted. Presets without the flag keep the raw mask.
-- `draw_text` paints `text` onto a layer. Use `"$text"` for user caption, or `"$datetime"` / `"$date"` / `"$time"` for apply-time stamps. Common params: `font_size`, `color`/`rgb`, `align` (`center`/`top`/`bottom`/`top_right`/…), `font_style` (`sans`/`flow`), optional `font_path` (TTF/OTF/TTC, overrides style), `margin`, `x`/`y`, `stroke_width`.
+- `extract_subject` with `"require_clear_subject": true` (opt-in; the doodle presets use it) falls back to an empty subject + untouched background when `is_reliable_cutout` rejects the rembg mask, so the preset degrades to "no cutout" instead of a smeared shape. Rejected when solid alpha is < 0.3% of pixels, or when soft pixels *outside* a band around the solid body outnumber solid pixels (band = max(4% of short side, 0.75 × body equivalent radius)), so hair/fur hugging the body is accepted. Presets without the flag keep the raw mask. `"single_subject": true` (opt-in; doodle presets) then runs `keep_main_subject`: it labels solid islands on a working mask capped at 256 px short / 1024 px long side (flood fill seeded via `getbbox`, after a 1.5% merge dilation) and keeps every bottom-touching island ≥ 25% of the largest — else just the largest — plus a 3% soft-edge band, so rembg's second salient object (e.g. a framed picture behind a person) stays in the untouched background.
+- `draw_text` paints `text` onto a layer. Use `"$text"` for user caption, or `"$datetime"` / `"$date"` / `"$time"` for apply-time stamps. Common params: `font_size`, `color`/`rgb`, `align` (`center`/`top`/`bottom`/`top_right`/…), `font_style` (`sans`/`flow`), optional `font_path` (TTF/OTF/TTC, overrides style), `margin`, `x`/`y`, `stroke_width`; `font_size_ratio` / `margin_ratio` / `stroke_ratio` (fractions of the short side) override the px values so text keeps its proportions at any resolution. Text wider than 90% of the layer shrinks straight to the fitting size.
 - `place_on_canvas` puts a layer on a larger solid canvas (`scale`, `fill`, `layout`: `polaroid` or `center`).
-- `doodle` draws one hand-drawn doodle (`style`: `xo`/`rings`/`wiggles`/`stars`) with seeded wobble. It draws only the doodle's neighbourhood (not a full-frame layer), 2× supersampled when that region is ≤ 4 MP and 1× above, so a 25 MP upload stays bounded; `count` is capped at 12. Sizes are fractions of the short side. Its runner (`_run_doodle`) accepts an optional `around` layer so `anchor: subject` centres on that layer's alpha bbox — the only filter that reads a second layer besides `composite`.
+- `doodle` draws one hand-drawn doodle (`style`: `xo`/`rings`/`wiggles`/`stars`) with seeded wobble. It draws only the doodle's neighbourhood (not a full-frame layer), 2× supersampled when that region is ≤ 4 MP and 1× above, so a 25 MP upload stays bounded; `count` is capped at 12. Sizes are fractions of the short side. Its runner (`_run_doodle`) accepts an optional `around` layer so `anchor: subject` centres on that layer's alpha bbox — the only filter that reads a second layer besides `composite`. The same layer drives `avoid_subject` (corner/edge anchors flip to a mirror the subject doesn't cover; `avoid_busy` also skips cluttered background, scored on a blurred ≤128 px edge map); `color: "auto"` picks dark or white ink from the region's mean luma.
 - Shipped presets:
-  - `bw_bg_glowing_subject` — extract → grayscale background → `glow_line_border` on subject → composite (`text_input: no`)
+  - `bw_bg_glowing_subject` — extract (`single_subject`) → grayscale background → `glow_line_border` (ratio width/blur) on subject → composite (`text_input: no`)
   - `polaroid_memory` — soft warm grade → `$datetime` stamp → 1.4× white polaroid mat → flow `$text` caption (`ar: square`, `text_input: yes`)
   - `warm_faded_print` — lower contrast → muted color → slight lift → cream-amber overlay (`ar: non-square`, `text_input: no`)
   - `full_hd` — `ai_upscale` to 1920 px long edge, denoise 0.5 (`ar: non-square`, `text_input: no`)

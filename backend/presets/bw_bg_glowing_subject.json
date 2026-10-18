@@ -11,7 +11,8 @@
       "filter": "extract_subject",
       "on": "image",
       "as": "subject",
-      "bg_as": "background"
+      "bg_as": "background",
+      "single_subject": true
     },
     {
       "filter": "grayscale",
@@ -21,8 +22,8 @@
       "filter": "glow_line_border",
       "on": "subject",
       "color": [0, 255, 200],
-      "width": 5,
-      "blur": 2
+      "width_ratio": 0.007,
+      "blur_ratio": 0.0028
     },
     {
       "filter": "composite",

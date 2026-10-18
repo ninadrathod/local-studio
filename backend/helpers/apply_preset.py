@@ -223,6 +223,7 @@ def _run_extract_subject(
     subject, background = F.extract_subject_layers(
         layers[source_key],
         require_clear_subject=bool(step.get("require_clear_subject", False)),
+        single_subject=bool(step.get("single_subject", False)),
     )
     layers[step.get("as", "subject")] = subject
     layers[step.get("bg_as", "background")] = background

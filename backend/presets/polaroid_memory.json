@@ -27,13 +27,13 @@
       "filter": "draw_text",
       "on": "image",
       "text": "$datetime",
-      "font_size": 22,
       "color": [255, 255, 255],
       "align": "top_right",
       "font_style": "sans",
-      "stroke_width": 1,
       "stroke_color": [40, 40, 40],
-      "margin": 14
+      "font_size_ratio": 0.0306,
+      "stroke_ratio": 0.0014,
+      "margin_ratio": 0.0194
     },
     {
       "filter": "place_on_canvas",
@@ -47,11 +47,11 @@
       "filter": "draw_text",
       "on": "image",
       "text": "$text",
-      "font_size": 42,
       "color": [55, 55, 55],
       "align": "bottom",
       "font_style": "flow",
-      "margin": 28
+      "font_size_ratio": 0.0417,
+      "margin_ratio": 0.0278
     }
   ]
 }

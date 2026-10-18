@@ -12,7 +12,8 @@
       "on": "image",
       "as": "subject",
       "bg_as": "background",
-      "require_clear_subject": true
+      "require_clear_subject": true,
+      "single_subject": true
     },
     {
       "filter": "sticker_outline",
@@ -34,7 +35,8 @@
       "size": 0.92,
       "stroke": 0.007,
       "count": 4,
-      "seed": 5
+      "seed": 5,
+      "color": "auto"
     },
     {
       "filter": "doodle",
@@ -43,7 +45,10 @@
       "anchor": "top_left",
       "size": 0.3,
       "count": 3,
-      "seed": 2
+      "seed": 2,
+      "color": "auto",
+      "around": "subject",
+      "avoid_subject": true
     },
     {
       "filter": "composite",

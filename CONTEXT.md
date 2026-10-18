@@ -9,7 +9,7 @@ A local **image editor** for applying JSON presets to photos:
 1. User picks a preset from the gallery (post-edit thumbnails from `previews/`; hover shows the pre-edit original).
 2. Image upload unlocks after a preset is selected. If that preset has `text_input: yes`, a text field appears (default + character limit from the preset).
 3. Frontend `POST`s preset name + file (+ optional `text`) to `POST /api/apply-preset`.
-4. Backend resolves the preset from SQLite, runs the JSON filter pipeline (each step names a helper + params; `$text` is bound in), returns a PNG.
+4. Backend resolves the preset from SQLite, runs the JSON filter pipeline (each step names a helper + params; `$text` is bound in), returns a JPEG (for JPEG uploads) or PNG.
 5. Frontend shows (and can download) the result. Clicking **Download** increments `popular.used_count` immediately. The gallery does not reorder until the refresh control beside search is clicked (with **Popular** on). Unclicking **Popular** restores newest-first order. A page refresh clears in-memory session state.
 
 Repo: https://github.com/ninadrathod/local-studio
@@ -55,10 +55,10 @@ Repo: https://github.com/ninadrathod/local-studio
 - Frontend static server: typically `http://localhost:5500` (any static host of the repo root)
 - Health check: `GET /health`
 - Blur endpoint: `POST /api/blur` (multipart field name: `file`)
-- Apply-preset endpoint: `POST /api/apply-preset` (multipart fields: `preset_name`, `file`, optional `text`) → PNG
+- Apply-preset endpoint: `POST /api/apply-preset` (multipart fields: `preset_name`, `file`, optional `text`) → JPEG for JPEG uploads, else PNG
 - Preset search: `GET /api/presets/search?q=…` → JSON list of `{ preset_name, keywords, ar, text_input, default_text, text_character_limit }` (matches name or keywords; newest `preset_id` first)
 - Popular / download count: `POST /api/presets/use` form field `preset_name` → `{ preset_id, used_count }`; `GET /api/presets/popular` → `{ preset_id, preset_name, used_count }` sorted by `used_count` descending
-- Upload caps (blur + apply-preset): 20 MiB body, max side 8000 px / 25M pixels; preset JSON paths must stay under `backend/presets/`
+- Upload caps (blur + apply-preset): 100 MiB body; images up to 64M pixels / 12000 px side stay at native resolution (full-frame DSLR), larger ones are downscaled to fit; over 120M pixels is rejected; EXIF orientation and ICC colour (→ sRGB) are applied on load; one image job at a time across apply-preset + blur (others get 503 before the upload is read); preset JSON paths must stay under `backend/presets/`
 - Apply-preset concurrency: 1 in-flight job (extra requests get **503**)
 
 ## Current scope

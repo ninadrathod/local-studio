@@ -525,6 +525,8 @@ def test_doodle_preset_files() -> None:
         assert filters[-1] == "composite"
         assert [s["style"] for s in data["steps"] if s["filter"] == "doodle"] == styles
         assert all(s["on"] == "background" for s in data["steps"] if s["filter"] == "doodle")
+        assert data["steps"][0]["single_subject"] is True
+        assert all(s["color"] == "auto" for s in data["steps"] if s["filter"] == "doodle")
 
 
 def test_doodle_draws_only_near_anchor_and_offscreen_is_noop() -> None:
@@ -598,6 +600,136 @@ def test_extract_subject_layers_falls_back_when_cutout_unreliable(
     assert kept.tobytes() == smear.tobytes()
 
 
+def _two_island_alpha() -> Image.Image:
+    alpha = Image.new("L", (300, 200), 0)
+    alpha.paste(255, (10, 60, 130, 200))  # large "person"
+    alpha.paste(255, (180, 10, 280, 110))  # smaller "frame"
+    return alpha
+
+
+def test_keep_main_subject_drops_smaller_islands() -> None:
+    alpha = _two_island_alpha()
+    alpha.paste(70, (130, 100, 136, 120))  # soft fringe hugging the body
+    kept = F.keep_main_subject(alpha)
+    assert kept.getpixel((70, 130)) == 255
+    assert kept.getpixel((133, 110)) == 70
+    assert kept.getpixel((230, 60)) == 0
+    # One island (or none) comes back unchanged.
+    single = Image.new("L", (80, 80), 0)
+    single.paste(255, (20, 20, 60, 60))
+    assert F.keep_main_subject(single).tobytes() == single.tobytes()
+    empty = Image.new("L", (40, 40), 0)
+    assert F.keep_main_subject(empty).tobytes() == empty.tobytes()
+    # Too many islands to rank (speckle noise): leave the mask alone.
+    noisy = Image.new("L", (256, 256), 0)
+    for i in range(300):
+        x, y = (i % 20) * 12 + 2, (i // 20) * 12 + 2
+        noisy.paste(255, (x, y, x + 3, y + 3))
+    assert F.keep_main_subject(noisy).tobytes() == noisy.tobytes()
+
+
+def test_keep_main_subject_prefers_island_touching_bottom() -> None:
+    alpha = Image.new("L", (300, 200), 0)
+    alpha.paste(255, (10, 10, 160, 110))  # bigger sign on the wall
+    alpha.paste(255, (200, 100, 260, 200))  # person cropped by the bottom edge
+    kept = F.keep_main_subject(alpha)
+    assert kept.getpixel((230, 150)) == 255
+    assert kept.getpixel((80, 60)) == 0
+    # A tiny bottom crumb doesn't beat a large floating subject.
+    crumb = Image.new("L", (300, 200), 0)
+    crumb.paste(255, (10, 10, 200, 150))
+    crumb.paste(255, (260, 190, 266, 200))
+    assert F.keep_main_subject(crumb).getpixel((100, 80)) == 255
+
+
+def test_keep_main_subject_keeps_two_people_side_by_side() -> None:
+    alpha = Image.new("L", (300, 200), 0)
+    alpha.paste(255, (10, 60, 110, 200))
+    alpha.paste(255, (180, 80, 260, 200))
+    alpha.paste(255, (120, 5, 170, 40))  # floating frame still dropped
+    kept = F.keep_main_subject(alpha)
+    assert kept.getpixel((60, 130)) == 255
+    assert kept.getpixel((220, 150)) == 255
+    assert kept.getpixel((145, 20)) == 0
+
+
+def test_keep_main_subject_is_bounded_on_panoramas() -> None:
+    import time
+
+    alpha = Image.new("L", (12000, 400), 0)
+    for i in range(40):  # many islands across a very wide frame
+        alpha.paste(255, (i * 300, 100, i * 300 + 120, 400 if i == 0 else 300))
+    start = time.perf_counter()
+    kept = F.keep_main_subject(alpha)
+    assert time.perf_counter() - start < 5
+    assert kept.getpixel((60, 350)) == 255
+    assert kept.getpixel((3060, 200)) == 0
+
+
+def test_keep_main_subject_merges_pieces_across_a_small_gap() -> None:
+    alpha = Image.new("L", (400, 400), 0)
+    alpha.paste(255, (50, 50, 200, 350))
+    alpha.paste(255, (202, 100, 260, 200))  # arm split off by a 2 px seam
+    assert F.keep_main_subject(alpha).getpixel((230, 150)) == 255
+
+
+def test_extract_subject_layers_single_subject(monkeypatch: pytest.MonkeyPatch) -> None:
+    import types
+
+    cutout = Image.new("RGBA", (300, 200), (200, 50, 50, 0))
+    cutout.putalpha(_two_island_alpha())
+    fake = types.ModuleType("extract_subject")
+    fake.extract_subject = lambda image: cutout.copy()
+    monkeypatch.setitem(sys.modules, "extract_subject", fake)
+    original = Image.new("RGB", (300, 200), (90, 120, 150))
+    subject, background = F.extract_subject_layers(original, single_subject=True)
+    assert subject.getpixel((230, 60))[3] == 0
+    assert subject.getpixel((70, 130))[3] == 255
+    # The dropped island stays as untouched background, not a blurred hole.
+    assert background.getpixel((230, 60)) == (90, 120, 150)
+    both, _ = F.extract_subject_layers(original)
+    assert both.getpixel((230, 60))[3] == 255
+
+
+def test_doodle_auto_color_contrasts_with_background() -> None:
+    light = F.doodle(Image.new("RGB", (200, 200), (235, 230, 215)), style="xo", anchor="center", size=0.6, color="auto")
+    assert light.convert("L").getextrema()[0] < 80
+    dark = F.doodle(Image.new("RGB", (200, 200), (20, 20, 20)), style="xo", anchor="center", size=0.6, color="auto")
+    assert dark.convert("L").getextrema()[1] > 200
+    with pytest.raises(ValueError):
+        F.doodle(Image.new("RGB", (50, 50)), color="pink")
+
+
+def test_doodle_avoid_subject_moves_to_mirrored_corner() -> None:
+    base = Image.new("RGB", (200, 200), (0, 0, 0))
+    subject = Image.new("RGBA", (200, 200), (0, 0, 0, 0))
+    subject.paste((255, 0, 0, 255), (0, 100, 100, 200))  # covers bottom-left
+    out = F.doodle(base, style="xo", anchor="bottom_left", size=0.2, around=subject, avoid_subject=True)
+    bbox = out.convert("L").point(lambda v: 255 if v > 60 else 0).getbbox()
+    assert bbox is not None and bbox[0] > 100 and bbox[1] > 100
+    # Without the flag (or with a clear corner) the anchor is respected.
+    stay = F.doodle(base, style="xo", anchor="bottom_left", size=0.2, around=subject)
+    bbox = stay.convert("L").point(lambda v: 255 if v > 60 else 0).getbbox()
+    assert bbox is not None and bbox[2] < 100
+
+
+def test_doodle_avoid_busy_skips_cluttered_corner() -> None:
+    from PIL import ImageDraw
+
+    base = Image.new("RGB", (400, 400), (0, 0, 0))
+    draw = ImageDraw.Draw(base)
+    for i in range(220, 400, 16):  # bold stripes fill the top-right corner
+        draw.rectangle((i, 0, i + 7, 180), fill=(140, 140, 140))
+    out = F.doodle(base, style="xo", anchor="top_right", size=0.2, avoid_busy=True)
+    diff = Image.eval(F.ImageChops.difference(out, base).convert("L"), lambda v: 255 if v > 60 else 0)
+    bbox = diff.getbbox()
+    assert bbox is not None and bbox[2] < 200 and bbox[3] < 200  # moved to top-left
+    calm = Image.new("RGB", (400, 400), (0, 0, 0))
+    out = F.doodle(calm, style="xo", anchor="top_right", size=0.2, avoid_busy=True)
+    bbox = out.convert("L").point(lambda v: 255 if v > 60 else 0).getbbox()
+    assert bbox is not None and bbox[0] > 200
+
+
 def test_is_reliable_cutout_accepts_fluffy_edges_near_body() -> None:
     from PIL import ImageDraw
 
@@ -625,17 +757,18 @@ def test_doodle_presets_require_clear_subject() -> None:
 
 
 def test_run_extract_subject_passes_require_clear_subject(monkeypatch: pytest.MonkeyPatch) -> None:
-    seen: list[bool] = []
+    seen: list[tuple[bool, bool]] = []
 
-    def fake_layers(image, require_clear_subject=False):
-        seen.append(require_clear_subject)
+    def fake_layers(image, require_clear_subject=False, single_subject=False):
+        seen.append((require_clear_subject, single_subject))
         return Image.new("RGBA", image.size), image
 
     monkeypatch.setattr(F, "extract_subject_layers", fake_layers)
     layers = {"image": Image.new("RGB", (8, 8))}
     FILTERS["extract_subject"](layers, index=0, on="image", require_clear_subject=True)
-    FILTERS["extract_subject"](layers, index=1, on="image")
-    assert seen == [True, False]
+    FILTERS["extract_subject"](layers, index=1, on="image", single_subject=True)
+    FILTERS["extract_subject"](layers, index=2, on="image")
+    assert seen == [(True, False), (False, True), (False, False)]
 
 
 def _gradient(width: int = 120, height: int = 80) -> Image.Image:
@@ -808,3 +941,62 @@ def test_filters_do_not_mutate_input() -> None:
     F.paper_texture(img, grain=0.2, stains=0.5)
     F.halftone(img, mode="cmyk", cell=0.05)
     assert img.tobytes() == before
+
+
+def _ring_width(out: Image.Image, row: int) -> int:
+    """Count tinted (glow) pixels along one row of a glow_line_border result."""
+    pixels = [out.getpixel((x, row)) for x in range(out.width)]
+    return sum(1 for r, g, _, a in pixels if a > 100 and g > 150 and r < 80)
+
+
+def test_glow_line_border_ratio_scales_with_resolution() -> None:
+    def ring(side: int, **kw) -> int:
+        subject = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+        subject.paste((200, 0, 0, 255), (side // 4, side // 4, side * 3 // 4, side * 3 // 4))
+        return _ring_width(F.glow_line_border(subject, color=[0, 255, 200], **kw), side // 2)
+
+    small, large = ring(200, width_ratio=0.03, blur_ratio=0), ring(800, width_ratio=0.03, blur_ratio=0)
+    assert small > 0 and abs(large / small - 4) < 1
+    # Fixed px params keep their original meaning.
+    assert ring(200, width=4, blur=0) == ring(800, width=4, blur=0)
+    with pytest.raises(ValueError):
+        F.glow_line_border(Image.new("RGBA", (10, 10)), width_ratio=-1)
+
+
+def test_glow_border_ratio_scales_with_resolution() -> None:
+    def spread(side: int) -> int:
+        subject = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+        subject.paste((200, 0, 0, 255), (side // 4, side // 4, side * 3 // 4, side * 3 // 4))
+        out = F.glow_border(subject, width_ratio=0.04, blur_ratio=0)
+        return out.getchannel("A").getbbox()[2] - side * 3 // 4
+
+    assert abs(spread(800) / spread(200) - 4) < 1
+
+
+def test_draw_text_ratio_params_scale_with_canvas() -> None:
+    def text_height(side: int) -> int:
+        canvas = Image.new("RGB", (side, side), (255, 255, 255))
+        out = F.draw_text(canvas, text="Hi", color=[0, 0, 0], font_size_ratio=0.1, margin_ratio=0.02, align="top")
+        bbox = out.convert("L").point(lambda v: 255 if v < 128 else 0).getbbox()
+        assert bbox is not None and bbox[1] >= int(0.02 * side) - 2
+        return bbox[3] - bbox[1]
+
+    assert abs(text_height(1200) / text_height(300) - 4) < 1
+
+
+def test_draw_text_shrinks_large_fonts_to_fit() -> None:
+    canvas = Image.new("RGB", (600, 200), (255, 255, 255))
+    out = F.draw_text(canvas, text="a fairly long caption", color=[0, 0, 0], font_size=900)
+    bbox = out.convert("L").point(lambda v: 255 if v < 128 else 0).getbbox()
+    assert bbox is not None and bbox[2] - bbox[0] <= 600 * 0.9 + 2
+
+
+def test_shipped_presets_use_resolution_relative_sizes() -> None:
+    for name, filt, keys in (
+        ("bw_bg_glowing_subject", "glow_line_border", ("width_ratio", "blur_ratio")),
+        ("polaroid_memory", "draw_text", ("font_size_ratio", "margin_ratio")),
+    ):
+        data = load_preset(PRESETS / f"{name}.json")
+        steps = [s for s in data["steps"] if s["filter"] == filt]
+        assert steps and all(all(k in s for k in keys) for s in steps)
+        assert all("width" not in s and "font_size" not in s for s in steps)

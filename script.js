@@ -424,7 +424,9 @@ async function handleGenerate() {
     els.previewEdited.classList.remove("hidden");
     els.resultPlaceholder.classList.add("hidden");
     els.downloadBtn.href = editedUrl;
-    els.downloadBtn.download = `${presetName}-edit.png`;
+    // JPEG uploads come back as JPEG; everything else as PNG.
+    const ext = blob.type === "image/jpeg" ? "jpg" : "png";
+    els.downloadBtn.download = `${presetName}-edit.${ext}`;
     els.downloadBtn.classList.remove("hidden");
   } catch (err) {
     if (token !== generateGeneration) return;

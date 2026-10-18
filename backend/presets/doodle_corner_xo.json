@@ -12,7 +12,8 @@
       "on": "image",
       "as": "subject",
       "bg_as": "background",
-      "require_clear_subject": true
+      "require_clear_subject": true,
+      "single_subject": true
     },
     {
       "filter": "sticker_outline",
@@ -32,7 +33,11 @@
       "anchor": "top_right",
       "size": 0.26,
       "stroke": 0.008,
-      "seed": 3
+      "seed": 3,
+      "color": "auto",
+      "around": "subject",
+      "avoid_subject": true,
+      "avoid_busy": true
     },
     {
       "filter": "doodle",
@@ -42,7 +47,10 @@
       "size": 0.32,
       "stroke": 0.008,
       "count": 3,
-      "angle": -20
+      "angle": -20,
+      "color": "auto",
+      "around": "subject",
+      "avoid_subject": true
     },
     {
       "filter": "composite",
