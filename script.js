@@ -456,7 +456,7 @@ function createPresetCard(preset) {
   if (isSelected) button.classList.add("preset-card--selected");
   button.setAttribute(
     "aria-label",
-    `Select preset ${label}. Hover or focus to compare with the original photo.`,
+    `Select preset ${label}. Hover, focus, or press and hold to compare with the original photo.`,
   );
 
   const media = document.createElement("span");
@@ -468,6 +468,8 @@ function createPresetCard(preset) {
   imgEdited.alt = "";
   imgEdited.loading = "lazy";
   imgEdited.decoding = "async";
+  // A long-press drag "lift" (iOS) would cancel the press-and-hold compare.
+  imgEdited.draggable = false;
 
   const imgOriginal = document.createElement("img");
   imgOriginal.className = "preset-card__img preset-card__img--original";
@@ -475,6 +477,7 @@ function createPresetCard(preset) {
   imgOriginal.alt = "";
   imgOriginal.loading = "lazy";
   imgOriginal.decoding = "async";
+  imgOriginal.draggable = false;
 
   media.append(imgEdited, imgOriginal);
 
@@ -774,6 +777,90 @@ async function runPresetSearch(query) {
   }
 }
 
+/* —— Touch compare: press and hold a preset card to peek at the original —— */
+
+// Touch screens have no hover. A short tap still selects the card; holding
+// past PEEK_DELAY_MS shows the original until the finger lifts, and that
+// release doesn't select. Moving (i.e. scrolling the gallery) cancels.
+const PEEK_DELAY_MS = 180;
+const PEEK_MOVE_TOLERANCE_PX = 10;
+const PEEK_CLICK_GRACE_MS = 500;
+
+/** @type {{ card: HTMLElement, pointerId: number, x: number, y: number, timer: number, shown: boolean } | null} */
+let peek = null;
+/** Card whose next click is the tail of a peek and must not select it. */
+let peekClickCard = null;
+
+/** Hide the original; returns the card if the peek had become visible. */
+function endPeek() {
+  if (!peek) return null;
+  clearTimeout(peek.timer);
+  peek.card.classList.remove("preset-card--peek");
+  const shownCard = peek.shown ? peek.card : null;
+  peek = null;
+  return shownCard;
+}
+
+function bindTouchCompare(grid) {
+  grid.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "mouse") return;
+    const card = event.target.closest(".preset-card");
+    if (!card) return;
+    endPeek();
+    const state = {
+      card,
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      shown: false,
+      timer: 0,
+    };
+    state.timer = setTimeout(() => {
+      if (peek !== state) return;
+      state.shown = true;
+      card.classList.add("preset-card--peek");
+    }, PEEK_DELAY_MS);
+    peek = state;
+  });
+
+  grid.addEventListener("pointermove", (event) => {
+    if (!peek || event.pointerId !== peek.pointerId) return;
+    const moved = Math.hypot(event.clientX - peek.x, event.clientY - peek.y);
+    if (moved > PEEK_MOVE_TOLERANCE_PX) endPeek();
+  });
+
+  grid.addEventListener("pointerup", (event) => {
+    if (!peek || event.pointerId !== peek.pointerId) return;
+    const shownCard = endPeek();
+    if (!shownCard) return;
+    peekClickCard = shownCard;
+    // Some browsers fire no click after a long press; don't swallow a later tap.
+    setTimeout(() => {
+      if (peekClickCard === shownCard) peekClickCard = null;
+    }, PEEK_CLICK_GRACE_MS);
+  });
+
+  // The browser takes over the pointer when the gallery starts scrolling.
+  grid.addEventListener("pointercancel", () => endPeek());
+
+  // Capture phase runs before the card's own click handler.
+  grid.addEventListener(
+    "click",
+    (event) => {
+      if (!peekClickCard || event.target.closest(".preset-card") !== peekClickCard) return;
+      peekClickCard = null;
+      event.preventDefault();
+      event.stopPropagation();
+    },
+    true,
+  );
+
+  // Android opens the long-press menu while the finger is still down.
+  grid.addEventListener("contextmenu", (event) => {
+    if (peek || peekClickCard) event.preventDefault();
+  });
+}
+
 function schedulePresetSearch() {
   if (!els.presetSearch) return;
   const value = els.presetSearch.value;
@@ -785,6 +872,8 @@ function schedulePresetSearch() {
 }
 
 /* —— Event listeners —— */
+
+bindTouchCompare(els.presetGrid);
 
 els.input.addEventListener("change", () => {
   setSelectedFile(els.input.files?.[0] ?? null);

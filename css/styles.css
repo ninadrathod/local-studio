@@ -405,6 +405,10 @@ html:has(.studio-page) {
   border-radius: calc(var(--radius) - 0.1rem);
   outline: none;
   -webkit-tap-highlight-color: transparent;
+  /* Press-and-hold compares; no iOS "Save image" callout or text selection. */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
   transition: transform 0.25s var(--ease);
 }
 
@@ -436,6 +440,7 @@ html:has(.studio-page) {
   height: 100%;
   object-fit: cover;
   display: block;
+  -webkit-user-drag: none;
 }
 
 .preset-card__img--original {
@@ -452,9 +457,26 @@ html:has(.studio-page) {
   }
 }
 
+/* `--peek` is set by script.js while a touch/pen press is held (touch has no hover). */
 .preset-card:focus-visible .preset-card__img--original,
-.preset-card:active .preset-card__img--original {
+.preset-card--peek .preset-card__img--original {
   opacity: 1;
+}
+
+/* Touch-only hint next to the "Presets" heading; hover devices don't need it. */
+.preset-touch-hint {
+  display: none;
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--mute);
+}
+
+@media (hover: none) {
+  .preset-touch-hint {
+    display: block;
+  }
 }
 
 .preset-card:hover .preset-card__media {
