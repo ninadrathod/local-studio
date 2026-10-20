@@ -204,3 +204,34 @@ def test_encode_result_matches_upload_format() -> None:
     opaque_rgba = Image.new("RGBA", (16, 16), (120, 80, 40, 255))
     assert encode_result(opaque_rgba, "JPEG")[1] == "image/jpeg"
     assert encode_result(photo, None)[1] == "image/png"
+
+
+def _exif_bytes() -> bytes:
+    exif = Image.Exif()
+    exif.get_ifd(0x8769)[0x9003] = "2019:07:04 18:30:00"  # DateTimeOriginal
+    exif[0x0110] = "TestCam"  # camera model, standing in for private metadata
+    return exif.tobytes()
+
+
+def test_load_image_keeps_exif_through_profile_conversion() -> None:
+    from PIL import ImageCms
+
+    srgb = ImageCms.ImageCmsProfile(ImageCms.createProfile("sRGB"))
+    buffer = BytesIO()
+    Image.new("RGB", (8, 8), (200, 40, 40)).save(
+        buffer, format="JPEG", icc_profile=srgb.tobytes(), exif=_exif_bytes()
+    )
+    loaded = load_image(buffer.getvalue())
+    assert "icc_profile" not in loaded.info  # the conversion ran
+    assert loaded.getexif().get_ifd(0x8769)[0x9003] == "2019:07:04 18:30:00"
+
+
+def test_encoders_never_write_upload_exif() -> None:
+    from app.services.image_io import encode_result
+
+    photo = Image.new("RGB", (16, 16), (120, 80, 40))
+    photo.info["exif"] = _exif_bytes()
+    for source_format in ("JPEG", "PNG"):
+        body, _ = encode_result(photo, source_format)
+        assert not Image.open(BytesIO(body)).getexif()
+    assert not Image.open(BytesIO(save_png_bytes(photo))).getexif()

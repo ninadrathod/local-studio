@@ -1,0 +1,36 @@
+{
+  "name": "dreamy_glow",
+  "label": "Dreamy glow",
+  "description": "HD pass, then a warm soft-focus look: lifted, low-contrast grade with creamy highlights and a diffusion bloom glowing out of the highlights.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "temperature": 0.2,
+      "exposure": 0.1,
+      "contrast": -0.2,
+      "black_lift": 0.06,
+      "white_rolloff": 0.6,
+      "saturation": 0.92,
+      "vibrance": 0.2
+    },
+    {
+      "filter": "bloom",
+      "on": "image",
+      "threshold": 0.45,
+      "radius_ratio": 0.04,
+      "amount": 0.9,
+      "color": [255, 235, 210]
+    }
+  ]
+}

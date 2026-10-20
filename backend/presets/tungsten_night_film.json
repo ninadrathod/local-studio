@@ -1,0 +1,56 @@
+{
+  "name": "tungsten_night_film",
+  "label": "Tungsten night film",
+  "description": "HD pass, then a tungsten-balanced night film look: cool blue-teal cast, warm highlights, a red halation halo around lights, light bloom and grain.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "temperature": -0.35,
+      "tint": 0.05,
+      "exposure": 0.05,
+      "contrast": 0.2,
+      "black_lift": 0.04,
+      "white_rolloff": 0.5,
+      "split": 0.5,
+      "shadows": [20, 70, 110],
+      "highlights": [255, 200, 170],
+      "saturation": 0.95,
+      "vibrance": 0.15
+    },
+    {
+      "filter": "halation",
+      "on": "image",
+      "threshold": 0.55,
+      "radius_ratio": 0.018,
+      "amount": 1.0,
+      "color": [255, 40, 30]
+    },
+    {
+      "filter": "bloom",
+      "on": "image",
+      "threshold": 0.7,
+      "radius_ratio": 0.02,
+      "amount": 0.2
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0,
+      "stains": 0,
+      "fade": 0,
+      "grain": 0.07,
+      "seed": 7
+    }
+  ]
+}

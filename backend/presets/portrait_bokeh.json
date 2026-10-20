@@ -1,0 +1,50 @@
+{
+  "name": "portrait_bokeh",
+  "label": "Portrait bokeh",
+  "description": "HD pass, then a DSLR portrait-mode look: subject cut out, background lens-blurred with a gentle highlight bloom, composited back and lightly graded.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "blur",
+      "on": "background",
+      "radius_ratio": 0.012,
+      "exclude": "subject"
+    },
+    {
+      "filter": "bloom",
+      "on": "background",
+      "threshold": 0.72,
+      "radius_ratio": 0.02,
+      "amount": 0.2
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "contrast": 0.1,
+      "white_rolloff": 0.4,
+      "vibrance": 0.2
+    }
+  ]
+}

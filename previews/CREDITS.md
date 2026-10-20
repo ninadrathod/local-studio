@@ -151,3 +151,73 @@ is required where the license says so; CC0 and public-domain sources need none.
 - **Photographer:** Suvodeb Banerjee
 - **License:** [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/)
 - **Files:** `pre-edit/blue_hour_noir.jpg` → `post-edit/blue_hour_noir.png` (preset `blue_hour_noir`)
+
+## `dreamy_glow`
+
+- **Photograph:** [Golden hour to sunset - 2019-08-27 19-54 - modelled by Marina Daschner](https://commons.wikimedia.org/wiki/File:Golden_hour_to_sunset_-_2019-08-27_19-54_-_modelled_by_Marina_Daschner.jpg)
+- **Photographer:** Tobias ToMar Maier
+- **License:** [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)
+- **Files:** `pre-edit/dreamy_glow.jpg` → `post-edit/dreamy_glow.png` (preset `dreamy_glow`)
+
+## `film_halation`
+
+- **Photograph:** [Buildings with colorful neon street signs at blue hour, Shinjuku, Tokyo](https://commons.wikimedia.org/wiki/File:Buildings_with_colorful_neon_street_signs_at_blue_hour,_Shinjuku,_Tokyo.jpg)
+- **Photographer:** Basile Morin
+- **License:** [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+- **Files:** `pre-edit/film_halation.jpg` → `post-edit/film_halation.png` (preset `film_halation`)
+
+## `film_dust`
+
+- **Photograph:** [National-Capitol-and-classic-cars-in-Havana-Cuba-225-031-061A](https://commons.wikimedia.org/wiki/File:National-Capitol-and-classic-cars-in-Havana-Cuba-225-031-061A.jpg)
+- **Photographer:** Fraganda
+- **License:** [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+- **Files:** `pre-edit/film_dust.jpg` → `post-edit/film_dust.png` (preset `film_dust`)
+
+## `miami_neon`
+
+- **Photograph:** [Ocean Drive in the Miami Beach Art Deco Historic District](https://commons.wikimedia.org/wiki/File:Ocean_Drive_in_the_Miami_Beach_Art_Deco_Historic_District.jpg)
+- **Photographer:** Robbschultz69
+- **License:** [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+- **Files:** `pre-edit/miami_neon.jpg` → `post-edit/miami_neon.png` (preset `miami_neon`)
+
+## `prism_glow`
+
+- **Photograph:** [Fashion-woman-model-portrait (24300464886)](https://commons.wikimedia.org/wiki/File:Fashion-woman-model-portrait_(24300464886).jpg)
+- **Photographer:** www.Pixel.la Free Stock Photos
+- **License:** [CC0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/prism_glow.jpg` → `post-edit/prism_glow.png` (preset `prism_glow`)
+
+## `disposable_flash`
+
+- **Photograph:** [Friends laugh](https://commons.wikimedia.org/wiki/File:Friends_laugh.jpg)
+- **Photographer:** Ezeflorence
+- **License:** [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+- **Files:** `pre-edit/disposable_flash.jpg` → `post-edit/disposable_flash.png` (preset `disposable_flash`)
+
+## `portrait_bokeh`
+
+- **Photograph:** [Fashion Model Gary Borden](https://commons.wikimedia.org/wiki/File:Fashion_Model_Gary_Borden.jpg)
+- **Photographer:** Gary Borden
+- **License:** [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)
+- **Files:** `pre-edit/portrait_bokeh.jpg` → `post-edit/portrait_bokeh.png` (preset `portrait_bokeh`)
+
+## `tungsten_night_film`
+
+- **Photograph:** [Dotonbori, Osaka, at night, November 2016](https://commons.wikimedia.org/wiki/File:Dotonbori,_Osaka,_at_night,_November_2016.jpg)
+- **Photographer:** Martin Falbisoner
+- **License:** [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+- **Files:** `pre-edit/tungsten_night_film.jpg` → `post-edit/tungsten_night_film.png` (preset `tungsten_night_film`)
+
+## `muted_chrome_film`
+
+- **Photograph:** [Woman with hand-rolled cigarette cutting rice](https://commons.wikimedia.org/wiki/File:Woman_with_hand-rolled_cigarette_cutting_rice.jpg)
+- **Photographer:** Basile Morin
+- **License:** [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+- **Files:** `pre-edit/muted_chrome_film.jpg` → `post-edit/muted_chrome_film.png` (preset `muted_chrome_film`)
+
+## `studio_spotlight`
+
+- **Photograph:** [Balaclava as suggested fashion piece for winter 2018 - modelled by ModelTanja](https://commons.wikimedia.org/wiki/File:Balaclava_as_suggested_fashion_piece_for_winter_2018_-_modelled_by_ModelTanja.jpg)
+- **Photographer:** Tobias ToMar Maier
+- **License:** [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)
+- **Files:** `pre-edit/studio_spotlight.jpg` → `post-edit/studio_spotlight.png` (preset `studio_spotlight`)
