@@ -85,6 +85,7 @@ Detailed architecture for the preset-based local image editor.
 - **Python 3.12**
 - **FastAPI** — HTTP API
 - **Pillow** — image decode (EXIF orientation, ICC → sRGB via `ImageCms`) / Gaussian blur / JPEG·PNG encode
+- **NumPy** — array maths in the preset filters (`color_grade`, `light_leak`, `blur`, `halftone`, …); the API runs presets in-process, so it is a core dependency
 - **uvicorn** — ASGI server
 - **python-multipart** — file uploads
 
