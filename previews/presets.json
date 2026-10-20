@@ -1,5 +1,95 @@
 [
   {
+    "preset_name": "studio_spotlight",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/studio_spotlight.jpg",
+    "post_edit_image": "previews/post-edit/studio_spotlight.png"
+  },
+  {
+    "preset_name": "muted_chrome_film",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/muted_chrome_film.jpg",
+    "post_edit_image": "previews/post-edit/muted_chrome_film.png"
+  },
+  {
+    "preset_name": "tungsten_night_film",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/tungsten_night_film.jpg",
+    "post_edit_image": "previews/post-edit/tungsten_night_film.png"
+  },
+  {
+    "preset_name": "portrait_bokeh",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/portrait_bokeh.jpg",
+    "post_edit_image": "previews/post-edit/portrait_bokeh.png"
+  },
+  {
+    "preset_name": "disposable_flash",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/disposable_flash.jpg",
+    "post_edit_image": "previews/post-edit/disposable_flash.png"
+  },
+  {
+    "preset_name": "prism_glow",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/prism_glow.jpg",
+    "post_edit_image": "previews/post-edit/prism_glow.png"
+  },
+  {
+    "preset_name": "miami_neon",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/miami_neon.jpg",
+    "post_edit_image": "previews/post-edit/miami_neon.png"
+  },
+  {
+    "preset_name": "film_dust",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/film_dust.jpg",
+    "post_edit_image": "previews/post-edit/film_dust.png"
+  },
+  {
+    "preset_name": "film_halation",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/film_halation.jpg",
+    "post_edit_image": "previews/post-edit/film_halation.png"
+  },
+  {
+    "preset_name": "dreamy_glow",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/dreamy_glow.jpg",
+    "post_edit_image": "previews/post-edit/dreamy_glow.png"
+  },
+  {
     "preset_name": "blue_hour_noir",
     "ar": "non-square",
     "text_input": "no",

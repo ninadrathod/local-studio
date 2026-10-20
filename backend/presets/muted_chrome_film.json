@@ -1,0 +1,44 @@
+{
+  "name": "muted_chrome_film",
+  "label": "Muted chrome film",
+  "description": "HD pass, then a muted documentary film grade: lowered saturation, firm contrast with a slight matte lift, cyan-teal shadows, warm highlights and fine grain.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "temperature": -0.05,
+      "tint": 0.05,
+      "contrast": 0.4,
+      "black_lift": 0.06,
+      "white_rolloff": 0.4,
+      "split": 0.45,
+      "shadows": [30, 90, 100],
+      "highlights": [255, 215, 185],
+      "saturation": 0.8
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0,
+      "stains": 0,
+      "fade": 0,
+      "grain": 0.05,
+      "seed": 7
+    },
+    {
+      "filter": "vignette",
+      "on": "image",
+      "amount": 0.15
+    }
+  ]
+}

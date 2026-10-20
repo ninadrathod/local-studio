@@ -181,8 +181,14 @@ def load_image_with_format(
         image.draft(image.mode, target)
     image.load()
     image = ImageOps.exif_transpose(image) or image
+    # Colour conversion can drop metadata; keep EXIF so presets can read the
+    # capture date. Encoders here never write `info["exif"]`, so it isn't re-emitted.
+    exif = image.info.get("exif")
     image = to_working_mode(image)
-    return fit_image_limits(image, max_side=max_side, max_pixels=max_pixels), source_format
+    image = fit_image_limits(image, max_side=max_side, max_pixels=max_pixels)
+    if exif and "exif" not in image.info:
+        image.info["exif"] = exif
+    return image, source_format
 
 
 def load_image(
@@ -202,7 +208,7 @@ def load_image(
 def save_png_bytes(image: Image.Image) -> bytes:
     """Encode an image as PNG bytes."""
     buffer = BytesIO()
-    image.save(buffer, format="PNG")
+    image.save(buffer, format="PNG", exif=b"")  # never re-emit upload EXIF
     return buffer.getvalue()
 
 
@@ -227,7 +233,8 @@ def encode_result(image: Image.Image, source_format: str | None) -> tuple[bytes,
             quality=JPEG_OUTPUT_QUALITY,
             subsampling=0,
             icc_profile=_SRGB_BYTES,
+            exif=b"",
         )
         return buffer.getvalue(), "image/jpeg"
-    image.save(buffer, format="PNG", icc_profile=_SRGB_BYTES)
+    image.save(buffer, format="PNG", icc_profile=_SRGB_BYTES, exif=b"")
     return buffer.getvalue(), "image/png"

@@ -48,11 +48,24 @@ _FLOW_FONT_CANDIDATES = (
     "DejaVuSans.ttf",
 )
 
+# Film-camera date imprint: bold typewriter mono, falling back to other bold monos.
+_STAMP_FONT_CANDIDATES = (
+    "/System/Library/Fonts/Supplemental/Courier New Bold.ttf",
+    "/Library/Fonts/Courier New Bold.ttf",
+    "/usr/share/fonts/truetype/msttcorefonts/Courier_New_Bold.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf",
+    "DejaVuSansMono-Bold.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
+    "DejaVuSans.ttf",
+)
+
 
 def _font_candidates(style: str) -> tuple[str, ...]:
     text = (style or "sans").strip().lower()
     if text in {"flow", "script", "hand", "cursive"}:
         return _FLOW_FONT_CANDIDATES
+    if text in {"stamp", "mono", "typewriter"}:
+        return _STAMP_FONT_CANDIDATES
     return _SANS_FONT_CANDIDATES
 
 
@@ -1268,6 +1281,313 @@ def vignette(
     return _keep_alpha(out, image)
 
 
+_GLOW_WORK_EDGE = 1024
+
+
+def _small_copy(image: Image.Image, long_edge: int = _GLOW_WORK_EDGE) -> Image.Image:
+    """RGB copy shrunk so its long side is at most `long_edge` (never enlarged)."""
+    rgb = _as_rgb(image)
+    w, h = rgb.size
+    scale = min(1.0, long_edge / max(w, h))
+    if scale >= 1.0:
+        return rgb.copy()
+    return rgb.resize((max(1, round(w * scale)), max(1, round(h * scale))), Image.Resampling.BILINEAR)
+
+
+def _highlight_mask(small: Image.Image, threshold: float) -> Image.Image:
+    """L mask of pixels brighter than `threshold` (0–1), with a soft knee."""
+    t = max(0.0, min(0.99, float(threshold)))
+    lut = [round(255 * max(0.0, min(1.0, (v / 255 - t) / (1 - t))) ** 1.5) for v in range(256)]
+    return small.convert("L").point(lut)
+
+
+def _screen_blend(base: Image.Image, light: Image.Image, amount: float) -> Image.Image:
+    """Screen `light` (RGB, any size) over `base` (RGB) at `amount` 0–1."""
+    if light.size != base.size:
+        light = light.resize(base.size, Image.Resampling.BICUBIC)
+    if amount >= 1.0:
+        return ImageChops.screen(base, light)
+    lut = [round(v * max(0.0, float(amount))) for v in range(256)] * 3
+    return ImageChops.screen(base, light.point(lut))
+
+
+def bloom(
+    image: Image.Image,
+    threshold: float = 0.65,
+    radius_ratio: float = 0.03,
+    amount: float = 0.5,
+    color: Sequence[int] | None = None,
+    rgb: Sequence[int] | None = None,
+) -> Image.Image:
+    """
+    Soft diffusion glow (Pro-Mist / dreamy filter): highlights above `threshold`
+    are blurred by `radius_ratio` × the short side and screened back at `amount`.
+    Optional `color` multiplies the glow (e.g. warm cream). Worked at ≤ 1024 px,
+    so cost is flat at any resolution.
+    """
+    out = _as_rgb(image)
+    small = _small_copy(out)
+    glow = ImageChops.multiply(small, _highlight_mask(small, threshold).convert("RGB"))
+    if color is not None or rgb is not None:
+        glow = ImageChops.multiply(glow, Image.new("RGB", glow.size, _rgb_tint(color, rgb, (255, 255, 255))))
+    radius = max(0.5, float(radius_ratio) * min(small.size))
+    glow = glow.filter(ImageFilter.GaussianBlur(radius))
+    return _keep_alpha(_screen_blend(out, glow, amount), image)
+
+
+_HALATION_GAIN = 10 / 3
+
+
+def halation(
+    image: Image.Image,
+    threshold: float = 0.75,
+    radius_ratio: float = 0.012,
+    amount: float = 0.6,
+    color: Sequence[int] | None = None,
+    rgb: Sequence[int] | None = None,
+) -> Image.Image:
+    """
+    Film halation: a red-orange (`color`) halo bleeding out of bright highlights,
+    as light reflects off the film base. Like `bloom`, but the glow is tinted
+    luminance rather than the highlight colour, and the halo sits around (not on)
+    the source.
+    """
+    out = _as_rgb(image)
+    small = _small_copy(out)
+    mask = _highlight_mask(small, threshold)
+    radius = max(0.5, float(radius_ratio) * min(small.size))
+    # Keep only the spill *outside* the source (blurred minus original), boosted
+    # so a faint spill still reads as a halo.
+    halo = ImageChops.subtract(mask.filter(ImageFilter.GaussianBlur(radius)), mask)
+    halo = halo.point(lambda v: min(255, round(v * _HALATION_GAIN)))
+    tint = Image.new("RGB", small.size, _rgb_tint(color, rgb, (255, 70, 30)))
+    glow = ImageChops.multiply(tint, halo.convert("RGB"))
+    return _keep_alpha(_screen_blend(out, glow, amount), image)
+
+
+_LEAK_ANCHORS = {
+    "top_left": (-0.1, -0.1),
+    "top_right": (1.1, -0.1),
+    "bottom_left": (-0.1, 1.1),
+    "bottom_right": (1.1, 1.1),
+    "left": (-0.15, 0.45),
+    "right": (1.15, 0.45),
+    "top": (0.55, -0.15),
+    "bottom": (0.45, 1.15),
+}
+
+
+def light_leak(
+    image: Image.Image,
+    anchor: str = "top_right",
+    size: float = 0.7,
+    amount: float = 0.6,
+    color: Sequence[int] | None = None,
+    rgb: Sequence[int] | None = None,
+    core: Sequence[int] | None = None,
+    streak: float = 0.35,
+) -> Image.Image:
+    """
+    Analog light leak / "sun puddle": a warm `color` glow bleeding in from an
+    edge or corner `anchor`, with a brighter `core` near the edge and a soft
+    `streak` (0–1) stretched along the nearest frame edge. `size` is the reach
+    as a fraction of the frame diagonal. Built at ≤ 256 px and screened in.
+    """
+    import numpy as np
+
+    out = _as_rgb(image)
+    w, h = out.size
+    scale = min(1.0, 256 / max(w, h))
+    sw, sh = max(2, round(w * scale)), max(2, round(h * scale))
+    ax, ay = _LEAK_ANCHORS.get(anchor, _LEAK_ANCHORS["top_right"])
+    yy, xx = np.mgrid[0:sh, 0:sw].astype(np.float32)
+    nx, ny = (xx + 0.5) / sw, (yy + 0.5) / sh
+    aspect = w / h
+    dx, dy = (nx - ax) * aspect, ny - ay
+    diag = float(np.hypot(aspect, 1.0))
+    reach = max(0.05, float(size)) * diag
+    s = max(0.0, min(1.0, float(streak)))
+    # Stretch the falloff along the edge the anchor sits on (vertical edges → tall streak).
+    if ax < 0 or ax > 1:
+        dy = dy * (1 - 0.7 * s)
+    else:
+        dx = dx * (1 - 0.7 * s)
+    d = np.hypot(dx, dy) / reach
+    outer = np.clip(1 - d, 0, 1) ** 2
+    inner = np.clip(1 - d * 2.2, 0, 1) ** 2
+    tint = np.array(_rgb_tint(color, rgb, (255, 110, 40)), dtype=np.float32)
+    hot = np.array(core if core is not None else (255, 220, 150), dtype=np.float32)
+    layer = outer[..., None] * tint + inner[..., None] * (hot - tint)
+    leak = Image.fromarray(np.clip(layer, 0, 255).astype(np.uint8), "RGB")
+    leak = leak.resize((w, h), Image.Resampling.BICUBIC)
+    return _keep_alpha(_screen_blend(out, leak, amount), image)
+
+
+def film_dust(
+    image: Image.Image,
+    amount: float = 0.5,
+    hairs: int = 3,
+    scratches: int = 2,
+    opacity: float = 0.75,
+    seed: int = 11,
+) -> Image.Image:
+    """
+    Scanned-film dust: seeded white specks (and a few dark ones), curly hairs and
+    faint vertical scratches. Speck count follows `amount` (0–1), sizes are
+    fractions of the short side, so the frame looks the same at any resolution.
+    """
+    import math
+    import random
+
+    out = _as_rgb(image)
+    w, h = out.size
+    short = min(w, h)
+    rng = random.Random(int(seed))
+    light = Image.new("L", out.size, 0)
+    dark = Image.new("L", out.size, 0)
+    draw_l, draw_d = ImageDraw.Draw(light), ImageDraw.Draw(dark)
+    specks = round(max(0.0, min(1.0, float(amount))) * 160)
+    for _ in range(specks):
+        r = short * rng.uniform(0.0006, 0.0028) * (2.2 if rng.random() < 0.08 else 1.0)
+        x, y = rng.uniform(0, w), rng.uniform(0, h)
+        rx, ry = r * rng.uniform(0.6, 1.4), r * rng.uniform(0.6, 1.4)
+        target = draw_d if rng.random() < 0.2 else draw_l
+        target.ellipse((x - rx, y - ry, x + rx, y + ry), fill=rng.randint(150, 255))
+    line_w = max(1, round(short * 0.0009))
+    for _ in range(max(0, int(hairs))):
+        x, y = rng.uniform(0.05, 0.95) * w, rng.uniform(0.05, 0.95) * h
+        angle = rng.uniform(0, 2 * math.pi)
+        step = short * 0.004
+        pts = [(x, y)]
+        for _ in range(rng.randint(10, 22)):
+            angle += rng.uniform(-0.6, 0.6)
+            x, y = x + math.cos(angle) * step, y + math.sin(angle) * step
+            pts.append((x, y))
+        draw_l.line(pts, fill=rng.randint(170, 230), width=line_w, joint="curve")
+    for _ in range(max(0, int(scratches))):
+        x = rng.uniform(0.1, 0.9) * w
+        y0, y1 = sorted((rng.uniform(0, h), rng.uniform(0, h)))
+        drift = rng.uniform(-0.01, 0.01) * w
+        draw_l.line([(x, y0), (x + drift, y1)], fill=rng.randint(60, 110), width=line_w)
+    soft = max(0.4, short * 0.0004)
+    k = max(0.0, min(1.0, float(opacity)))
+    light = light.filter(ImageFilter.GaussianBlur(soft)).point(lambda v: round(v * k))
+    dark = dark.filter(ImageFilter.GaussianBlur(soft)).point(lambda v: round(v * k))
+    out = Image.composite(Image.new("RGB", out.size, (245, 242, 232)), out, light)
+    out = Image.composite(Image.new("RGB", out.size, (18, 16, 14)), out, dark)
+    return _keep_alpha(out, image)
+
+
+def chromatic_aberration(
+    image: Image.Image,
+    amount: float = 0.004,
+) -> Image.Image:
+    """
+    Lens colour fringing: red is scaled out and blue in around the centre by
+    `amount` (fraction of size), so colour edges split more toward the corners.
+    """
+    out = _as_rgb(image)
+    w, h = out.size
+    a = max(0.0, min(0.05, float(amount)))
+    if a == 0:
+        return _keep_alpha(out, image)
+    r, g, b = out.split()
+
+    def zoom(channel: Image.Image, k: float) -> Image.Image:
+        zw, zh = max(w, round(w * k)), max(h, round(h * k))
+        if (zw, zh) == (w, h):
+            return channel
+        big = channel.resize((zw, zh), Image.Resampling.BICUBIC)
+        left, top = (zw - w) // 2, (zh - h) // 2
+        return big.crop((left, top, left + w, top + h))
+
+    # Scale every channel ≥ 1 so none leaves a border: R most, G half, B none.
+    merged = Image.merge("RGB", (zoom(r, 1 + 2 * a), zoom(g, 1 + a), b))
+    return _keep_alpha(merged, image)
+
+
+def _weighted_blur(rgb: Image.Image, weight: Image.Image, radius: float) -> tuple[Image.Image, Image.Image]:
+    """
+    Normalised Gaussian blur: each output pixel averages only neighbours with
+    `weight` (L, 0–255), so zero-weight pixels (a cut-out hole, transparent
+    areas) don't bleed their colour. Returns (rgb, blurred weight). Where almost
+    nothing nearby has weight, falls back to the plain blur.
+    """
+    import numpy as np
+
+    gauss = ImageFilter.GaussianBlur(radius)
+    num = ImageChops.multiply(rgb, Image.merge("RGB", (weight, weight, weight))).filter(gauss)
+    den = weight.filter(gauss)
+    plain = rgb.filter(gauss)
+    w, h = rgb.size
+    rows = max(1, _GRADE_STRIP_PIXELS // max(1, w))
+    out = Image.new("RGB", rgb.size)
+    for top in range(0, h, rows):
+        box = (0, top, w, min(h, top + rows))
+        n = np.asarray(num.crop(box), dtype=np.float32)
+        d = np.asarray(den.crop(box), dtype=np.float32)[..., None]
+        p = np.asarray(plain.crop(box), dtype=np.float32)
+        norm = n * 255.0 / np.maximum(d, 1.0)
+        # 8-bit premultiplied values get noisy at tiny weights: ease into the plain blur there.
+        t = np.clip(d / 16.0, 0.0, 1.0)
+        mixed = np.clip(norm * t + p * (1 - t) + 0.5, 0, 255).astype(np.uint8)
+        out.paste(Image.fromarray(mixed, "RGB"), box[:2])
+    return out, den
+
+
+def blur(
+    image: Image.Image,
+    radius_ratio: float = 0.01,
+    exclude: Image.Image | None = None,
+    exclude_grow: float = 0.004,
+) -> Image.Image:
+    """
+    Gaussian blur by `radius_ratio` × the short side (lens / background blur).
+    Large radii are computed on a shrunken copy and scaled back, so cost stays
+    flat. RGBA is blurred with premultiplied alpha, so transparent pixels don't
+    darken the edges. `exclude` (an RGBA layer, e.g. the subject cutout) gives
+    zero weight to the pixels under its alpha, grown by `exclude_grow` × the
+    short side, so a hole filled with the subject's colours doesn't bleed into
+    the blurred background as a dark rim.
+    """
+    has_alpha = image.mode == "RGBA"
+    rgb = _as_rgb(image)
+    w, h = rgb.size
+    radius = max(0.0, float(radius_ratio)) * min(w, h)
+    if radius < 0.3:
+        return _keep_alpha(rgb, image)
+    weight = image.getchannel("A") if has_alpha else None
+    if exclude is not None:
+        hole = _as_rgba(exclude).getchannel("A")
+        if hole.size != rgb.size:
+            hole = hole.resize(rgb.size, Image.Resampling.BILINEAR)
+        grow = max(0.0, float(exclude_grow)) * min(w, h)
+        if grow >= 0.5:
+            hole = _dilate(hole, grow)
+        keep = ImageChops.invert(hole)
+        weight = keep if weight is None else ImageChops.multiply(weight, keep)
+    shrink = min(1.0, 6.0 / radius) if radius > 6 else 1.0
+    size = (max(1, round(w * shrink)), max(1, round(h * shrink)))
+    work = rgb.resize(size, Image.Resampling.BILINEAR) if shrink < 1.0 else rgb
+    if weight is None:
+        out = work.filter(ImageFilter.GaussianBlur(radius * shrink))
+        alpha = None
+    else:
+        work_w = weight.resize(size, Image.Resampling.BILINEAR) if shrink < 1.0 else weight
+        out, alpha = _weighted_blur(work, work_w, radius * shrink)
+    if shrink < 1.0:
+        out = out.resize((w, h), Image.Resampling.BICUBIC)
+        alpha = alpha.resize((w, h), Image.Resampling.BICUBIC) if alpha is not None else None
+    if not has_alpha:
+        return out
+    if exclude is not None:
+        # An `exclude` hole only steers the colour average; the layer keeps its
+        # own transparency, blurred like the colour.
+        alpha = blur(image.getchannel("A").convert("RGB"), radius_ratio).convert("L")
+    out = out.convert("RGBA")
+    out.putalpha(alpha)
+    return out
+
 def composite(base: Image.Image, overlay: Image.Image) -> Image.Image:
     """Paste overlay (with alpha) on top of base."""
     bottom = _as_rgba(base)
@@ -1340,9 +1660,9 @@ def draw_text(
     params (fractions of the short side) override them so text keeps its
     proportions from phone to DSLR size.
 
-    `align`: `center`, `top`, `bottom`, `top_right`, `top_left`, `bottom_center`
+    `align`: `center`, `top`, `bottom`, `top_right`, `top_left`, `bottom_right`, `bottom_left`, `bottom_center`
     (ignored when both `x` and `y` are set — then those are top-left).
-    `font_style`: `sans` (default) or `flow` / `script` for handwriting look.
+    `font_style`: `sans` (default), `flow` / `script` for handwriting look, or `stamp` for a bold mono film-camera date imprint.
     `font_path`: optional `.ttf` / `.otf` / `.ttc` file; when set, it is used
     instead of `font_style`.
     """
@@ -1397,20 +1717,20 @@ def draw_text(
         try:
             draw.text((px, py), value, anchor=anchor, **draw_kwargs)
         except (TypeError, ValueError):
-            # Fallback when anchors aren't supported.
-            if anchor.endswith("m") and anchor.startswith("m"):
-                draw.text((int(px - text_w / 2), int(py - text_h / 2)), value, **draw_kwargs)
-            elif anchor.startswith("r"):
-                draw.text((int(px - text_w), int(py)), value, **draw_kwargs)
-            elif anchor.startswith("l"):
-                draw.text((int(px), int(py)), value, **draw_kwargs)
-            else:
-                draw.text((int(px - text_w / 2), int(py)), value, **draw_kwargs)
+            # Fallback when anchors aren't supported: first letter is horizontal
+            # (l/m/r), second vertical (t/m/b), offsetting from the top-left origin.
+            dx = {"l": 0.0, "m": -text_w / 2, "r": -text_w}.get(anchor[0], -text_w / 2)
+            dy = {"t": 0.0, "m": -text_h / 2, "b": -text_h}.get(anchor[1:2], 0.0)
+            draw.text((int(px + dx), int(py + dy)), value, **draw_kwargs)
 
     if mode in {"top_right", "right_top"}:
         _draw_at(canvas.size[0] - pad, pad, "rt")
     elif mode in {"top_left", "left_top"}:
         _draw_at(pad, pad, "lt")
+    elif mode in {"bottom_right", "right_bottom"}:
+        _draw_at(canvas.size[0] - pad, canvas.size[1] - pad, "rb")
+    elif mode in {"bottom_left", "left_bottom"}:
+        _draw_at(pad, canvas.size[1] - pad, "lb")
     elif mode in {"bottom", "bottom_center"}:
         _draw_at(canvas.size[0] / 2, canvas.size[1] - pad, "mb")
     elif mode == "top":

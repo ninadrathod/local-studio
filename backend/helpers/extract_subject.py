@@ -53,7 +53,12 @@ def extract_subject(image: Image.Image, *, model_name: str = DEFAULT_MODEL) -> I
     cutout = remove(rgb, session=_session(model_name))
     if not isinstance(cutout, Image.Image):
         raise RuntimeError("rembg did not return a Pillow image.")
-    return cutout.convert("RGBA")
+    # rembg darkens soft edge pixels (colour ≈ premultiplied by alpha), which
+    # shows as a dark rim once composited as straight alpha. Keep its mask, take
+    # the colour from the source.
+    subject = rgb.convert("RGB")
+    subject.putalpha(cutout.convert("RGBA").getchannel("A"))
+    return subject
 
 
 def extract_subject_file(input_path: str | Path, output_path: str | Path) -> Path:

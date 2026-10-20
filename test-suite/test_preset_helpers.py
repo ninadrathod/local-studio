@@ -18,6 +18,7 @@ if str(HELPERS) not in sys.path:
 import filters as F  # noqa: E402
 from apply_preset import (  # noqa: E402
     FILTERS,
+    photo_datetime,
     PresetAspectRatioError,
     PresetTextError,
     apply_preset,
@@ -1152,3 +1153,271 @@ def test_pro_grade_presets_apply_without_upscale(name: str, monkeypatch: pytest.
     out = apply_preset(source, PRESETS / f"{name}.json")
     assert out.size == (1920, 1440)  # HD step 0 ran first
     assert out.tobytes() != F.upscale(source, long_edge=1920).convert(out.mode).tobytes()
+
+
+def _spot(size: tuple[int, int] = (200, 200), radius: int = 12) -> Image.Image:
+    """Black frame with one white disc in the centre."""
+    from PIL import ImageDraw
+
+    img = Image.new("RGB", size, (0, 0, 0))
+    cx, cy = size[0] // 2, size[1] // 2
+    ImageDraw.Draw(img).ellipse((cx - radius, cy - radius, cx + radius, cy + radius), fill=(255, 255, 255))
+    return img
+
+
+def test_bloom_spreads_highlights_and_ignores_shadows() -> None:
+    src = _spot()
+    out = F.bloom(src, threshold=0.5, radius_ratio=0.05, amount=1.0)
+    assert out.size == src.size and out.mode == "RGB"
+    assert out.getpixel((100, 120))[0] > src.getpixel((100, 120))[0]  # glow just outside the disc
+    assert out.getpixel((2, 2)) == (0, 0, 0)  # far corner stays black
+    dark = Image.new("RGB", (64, 64), (60, 60, 60))
+    assert F.bloom(dark, threshold=0.5).tobytes() == dark.tobytes()
+    rgba = src.convert("RGBA")
+    assert F.bloom(rgba).mode == "RGBA"
+
+
+def test_halation_adds_warm_halo_around_highlights() -> None:
+    src = _spot()
+    out = F.halation(src, threshold=0.5, radius_ratio=0.05, amount=1.0)
+    r, g, b = out.getpixel((100, 122))
+    assert r > 20 and r > g and r > b  # red-orange ring just past the edge
+    assert out.getpixel((2, 2)) == (0, 0, 0)
+
+
+def test_light_leak_glows_from_anchor_corner() -> None:
+    grey = Image.new("RGB", (300, 200), (40, 40, 40))
+    out = F.light_leak(grey, anchor="top_right", size=0.6, amount=1.0)
+    near, far = out.getpixel((295, 5)), out.getpixel((5, 195))
+    assert near[0] > far[0] + 60
+    assert near[0] > near[2]  # warm, not cool
+    assert far == (40, 40, 40)
+
+
+def test_film_dust_is_seeded_and_scales() -> None:
+    grey = Image.new("RGB", (400, 300), (100, 100, 100))
+    a = F.film_dust(grey, amount=0.8, seed=3)
+    b = F.film_dust(grey, amount=0.8, seed=3)
+    c = F.film_dust(grey, amount=0.8, seed=4)
+    assert a.tobytes() == b.tobytes() and a.tobytes() != c.tobytes()
+    assert a.tobytes() != grey.tobytes()
+    clean = F.film_dust(grey, amount=0, hairs=0, scratches=0)
+    assert clean.tobytes() == grey.tobytes()
+    # Same seed at 2× resolution touches about the same share of pixels (above the
+    # ~1 px minimum speck size, which dominates on thumbnails).
+    import numpy as np
+
+    def share(size: tuple[int, int]) -> float:
+        out = np.asarray(F.film_dust(Image.new("RGB", size, (100, 100, 100)), amount=0.8, seed=3))
+        return float((out != 100).any(axis=2).mean())
+
+    assert 0.7 < share((2400, 1800)) / share((1200, 900)) < 1.4
+
+
+def test_chromatic_aberration_fringes_edges_not_centre() -> None:
+    src = Image.new("RGB", (200, 200), (0, 0, 0))
+    src.paste((255, 255, 255), (170, 90, 190, 110))  # white block near the right edge
+    out = F.chromatic_aberration(src, amount=0.02)
+    assert out.size == src.size
+    r, g, b = out.getpixel((191, 100))
+    assert r > b  # red is pushed outward past the block's outer edge
+    assert out.getpixel((100, 100)) == (0, 0, 0)
+    assert F.chromatic_aberration(src, amount=0).tobytes() == src.tobytes()
+
+
+def test_blur_radius_scales_and_keeps_mode() -> None:
+    src = _spot((200, 200), radius=20)
+    soft = F.blur(src, radius_ratio=0.02)
+    softer = F.blur(src, radius_ratio=0.1)  # takes the shrink path
+    assert soft.size == softer.size == src.size
+    assert softer.getpixel((100, 135))[0] > soft.getpixel((100, 135))[0]
+    assert F.blur(src, radius_ratio=0).tobytes() == src.tobytes()
+    assert F.blur(src.convert("RGBA"), radius_ratio=0.05).mode == "RGBA"
+
+
+def test_draw_text_bottom_corners() -> None:
+    blank = Image.new("RGB", (300, 200), (0, 0, 0))
+    for align, in_right in (("bottom_right", True), ("bottom_left", False)):
+        out = F.draw_text(blank, text="1999", color=[255, 255, 255], align=align, font_size_ratio=0.1, margin_ratio=0.03)
+        bbox = out.convert("L").getbbox()
+        assert bbox is not None
+        assert bbox[1] > 100  # lower half
+        assert (bbox[0] > 150) if in_right else (bbox[2] < 150)
+
+
+def test_stamp_font_style_has_mono_fallbacks() -> None:
+    candidates = F._font_candidates("stamp")
+    assert candidates != F._font_candidates("sans")
+    assert any("Mono" in c for c in candidates) and candidates[-1] == "DejaVuSans.ttf"
+
+
+PREQUEL_PRESETS = {
+    "dreamy_glow": True,
+    "film_halation": True,
+    "film_dust": False,
+    "miami_neon": True,
+    "prism_glow": True,
+    "disposable_flash": False,
+    "portrait_bokeh": True,
+    "tungsten_night_film": True,
+    "muted_chrome_film": True,
+    "studio_spotlight": True,
+}
+
+
+@pytest.mark.parametrize("name,hd", PREQUEL_PRESETS.items())
+def test_prequel_preset_files(name: str, hd: bool) -> None:
+    data = load_preset(PRESETS / f"{name}.json")
+    assert data["name"] == name
+    assert data["ar"] == "non-square" and data["text_input"] == "no"
+    assert data["default_text"] == "" and data["text_character_limit"] == 0
+    steps = data["steps"]
+    has_hd = steps[0] == {"filter": "ai_upscale", "on": "image", "long_edge": 1920, "denoise": 0.3}
+    assert has_hd is hd
+    assert all(s["filter"] in FILTERS for s in steps)
+    assert sum(s["filter"] == "ai_upscale" for s in steps) == (1 if hd else 0)
+
+
+_NEEDS_REMBG = {"portrait_bokeh", "studio_spotlight"}
+
+
+@pytest.mark.parametrize("name", [n for n in PREQUEL_PRESETS if n not in _NEEDS_REMBG])
+def test_prequel_presets_apply_without_upscale(name: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(F, "ai_upscale", lambda image, **kw: F.upscale(image, long_edge=kw.get("long_edge", 1920)))
+    from apply_preset import FILTERS as REG, _run_simple
+
+    monkeypatch.setitem(REG, "ai_upscale", _run_simple(F.ai_upscale))
+    source = _gradient(640, 480)
+    out = apply_preset(source, PRESETS / f"{name}.json")
+    assert out.size == ((1920, 1440) if PREQUEL_PRESETS[name] else (640, 480))
+    baseline = F.upscale(source, long_edge=1920) if PREQUEL_PRESETS[name] else source
+    assert out.tobytes() != baseline.convert(out.mode).tobytes()
+
+
+def test_blur_exclude_keeps_hole_colour_out_of_the_background() -> None:
+    from PIL import ImageDraw
+
+    # Grey background whose centre (the "hole" behind a cut-out) is filled black.
+    bg = Image.new("RGB", (300, 300), (180, 180, 180))
+    ImageDraw.Draw(bg).rectangle((100, 100, 200, 200), fill=(0, 0, 0))
+    subject = Image.new("RGBA", (300, 300), (0, 0, 0, 0))
+    ImageDraw.Draw(subject).rectangle((100, 100, 200, 200), fill=(255, 255, 255, 255))
+    plain = F.blur(bg, radius_ratio=0.05)
+    steered = F.blur(bg, radius_ratio=0.05, exclude=subject)
+    # Just outside the hole, the plain blur darkens (a rim); the excluded one stays grey.
+    assert plain.getpixel((215, 150))[0] < 150
+    assert steered.getpixel((215, 150))[0] > 170
+    # Just inside the hole edge (seen through a cut-out's soft edge) fills from the surroundings.
+    assert steered.getpixel((196, 150))[0] > 150
+    assert steered.size == bg.size and steered.mode == "RGB"
+
+
+def test_blur_rgba_does_not_darken_toward_transparency() -> None:
+    # Opaque white square on fully transparent *black* pixels.
+    img = Image.new("RGBA", (200, 200), (0, 0, 0, 0))
+    img.paste((255, 255, 255, 255), (50, 50, 150, 150))
+    out = F.blur(img, radius_ratio=0.05)
+    assert out.mode == "RGBA"
+    r, g, b, a = out.getpixel((152, 100))  # soft edge just outside the square
+    assert 0 < a < 255
+    assert min(r, g, b) > 240  # colour stays white, not dragged toward black
+
+
+def test_run_blur_rejects_unknown_exclude_layer() -> None:
+    with pytest.raises(KeyError, match="exclude"):
+        apply_steps(Image.new("RGB", (32, 32)), [{"filter": "blur", "on": "image", "exclude": "nope"}])
+
+
+def test_portrait_bokeh_blur_excludes_subject() -> None:
+    steps = load_preset(PRESETS / "portrait_bokeh.json")["steps"]
+    blur_step = next(s for s in steps if s["filter"] == "blur")
+    assert blur_step["on"] == "background" and blur_step["exclude"] == "subject"
+
+
+def _with_exif(tags: dict[tuple[int | None, int], str]) -> Image.Image:
+    img = Image.new("RGB", (40, 30), (90, 90, 90))
+    exif = Image.Exif()
+    for (ifd, tag), value in tags.items():
+        if ifd is None:
+            exif[tag] = value
+        else:
+            exif.get_ifd(ifd)[tag] = value
+    from io import BytesIO
+
+    buffer = BytesIO()
+    img.save(buffer, format="JPEG", exif=exif.tobytes())
+    return Image.open(BytesIO(buffer.getvalue()))
+
+
+def test_photo_datetime_prefers_capture_time() -> None:
+    from datetime import datetime
+
+    both = _with_exif({(0x8769, 0x9003): "2019:07:04 18:30:00", (None, 0x0132): "2024:01:01 00:00:00"})
+    assert photo_datetime(both) == datetime(2019, 7, 4, 18, 30)
+    only_modified = _with_exif({(None, 0x0132): "2024:01:02 03:04:05"})
+    assert photo_datetime(only_modified) == datetime(2024, 1, 2, 3, 4, 5)
+    assert photo_datetime(_with_exif({(None, 0x0132): "not a date"})) is None
+    assert photo_datetime(Image.new("RGB", (4, 4))) is None
+
+
+def test_date_stamp_uses_photo_capture_date(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: list[str] = []
+    real = F.draw_text
+
+    def spy(image: Image.Image, **kw: object) -> Image.Image:
+        seen.append(str(kw.get("text")))
+        return real(image, **kw)
+
+    from apply_preset import FILTERS as REG, _run_simple
+
+    monkeypatch.setitem(REG, "draw_text", _run_simple(spy))
+    photo = _with_exif({(0x8769, 0x9003): "2019:07:04 18:30:00"})
+    apply_preset(photo, PRESETS / "disposable_flash.json")
+    assert seen == ["2019-07-04"]
+
+
+def test_draw_text_fallback_places_bottom_anchors_inside(monkeypatch: pytest.MonkeyPatch) -> None:
+    from PIL import ImageDraw
+
+    real_text = ImageDraw.ImageDraw.text
+
+    def no_anchor(self, xy, text, *args, **kwargs):  # type: ignore[no-untyped-def]
+        if kwargs.get("anchor"):
+            raise ValueError("anchors unsupported")
+        return real_text(self, xy, text, *args, **kwargs)
+
+    monkeypatch.setattr(ImageDraw.ImageDraw, "text", no_anchor)
+    blank = Image.new("RGB", (300, 200), (0, 0, 0))
+    for align in ("bottom_right", "bottom_left", "bottom"):
+        out = F.draw_text(blank, text="1999", color=[255, 255, 255], align=align, font_size_ratio=0.1, margin_ratio=0.03)
+        bbox = out.convert("L").getbbox()
+        assert bbox is not None and bbox[1] > 100 and bbox[3] <= 200, align
+
+
+def test_extract_subject_takes_colour_from_source(monkeypatch: pytest.MonkeyPatch) -> None:
+    import extract_subject as ES
+
+    source = Image.new("RGB", (20, 20), (200, 150, 100))
+
+    def fake_remove(rgb: Image.Image, session: object = None) -> Image.Image:
+        # rembg-style output: soft edge colour pre-multiplied (darkened) by alpha.
+        out = Image.new("RGBA", rgb.size, (0, 0, 0, 0))
+        out.paste((200, 150, 100, 255), (5, 5, 15, 15))
+        out.putpixel((4, 10), (50, 37, 25, 64))
+        return out
+
+    monkeypatch.setattr(ES, "_rembg", lambda: (lambda name: None, fake_remove))
+    monkeypatch.setattr(ES, "_SESSION", object())
+    subject = ES.extract_subject(source)
+    assert subject.getpixel((4, 10)) == (200, 150, 100, 64)  # colour restored, alpha kept
+    assert subject.getpixel((10, 10)) == (200, 150, 100, 255)
+    assert subject.getpixel((0, 0))[3] == 0
+
+
+def test_studio_spotlight_darkens_background_around_subject() -> None:
+    steps = load_preset(PRESETS / "studio_spotlight.json")["steps"]
+    bg = [s for s in steps if s.get("on") == "background"]
+    grade = next(s for s in bg if s["filter"] == "color_grade")
+    assert grade["exposure"] < 0 and grade["saturation"] < 1
+    assert any(s["filter"] == "blur" and s.get("exclude") == "subject" for s in bg)
+    assert steps.index(next(s for s in steps if s["filter"] == "composite")) > steps.index(grade)

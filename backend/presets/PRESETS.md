@@ -192,11 +192,77 @@ Ten grades for professional photographs (model shoots, street, travel, weddings)
 - **File:** `backend/presets/blue_hour_noir.json`
 
 
+### Prequel-style looks
+
+Ten looks recreated from popular Prequel app filters, aimed at a professionally shot-and-edited feel. All are `ar: non-square`, `text_input: no`, seeded via `seed_default_presets()` / setup. Eight start with the HD pass `{ "filter": "ai_upscale", "long_edge": 1920, "denoise": 0.3 }`; `film_dust` and `disposable_flash` skip it on purpose (lo-fi looks). Each runs in ~3.5–5 s at 33 MP (~1.2 GiB peak; `portrait_bokeh` ~3 GiB for the cutout).
+
+#### `dreamy_glow` — Dreamy glow
+
+- **Idea:** HD pass, then a warm soft-focus (Pro-Mist) look: lifted low-contrast grade with creamy highlights and a diffusion bloom.
+- **Steps:** HD → `color_grade` (temperature 0.2, exposure 0.1, contrast -0.2, black_lift 0.06, white_rolloff 0.6, saturation 0.92, vibrance 0.2) → `bloom` (threshold 0.45, radius_ratio 0.04, amount 0.9, color [255, 235, 210])
+- **File:** `backend/presets/dreamy_glow.json`
+
+#### `film_halation` — Film halation
+
+- **Idea:** HD pass, then a warm consumer-film grade with a red-orange halation halo around bright lights and fine grain.
+- **Steps:** HD → `color_grade` (temperature 0.25, tint -0.05, contrast 0.15, black_lift 0.05, white_rolloff 0.5, split 0.35, saturation 1.05, vibrance 0.1, shadows [40, 70, 60] / highlights [255, 210, 140]) → `halation` (threshold 0.55, radius_ratio 0.015, amount 1.0) → grain 0.06 (`paper_texture`, tint/stains/fade 0)
+- **File:** `backend/presets/film_halation.json`
+
+#### `film_dust` — Film dust
+
+- **Idea:** Faded warm film with matte blacks, grain, and scanned-film dust specks, hairs and scratches. No HD pass.
+- **Steps:** `color_grade` (temperature 0.2, contrast -0.1, black_lift 0.1, white_rolloff 0.5, split 0.3, saturation 0.8, shadows [60, 70, 80] / highlights [255, 225, 180]) → grain 0.07 → `film_dust` (amount 0.5, hairs 3, scratches 2) → `vignette` 0.2
+- **File:** `backend/presets/film_dust.json`
+
+#### `miami_neon` — Miami neon
+
+- **Idea:** HD pass, then a neon-dusk grade: purple shadows, hot-pink highlights, and a pink bloom.
+- **Steps:** HD → `color_grade` (tint 0.3, exposure -0.05, contrast 0.2, black_lift 0.03, split 0.7, balance 0.1, saturation 1.15, vibrance 0.2, shadows [80, 40, 160] / highlights [255, 120, 170]) → `bloom` (threshold 0.6, radius_ratio 0.035, amount 0.45, color [255, 170, 220])
+- **File:** `backend/presets/miami_neon.json`
+
+#### `prism_glow` — Prism glow
+
+- **Idea:** HD pass, then an editorial prism look: radial colour fringing, a faint violet-blue leak from the left, and a soft bloom.
+- **Steps:** HD → `color_grade` (contrast 0.15, saturation 1.1) → `chromatic_aberration` 0.018 → `light_leak` (anchor left, size 0.55, amount 0.3, color [190, 60, 255], core [120, 200, 255], streak 0.7) → `bloom` (threshold 0.55, radius_ratio 0.04, amount 0.5)
+- **File:** `backend/presets/prism_glow.json`
+
+#### `disposable_flash` — Disposable flash
+
+- **Idea:** 90s disposable camera: harsh flash contrast, green-tinted shadows, flash falloff, grain, and an orange `$date` stamp (bottom-right, `font_style: stamp`) showing when the photo was taken (EXIF), or today when the file has no capture date. No HD pass.
+- **Steps:** `color_grade` (temperature 0.1, tint -0.1, exposure 0.1, contrast 0.35, split 0.3, saturation 1.1, shadows [30, 70, 50] / highlights [255, 240, 215]) → `vignette` (0.35, midpoint 0.4) → grain 0.07 → `draw_text` (`$date`, [255, 140, 40], `bottom_right`, font_size_ratio 0.04, margin_ratio 0.04, `stamp`)
+- **File:** `backend/presets/disposable_flash.json`
+
+#### `portrait_bokeh` — Portrait bokeh
+
+- **Idea:** HD pass, then DSLR portrait mode: subject cutout, lens-blurred background with a gentle highlight bloom, composite, light grade.
+- **Steps:** HD → `extract_subject` (`single_subject: true`) → `blur` on background (radius_ratio 0.012, `exclude: subject` so the cut-out hole doesn't bleed a dark rim) → `bloom` on background (threshold 0.72, radius_ratio 0.02, amount 0.2) → `composite` → `color_grade` (contrast 0.1, white_rolloff 0.4, vibrance 0.2)
+- **File:** `backend/presets/portrait_bokeh.json`
+
+
+#### `tungsten_night_film` — Tungsten night film
+
+- **Idea:** HD pass, then a tungsten-balanced night film look (800T style): cool blue-teal cast, warm highlights, red halation around lights, light bloom, grain.
+- **Steps:** HD → `color_grade` (temperature -0.35, tint 0.05, exposure 0.05, contrast 0.2, black_lift 0.04, white_rolloff 0.5, split 0.5, saturation 0.95, vibrance 0.15, shadows [20, 70, 110] / highlights [255, 200, 170]) → `halation` (threshold 0.55, radius_ratio 0.018, amount 1.0, color [255, 40, 30]) → `bloom` (threshold 0.7, radius_ratio 0.02, amount 0.2) → grain 0.07
+- **File:** `backend/presets/tungsten_night_film.json`
+
+#### `muted_chrome_film` — Muted chrome film
+
+- **Idea:** HD pass, then a muted documentary film grade (Classic Chrome style): lowered saturation, firm contrast with a slight matte lift, cyan-teal shadows, warm highlights, fine grain.
+- **Steps:** HD → `color_grade` (temperature -0.05, tint 0.05, contrast 0.4, black_lift 0.06, white_rolloff 0.4, split 0.45, saturation 0.8, shadows [30, 90, 100] / highlights [255, 215, 185]) → grain 0.05 → `vignette` 0.15
+- **File:** `backend/presets/muted_chrome_film.json`
+
+#### `studio_spotlight` — Studio spotlight
+
+- **Idea:** HD pass, then a low-key studio portrait: subject cut out, background darkened, desaturated, softened and vignetted so the subject sits in a spotlight.
+- **Steps:** HD → `extract_subject` (`single_subject: true`) → `color_grade` on background (exposure -0.8, contrast 0.1, saturation 0.6) → `blur` on background (radius_ratio 0.004, `exclude: subject`) → `vignette` on background (0.55, midpoint 0.3, roundness 0.6) → `composite` → `color_grade` (contrast 0.15, white_rolloff 0.4, vibrance 0.15) → `vignette` 0.2
+- **File:** `backend/presets/studio_spotlight.json`
+
+
 ## Built-in filters
 
 | Filter | What it does | Common params |
 |--------|----------------|---------------|
-| `extract_subject` | rembg cutout + blurred fill background. With `require_clear_subject: true`, an unreliable mask (tiny, or semi-transparent smear away from the body — e.g. dark backlit subjects) gives an empty subject and the untouched original as background; soft hair/fur next to the body is fine. With `single_subject: true`, only the main solid island(s) are kept — every island touching the bottom edge that is ≥ 25% of the largest (so two people side by side both stay), else just the largest — plus pieces within ~1.5% of the short side and soft edges within 3%, so a second salient object (wall frame, poster) stays in the background instead of being cut out | `on`, `as` (subject), `bg_as` (background), `require_clear_subject` (default `false`), `single_subject` (default `false`) |
+| `extract_subject` | rembg cutout (rembg's alpha, the source photo's colour — rembg darkens soft edge pixels) + blurred fill background. With `require_clear_subject: true`, an unreliable mask (tiny, or semi-transparent smear away from the body — e.g. dark backlit subjects) gives an empty subject and the untouched original as background; soft hair/fur next to the body is fine. With `single_subject: true`, only the main solid island(s) are kept — every island touching the bottom edge that is ≥ 25% of the largest (so two people side by side both stay), else just the largest — plus pieces within ~1.5% of the short side and soft edges within 3%, so a second salient object (wall frame, poster) stays in the background instead of being cut out | `on`, `as` (subject), `bg_as` (background), `require_clear_subject` (default `false`), `single_subject` (default `false`) |
 | `brightness` | Brightness enhance | `on`, `amount` |
 | `color` | Saturation enhance | `on`, `amount` |
 | `contrast` | Contrast enhance | `on`, `amount` |
@@ -218,7 +284,13 @@ Ten grades for professional photographs (model shoots, street, travel, weddings)
 | `paper_texture` | Age onto paper: multiply tint, seeded fine grain (scales with resolution), low-frequency stains (grid follows aspect ratio), fade toward paper; tone steps run as point tables, grain is applied tile by tile | `on`, `color`/`rgb`, `tint`, `grain`, `stains`, `fade` (0–1 each), `seed` |
 | `color_grade` | Photographic grade in one pass: white balance, exposure, contrast S-curve (or flatten), matte black lift, soft highlight shoulder (per-channel point tables, flat cost); luminance-preserving split toning, saturation and vibrance (numpy in ≤ 4 MP strips); out-of-gamut pixels are pulled back along their own luma so highlights don't clip or shift hue; neutral params are an exact no-op | `on`, `temperature` (−1 cool…1 warm), `tint` (−1 green…1 magenta), `exposure` (stops), `contrast` (−1…1), `pivot`, `black_lift` (0–0.3), `white_rolloff` (0–1), `shadows` / `highlights` ([r,g,b]), `split` (0–1), `balance` (−1…1 crossover), `saturation`, `vibrance` (0–1) |
 | `vignette` | Edge falloff toward black (or `color`); mask built at ≤ 256 px and scaled up, so it is resolution-independent | `on`, `amount` (0–1), `midpoint` (0–1), `feather`, `roundness` (0 frame-shaped…1 circle), `color`/`rgb` |
-| `draw_text` | Paint a string onto a layer | `on`, `text` (`$text` / `$datetime` / `$date` / `$time`), `font_size`, `color`/`rgb`, `align` (`center`/`top`/`bottom`/`top_right`/…), `font_style` (`sans`/`flow`), `font_path` (optional TTF/OTF/TTC; overrides `font_style`), `margin`, `x`, `y`, `stroke_width` (px), or `font_size_ratio` / `margin_ratio` / `stroke_ratio` (fractions of the short side — prefer these); too-wide text shrinks to fit |
+| `bloom` | Diffusion glow: highlights above `threshold` are blurred and screened back (Pro-Mist / dreamy); worked at ≤ 1024 px, so cost is flat | `on`, `threshold` (0–1), `radius_ratio` (fraction of short side), `amount` (0–1), `color`/`rgb` (glow tint) |
+| `halation` | Film halation: a red-orange halo around (not on) bright highlights; worked at ≤ 1024 px | `on`, `threshold`, `radius_ratio`, `amount`, `color`/`rgb` (default [255, 70, 30]) |
+| `light_leak` | Analog light leak / "sun puddle" screened in from an edge or corner, with a hot `core` and a `streak` stretched along the edge; built at ≤ 256 px | `on`, `anchor` (`top_right`/`top_left`/`bottom_right`/`bottom_left`/`left`/`right`/`top`/`bottom`), `size` (reach, fraction of diagonal), `amount`, `color`/`rgb`, `core`, `streak` (0–1) |
+| `film_dust` | Seeded scanned-film dust: white (and some dark) specks, curly hairs, faint vertical scratches; sizes are fractions of the short side | `on`, `amount` (0–1 speck count), `hairs`, `scratches`, `opacity`, `seed` |
+| `chromatic_aberration` | Radial lens fringing: red scaled out, green half, blue fixed, so colour edges split more toward the corners (no border) | `on`, `amount` (fraction of size, ≤ 0.05) |
+| `blur` | Gaussian blur by `radius_ratio` × short side; large radii run on a shrunken copy (flat cost). RGBA blurs with premultiplied alpha (no dark edges toward transparency). `exclude` names a layer (e.g. `subject`) whose alpha, grown by `exclude_grow`, gets zero weight, so the blurred background fills the cut-out hole from its surroundings | `on`, `radius_ratio`, `exclude` (layer name), `exclude_grow` (fraction of short side; default 0.004) |
+| `draw_text` | Paint a string onto a layer | `on`, `text` (`$text` / `$datetime` / `$date` / `$time` — stamps use the photo's EXIF capture time, else now), `font_size`, `color`/`rgb`, `align` (`center`/`top`/`bottom`/`top_left`/`top_right`/`bottom_left`/`bottom_right`), `font_style` (`sans`/`flow`/`stamp` — bold mono date imprint), `font_path` (optional TTF/OTF/TTC; overrides `font_style`), `margin`, `x`, `y`, `stroke_width` (px), or `font_size_ratio` / `margin_ratio` / `stroke_ratio` (fractions of the short side — prefer these); too-wide text shrinks to fit |
 
 Layers are named images in memory. Typical keys: `image`, `subject`, `background`.
 

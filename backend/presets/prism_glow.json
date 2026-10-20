@@ -1,0 +1,45 @@
+{
+  "name": "prism_glow",
+  "label": "Prism glow",
+  "description": "HD pass, then an editorial prism look: radial chromatic-aberration fringes, a faint violet-blue light leak from the left, and a soft highlight bloom.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "contrast": 0.15,
+      "saturation": 1.1
+    },
+    {
+      "filter": "chromatic_aberration",
+      "on": "image",
+      "amount": 0.018
+    },
+    {
+      "filter": "light_leak",
+      "on": "image",
+      "anchor": "left",
+      "size": 0.55,
+      "amount": 0.3,
+      "color": [190, 60, 255],
+      "core": [120, 200, 255],
+      "streak": 0.7
+    },
+    {
+      "filter": "bloom",
+      "on": "image",
+      "threshold": 0.55,
+      "radius_ratio": 0.04,
+      "amount": 0.5
+    }
+  ]
+}

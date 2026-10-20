@@ -264,6 +264,25 @@ def _run_doodle(
     layers[step.get("as", on_key)] = F.doodle(layers[on_key], around=around, **call_params)
 
 
+def _run_blur(
+    layers: dict[str, Image.Image],
+    *,
+    index: int = 0,
+    **step: Any,
+) -> None:
+    on_key = step.get("on", "image")
+    if on_key not in layers:
+        raise KeyError(f"Step {index}: unknown layer '{on_key}'")
+    exclude_key = step.get("exclude")
+    if exclude_key is not None and exclude_key not in layers:
+        raise KeyError(f"Step {index}: unknown exclude layer '{exclude_key}'")
+    call_params = {
+        key: value for key, value in step.items() if key not in _LAYER_KEYS and key != "exclude"
+    }
+    exclude = layers[exclude_key] if exclude_key is not None else None
+    layers[step.get("as", on_key)] = F.blur(layers[on_key], exclude=exclude, **call_params)
+
+
 # JSON `"filter"` name → function. Add new ops here; do not add if/else in the runner.
 FILTERS: dict[str, FilterHandler] = {
     "extract_subject": _run_extract_subject,
@@ -282,6 +301,12 @@ FILTERS: dict[str, FilterHandler] = {
     "paper_texture": _run_simple(F.paper_texture),
     "color_grade": _run_simple(F.color_grade),
     "vignette": _run_simple(F.vignette),
+    "bloom": _run_simple(F.bloom),
+    "halation": _run_simple(F.halation),
+    "light_leak": _run_simple(F.light_leak),
+    "film_dust": _run_simple(F.film_dust),
+    "chromatic_aberration": _run_simple(F.chromatic_aberration),
+    "blur": _run_blur,
     "draw_text": _run_simple(F.draw_text),
     "place_on_canvas": _run_simple(F.place_on_canvas),
     "upscale": _run_simple(F.upscale),
@@ -349,6 +374,33 @@ def apply_steps(
     return layers["image"]
 
 
+# EXIF capture time, most specific first: DateTimeOriginal, DateTimeDigitized (Exif IFD), DateTime (IFD0).
+_EXIF_IFD = 0x8769
+_EXIF_DATE_TAGS = ((_EXIF_IFD, 0x9003), (_EXIF_IFD, 0x9004), (None, 0x0132))
+
+
+def photo_datetime(image: Image.Image) -> datetime | None:
+    """When the photo was taken, from EXIF (`YYYY:MM:DD HH:MM:SS`), or None."""
+    try:
+        exif = image.getexif()
+    except (AttributeError, OSError, ValueError):
+        return None
+    for ifd, tag in _EXIF_DATE_TAGS:
+        try:
+            value = exif.get_ifd(ifd).get(tag) if ifd is not None else exif.get(tag)
+        except (KeyError, OSError, ValueError):
+            continue
+        if isinstance(value, bytes):
+            value = value.decode("ascii", "ignore")
+        if not isinstance(value, str):
+            continue
+        try:
+            return datetime.strptime(value.strip().strip("\x00")[:19], "%Y:%m:%d %H:%M:%S")
+        except ValueError:
+            continue
+    return None
+
+
 def apply_preset(
     image: Image.Image,
     preset: str | Path,
@@ -360,7 +412,8 @@ def apply_preset(
     data = load_preset(path)
     assert_preset_fits_image(image, data.get("ar"))
     resolved_text = resolve_user_text(data, text)
-    return apply_steps(image, data["steps"], text=resolved_text)
+    # `$date` / `$time` stamp when the photo was taken; falls back to now.
+    return apply_steps(image, data["steps"], text=resolved_text, now=photo_datetime(image))
 
 
 def apply_preset_file(

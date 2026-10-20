@@ -1,0 +1,47 @@
+{
+  "name": "film_halation",
+  "label": "Film halation",
+  "description": "HD pass, then a warm consumer-film grade with green-teal shadows and golden highlights, a red-orange halation halo around bright lights, and fine grain.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "temperature": 0.25,
+      "tint": -0.05,
+      "contrast": 0.15,
+      "black_lift": 0.05,
+      "white_rolloff": 0.5,
+      "split": 0.35,
+      "shadows": [40, 70, 60],
+      "highlights": [255, 210, 140],
+      "saturation": 1.05,
+      "vibrance": 0.1
+    },
+    {
+      "filter": "halation",
+      "on": "image",
+      "threshold": 0.55,
+      "radius_ratio": 0.015,
+      "amount": 1.0
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0,
+      "stains": 0,
+      "fade": 0,
+      "grain": 0.06,
+      "seed": 7
+    }
+  ]
+}
