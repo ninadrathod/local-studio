@@ -61,14 +61,23 @@ sudo apt update && sudo apt install -y git python3-venv lsof curl
 cd ~ && git clone https://github.com/<your-username>/local-studio.git && cd local-studio
 ```
 
-3. Set up and start:
+3. Low-RAM devices (2 GB or less) only — add a 3 GB swap file, or the subject-cutout presets (they need ~2–3 GB) get killed mid-edit. With swap they work, just slowly (minutes per edit):
+
+```bash
+sudo fallocate -l 3G /swapfile && sudo chmod 600 /swapfile
+sudo mkswap /swapfile && sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+free -h   # "Swap:" should now show ~3G (more if the OS already had swap)
+```
+
+4. Set up and start:
 
 ```bash
 ./scripts/setup.sh
 ./scripts/run.sh
 ```
 
-4. Open the app from any device on your network:
+5. Open the app from any device on your network:
 
 ```bash
 echo "http://$(hostname).local:5500"   # or by IP: hostname -I
@@ -80,7 +89,7 @@ If a firewall is enabled, open both ports (the page calls the API on 8000):
 sudo ufw allow 5500,8000/tcp
 ```
 
-5. Schedule auto-update (pull + restart) daily at 00:00 and on every boot (run once; re-running adds duplicate entries):
+6. Schedule auto-update (pull + restart) daily at 00:00 and on every boot (run once; re-running adds duplicate entries):
 
 ```bash
 ( crontab -l 2>/dev/null
