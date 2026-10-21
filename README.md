@@ -107,7 +107,7 @@ sudo ufw allow 5500,8000/tcp
 
 Check it with `crontab -l` and `tail ~/local-studio-update.log`. Midnight uses the system timezone (`timedatectl`; change with `sudo timedatectl set-timezone <Region/City>`). To remove the schedule, delete those two lines with `crontab -e`.
 
-7. Low-RAM devices: turn on lightweight mode (every input image is downscaled to ≤ 2 megapixels before editing). Set it in `.env`, which `run.sh` reads on every start, including the scheduled restarts:
+7. Low-RAM devices: turn on lightweight mode (inputs downscaled to ≤ 2 megapixels, HD upscale done with a plain resize instead of the AI model, smaller subject-cutout model). Set it in `.env`, which `run.sh` reads on every start, including the scheduled restarts:
 
 ```bash
 cp -n .env.example .env

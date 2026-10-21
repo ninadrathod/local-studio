@@ -5,6 +5,7 @@ Pillow filter ops used by the JSON preset step runner.
 from __future__ import annotations
 
 import math
+import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Sequence
@@ -518,8 +519,12 @@ def ai_upscale(
     Longer side reaches `long_edge` px (factor capped at `max_scale`; never shrinks).
     Inputs above `max_input_pixels` are reduced before the model so the 4× pass
     stays bounded. `denoise` is 0.0 (keep grain) – 1.0 (smoothest). Alpha is
-    resized with Lanczos.
+    resized with Lanczos. With LIGHTWEIGHT=1 the model is skipped and the image
+    is just Lanczos-resized to the same target (`upscale`), much cheaper.
     """
+    if os.environ.get("LIGHTWEIGHT", "0").strip() == "1":
+        return upscale(image, long_edge=long_edge, max_scale=max_scale)
+
     import numpy as np
 
     from upscale_model import super_resolve
