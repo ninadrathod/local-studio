@@ -32,6 +32,7 @@ Repo: https://github.com/ninadrathod/local-studio
 | `.github/workflows/` | CI (runs `test-suite/` on PRs) |
 | `scripts/setup.sh` | Full local setup (venv + deps) |
 | `scripts/run.sh` | Start API + frontend in the background (logs in `logs/`) |
+| `.env.example` | Settings template; copy to gitignored `.env` (loaded by `run.sh`), e.g. `LIGHTWEIGHT` |
 | `scripts/update.sh` | `git pull` → `stop.sh` → `run.sh` (always all three) |
 | `README.md` | Setup & run only |
 | `ARCHITECTURE.md` | How the system works |
@@ -60,7 +61,7 @@ Repo: https://github.com/ninadrathod/local-studio
 - Apply-preset endpoint: `POST /api/apply-preset` (multipart fields: `preset_name`, `file`, optional `text`) → JPEG for JPEG uploads, else PNG
 - Preset search: `GET /api/presets/search?q=…` → JSON list of `{ preset_name, keywords, ar, text_input, default_text, text_character_limit }` (matches name or keywords; newest `preset_id` first)
 - Popular / download count: `POST /api/presets/use` form field `preset_name` → `{ preset_id, used_count }`; `GET /api/presets/popular` → `{ preset_id, preset_name, used_count }` sorted by `used_count` descending
-- Upload caps (blur + apply-preset): 100 MiB body; images up to 64M pixels / 12000 px side stay at native resolution (full-frame DSLR), larger ones are downscaled to fit; over 120M pixels is rejected; EXIF orientation and ICC colour (→ sRGB) are applied on load; EXIF stays on the in-memory image (so `$date` / `$time` / `$datetime` stamps show the capture time) but is never written to results; one image job at a time across apply-preset + blur (others get 503 before the upload is read); preset JSON paths must stay under `backend/presets/`
+- Upload caps (blur + apply-preset): 100 MiB body; images up to 64M pixels / 12000 px side stay at native resolution (full-frame DSLR), larger ones are downscaled to fit (with `LIGHTWEIGHT=1` in `.env`, every input is downscaled to ≤ 2M pixels — for low-RAM machines like a 1 GB Raspberry Pi); over 120M pixels is rejected; EXIF orientation and ICC colour (→ sRGB) are applied on load; EXIF stays on the in-memory image (so `$date` / `$time` / `$datetime` stamps show the capture time) but is never written to results; one image job at a time across apply-preset + blur (others get 503 before the upload is read); preset JSON paths must stay under `backend/presets/`
 - Apply-preset concurrency: 1 in-flight job (extra requests get **503**)
 
 ## Current scope

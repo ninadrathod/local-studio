@@ -75,6 +75,10 @@ echo "==> Initializing preset metadata database"
 
 echo ""
 echo "Setup complete."
+if [[ ! -f "${ROOT_DIR}/.env" ]]; then
+  echo "  Settings: copy .env.example to .env and set the values:"
+  echo "    cp .env.example .env    # then edit .env (e.g. LIGHTWEIGHT=1 on low-RAM machines)"
+fi
 echo "  Next: ./scripts/run.sh"
 echo "  Then open http://localhost:5500"
 echo "  Subject helper: python backend/helpers/extract_subject.py photo.jpg -o subject.png"

@@ -235,3 +235,24 @@ def test_encoders_never_write_upload_exif() -> None:
         body, _ = encode_result(photo, source_format)
         assert not Image.open(BytesIO(body)).getexif()
     assert not Image.open(BytesIO(save_png_bytes(photo))).getexif()
+
+
+def test_lightweight_env_caps_inputs_at_2mp(monkeypatch) -> None:
+    import importlib
+
+    import app.services.image_io as image_io
+
+    raw = BytesIO()
+    Image.new("RGB", (4000, 3000), (10, 20, 30)).save(raw, format="JPEG")
+    try:
+        monkeypatch.setenv("LIGHTWEIGHT", "1")
+        light = importlib.reload(image_io)
+        image = light.load_image(raw.getvalue())
+        assert image.width * image.height <= 2_000_000
+        assert abs(image.width / image.height - 4 / 3) < 0.01
+
+        monkeypatch.setenv("LIGHTWEIGHT", "0")
+        assert importlib.reload(image_io).load_image(raw.getvalue()).size == (4000, 3000)
+    finally:
+        monkeypatch.delenv("LIGHTWEIGHT", raising=False)
+        importlib.reload(image_io)

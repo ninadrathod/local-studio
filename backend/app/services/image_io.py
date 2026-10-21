@@ -5,6 +5,7 @@ Load and encode images with Pillow.
 from __future__ import annotations
 
 import math
+import os
 from io import BytesIO
 from typing import Any
 
@@ -16,7 +17,10 @@ MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # 100 MiB — full-quality DSLR JPEGs / TI
 # full-frame DSLR files (45–61 MP) at native resolution; the heaviest presets
 # peak at ~3.7 GiB there.
 MAX_IMAGE_SIDE = 12_000
-MAX_IMAGE_PIXELS = 64_000_000  # e.g. 9504×6336 (61 MP)
+# LIGHTWEIGHT=1 (low-RAM machines, e.g. a 1 GB Raspberry Pi): downscale every
+# input to ≤ 2 MP before any filter runs.
+LIGHTWEIGHT = os.environ.get("LIGHTWEIGHT", "0").strip() == "1"
+MAX_IMAGE_PIXELS = 2_000_000 if LIGHTWEIGHT else 64_000_000  # 64 MP e.g. 9504×6336 (61 MP)
 # Hard ceiling, checked from the header before decoding; above this the upload
 # is rejected outright (decompression-bomb guard).
 MAX_DECODE_PIXELS = 120_000_000  # e.g. a 102 MP medium-format file
