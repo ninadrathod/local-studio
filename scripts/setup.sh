@@ -50,7 +50,7 @@ echo "==> Installing backend requirements"
 "${PIP[@]}" install -r "${BACKEND_DIR}/requirements.txt"
 
 echo "==> Making scripts executable"
-chmod +x "${ROOT_DIR}/scripts/setup.sh" "${ROOT_DIR}/scripts/run.sh"
+chmod +x "${ROOT_DIR}/scripts/setup.sh" "${ROOT_DIR}/scripts/run.sh" "${ROOT_DIR}/scripts/stop.sh" "${ROOT_DIR}/scripts/update.sh"
 
 HELPERS_DIR="${BACKEND_DIR}/helpers"
 if [[ -f "${HELPERS_DIR}/requirements.txt" ]]; then
@@ -71,16 +71,7 @@ if [[ -f "${HELPERS_DIR}/requirements.txt" ]]; then
 fi
 
 echo "==> Initializing preset metadata database"
-"${PYTHON}" -c "
-import sys
-sys.path.insert(0, '${BACKEND_DIR}')
-from database.init_db import init_db
-from database.db_ops import seed_default_presets
-path = init_db()
-seeded = seed_default_presets()
-print(f'Database ready: {path}')
-print(f'Seeded {len(seeded)} preset(s)')
-"
+"${PYTHON}" "${BACKEND_DIR}/database/prepare_db.py"
 
 echo ""
 echo "Setup complete."

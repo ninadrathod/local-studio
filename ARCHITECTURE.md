@@ -109,9 +109,11 @@ backend/
     4k_crisp.json
   database/
     schema.sql           # presets + popular tables
-    init_db.py           # create presets.db
+    init_db.py           # create presets.local.db (first time: copy legacy presets.db)
+    prepare_db.py        # init + migrate + seed (run by setup.sh and run.sh)
     db_ops.py            # CRUD for preset metadata + download counts
-    presets.db           # SQLite file (created by setup/init)
+    presets.local.db     # live SQLite file (local, gitignored; created by prepare_db.py)
+    presets.db           # legacy committed copy, frozen (seed source for old clones)
   app/
     main.py              # FastAPI app, CORS, /health, router mount
     routes/
@@ -176,7 +178,7 @@ Upload guards (`services/image_io.py`): max **100 MiB** body (`MAX_UPLOAD_BYTES`
 
 - Presets live in `backend/presets/*.json` as ordered `steps`. Each step sets `"filter"` to a registered helper name plus that helper's parameters. The runner looks the function up in `FILTERS` — it does not branch on filter type. String params equal to (or containing) `$text` receive the user/default text.
 - Runner: `backend/helpers/apply_preset.py` (uses `filters.py`).
-- HTTP: `POST /api/apply-preset` looks up `preset_name` in `presets.db`, loads that JSON path, runs the same runner, returns PNG (`app/services/preset.py` + `app/routes/preset.py`). The route does not choose filters; it passes `preset_name`, the image, and optional `text`. Presets with `"ar": "square"` reject non-square input images (`PresetAspectRatioError` → HTTP **400**). Presets with `"text_input": "yes"` validate `text` against `text_character_limit` (`PresetTextError` → HTTP **400**); omitted text uses `default_text`.
+- HTTP: `POST /api/apply-preset` looks up `preset_name` in the preset DB, loads that JSON path, runs the same runner, returns PNG (`app/services/preset.py` + `app/routes/preset.py`). The route does not choose filters; it passes `preset_name`, the image, and optional `text`. Presets with `"ar": "square"` reject non-square input images (`PresetAspectRatioError` → HTTP **400**). Presets with `"text_input": "yes"` validate `text` against `text_character_limit` (`PresetTextError` → HTTP **400**); omitted text uses `default_text`.
 - Built-in filters: `extract_subject`, `brightness`, `color`, `contrast`, `overlay`, `grayscale`, `glow_border`, `glow_line_border`, `composite`, `draw_text`, `place_on_canvas`, `upscale`, `sharpen`, `denoise`, `ai_upscale`, `doodle`, `sticker_outline`, `posterize`, `ink_edges`, `halftone`, `paper_texture`, `color_grade`, `vignette`, `bloom`, `halation`, `light_leak`, `film_dust`, `chromatic_aberration`, `blur`, `selective_color`.
 - `glow_line_border` draws a colored outline ring only (does not fill/glow the subject body). Pass `"color": [R,G,B]` (or `"rgb"`). `glow_border` / `glow_line_border` take px `width`/`blur` or `width_ratio`/`blur_ratio` (fractions of the short side; the ratio path grows the mask with flat-cost blur+threshold, since `MaxFilter` cost grows with width²).
 - `posterize` flattens channels to N levels; `ink_edges` draws comic outlines from a difference of Gaussians; `halftone` renders a mono or CMYK dot screen (own grey-component-replacement separation, since Pillow's RGB→CMYK leaves K empty; processed at ≤ 2400 px long edge and resized back, pitch enlarged when a screen would exceed 160k dots); `paper_texture` adds seeded grain, stains and fade (tone steps as point tables, grain tiled in place, stain grid follows aspect ratio). `halftone`/`ink_edges` flatten RGBA onto paper/white before analysing tone, so pixels under transparency never print. All sizes are fractions of the short side; at 25 MP these presets peak at ~0.5–0.65 GB.
@@ -207,7 +209,7 @@ Upload guards (`services/image_io.py`): max **100 MiB** body (`MAX_UPLOAD_BYTES`
 
 ### Preset metadata database
 
-- Location: `backend/database/` (SQLite file `presets.db`, same pattern as a lightweight local store).
+- Location: `backend/database/` (SQLite file `presets.local.db`, same pattern as a lightweight local store). The file is **not committed** (gitignored):  each install keeps its own `popular` counts, so `git pull` can't conflict on it. `prepare_db.py` (called by `setup.sh` and on every `run.sh`) runs `init_db()` + `migrate_schema()` + `seed_default_presets()`, which inserts any shipped preset that is missing and syncs metadata of existing ones without touching counts; the `defaults` list in `seed_default_presets()` is the source of truth for shipped presets. `presets.db` stays committed but **frozen** (legacy: never written, never change or delete it) so clones from before this change can `git pull` cleanly; its rows and counts are copied into `presets.local.db` the first time that file is created.
 - Table `presets`: `preset_id` (PK auto), `preset_name`, `preset_path`, `keywords` (JSON list), `ar` (`square` or `non-square`, default `non-square`), `text_input` (`yes` or `no`, default `no`), `default_text` (default `''`), `text_character_limit` (integer, default `0`, max 200), `created_date` (auto `datetime('now')`). Existing DBs gain `ar` and text columns via `migrate_schema()`. `list_presets()` returns rows `ORDER BY preset_id DESC` (newest first).
 - Table `popular`: `preset_id` (PK + FK to `presets.preset_id`, `ON DELETE CASCADE`), `used_count` (integer, default `0`). One row per preset; `list_popular()` / `GET /api/presets/popular` return `{ preset_id, preset_name, used_count }` ordered by `used_count DESC`. Existing DBs gain the table (and a 0-count row per preset) via `migrate_schema()`.
 - Service functions: `backend/database/db_ops.py` (`add_preset`, `list_presets`, `search_presets_by_keyword`, `get_preset_by_id`, `update_preset`, `delete_preset`, `seed_default_presets`, `list_popular`, `increment_used_count`, `increment_used_count_by_name`).
@@ -221,8 +223,8 @@ Upload guards (`services/image_io.py`): max **100 MiB** body (`MAX_UPLOAD_BYTES`
 
 ## Local run
 
-- `./scripts/setup.sh` creates `backend/.venv` (or recreates it if relocated/broken), installs deps, and initializes the preset DB.
-- `./scripts/run.sh` starts uvicorn on `0.0.0.0:8000` and a static frontend on port `5500` via the venv Python; fails fast if deps are missing or ports are taken.
+- `./scripts/setup.sh` creates `backend/.venv` (or recreates it if relocated/broken), installs deps, and prepares the local preset DB (`prepare_db.py`); `run.sh` re-runs `prepare_db.py` on every start so presets from a `git pull` are seeded.
+- `./scripts/run.sh` starts uvicorn on `0.0.0.0:8000` and a static frontend on port `5500` via the venv Python, in the background; fails fast if deps are missing or ports are taken.
 
 ## Documentation responsibilities
 
@@ -235,15 +237,18 @@ Upload guards (`services/image_io.py`): max **100 MiB** body (`MAX_UPLOAD_BYTES`
 | `.cursor/skills/create-preset/SKILL.md` | Gated agent workflow to design/ship a new preset |
 | `docs/` | GitHub Pages pitch (`docs/index.html`); CTAs link to GitHub fork |
 | `scripts/setup.sh` | One-command local bootstrap |
-| `scripts/run.sh` | One-command API + frontend start |
+| `scripts/run.sh` | One-command API + frontend start (background) |
+| `scripts/update.sh` | Pull latest code, stop, and restart |
 | `test-suite/` | Service-function unit tests (pytest); CI via `.github/workflows/test-suite.yml` |
 
 When features change, update these in the same change set (enforced by `.cursor/rules/docs-and-branch-safety.mdc`). When `backend/app/services/` change, update matching `test-suite/` tests **only where necessary**. When helpers/filters/presets/DB metadata change, update `PRESETS.md` as needed.
 
 ## Helper scripts
 
-- `scripts/setup.sh` — creates `backend/.venv` (recreates if shebangs/interpreter are broken after a folder rename), installs API + helper requirements, downloads rembg `u2net` into `~/.rembg/`, builds the Real-ESRGAN ONNX model in `~/.local-studio/models/`, initializes `backend/database/presets.db`, ensures scripts are executable.
-- `scripts/run.sh` — starts uvicorn (port 8000) and a static file server on the repo root (port 5500) using `backend/.venv/bin/python -m …`; checks deps + free ports; Ctrl+C stops both.
+- `scripts/setup.sh` — creates `backend/.venv` (recreates if shebangs/interpreter are broken after a folder rename), installs API + helper requirements, downloads rembg `u2net` into `~/.rembg/`, builds the Real-ESRGAN ONNX model in `~/.local-studio/models/`, creates/seeds the local `backend/database/presets.local.db` via `prepare_db.py`, ensures scripts are executable.
+- `scripts/run.sh` — starts uvicorn (port 8000) and a static file server on the repo root (port 5500) using `backend/.venv/bin/python -m …`; checks deps + free ports; runs `backend/database/prepare_db.py` (seed new presets, keep counts); both run under `nohup` in the background with output in `logs/api.log` / `logs/frontend.log` (gitignored). The script waits up to ~30 s for `/health`, then returns and leaves them running; on a failed start it kills what it launched and prints the log tail. Stop with `scripts/stop.sh`.
+- `scripts/stop.sh` — sends SIGTERM to whatever listens on ports 8000 / 5500, waits up to ~10 s for both ports to free (SIGKILL after that), so `run.sh` can start straight after.
+- `scripts/update.sh` — runs `git pull`, `scripts/stop.sh`, then `scripts/run.sh` in that order, with no checks (all three run even when there is nothing to pull or a step fails).
 
 ## Extension points
 

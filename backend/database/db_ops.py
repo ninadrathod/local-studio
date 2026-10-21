@@ -1,5 +1,5 @@
 """
-CRUD helpers for the presets and popular tables in presets.db.
+CRUD helpers for the presets and popular tables in the local preset DB (presets.local.db).
 
 Keywords are stored as a JSON array string in SQLite and returned as list[str].
 `popular` tracks download/use counts per preset_id (FK to presets).
