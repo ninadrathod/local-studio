@@ -17,6 +17,7 @@ and `filters.draw_text`).
 | `backend/helpers/apply_preset.py` | Step runner + CLI |
 | `backend/helpers/extract_subject.py` | Subject cutout CLI (rembg / `u2net`) |
 | `backend/helpers/download_model.py` | Warm-cache `u2net` during setup |
+| `backend/fonts/` | Bundled open-licensed display fonts (OFL / Apache, licence next to each) used by `draw_text` `font_style` |
 | `backend/helpers/upscale_model.py` | Real-ESRGAN weights → local ONNX (`~/.local-studio/models/`) + tiled 4× inference for `ai_upscale`; `python upscale_model.py` warms the cache |
 | `backend/database/` | SQLite metadata (`presets.db`, `db_ops.py`) |
 | `previews/pre-edit/` + `previews/post-edit/` + `previews/presets.json` | Before/after gallery assets per DB preset + name→path map (sources in `previews/CREDITS.md`) |
@@ -258,6 +259,61 @@ Ten looks recreated from popular Prequel app filters, aimed at a professionally 
 - **File:** `backend/presets/studio_spotlight.json`
 
 
+### Poster titles (text behind subject)
+
+Ten poster looks: subject cut out (`single_subject: true`) → one colour family pushed on the background with `selective_color` → a large `$text` title painted on the **background** → subject composited back on top, so it covers part of the title. All are `ar: non-square`, `text_input: yes`, `default_text: "TITLE"`, `text_character_limit: 16`, no HD pass, seeded via `seed_default_presets()` / setup. Titles are top-aligned (`margin_ratio` 0.03–0.05), stretched tall with `scale_y`, and auto-fit to 90% of the width. Text keeps the user's casing, except `neon_lines` (Monoton) and `marquee` (Bungee), whose fonts only have capitals.
+
+#### `poster_title_yellow_pop` — Poster title: yellow pop
+
+- **Steps:** `extract_subject` → `selective_color` yellow (width 45, saturation 1.8, lightness 0.12, others 0.35, pull 0.4) → `draw_text` red [220, 30, 30], `font_style: poster`, font_size_ratio 0.34, `scale_y` 1.9 → `composite`
+- **File:** `backend/presets/poster_title_yellow_pop.json`
+
+#### `poster_title_blue_pop` — Poster title: blue pop
+
+- **Steps:** `extract_subject` → `selective_color` blue (saturation 1.7, others 0.5) → `draw_text` orange [255, 120, 0], `poster`, `scale_y` 1.9 → `composite`
+- **File:** `backend/presets/poster_title_blue_pop.json`
+
+#### `retro_70s_poster` — Retro 70s poster
+
+- **Steps:** `extract_subject` → `selective_color` orange (saturation 1.6, others 0.5) → `draw_text` teal [0, 120, 125], `font_style: slab` → `composite` → warm faded `color_grade` → `paper_texture` (sun-faded paper)
+- **File:** `backend/presets/retro_70s_poster.json`
+
+#### `brush_script_poster` — Brush script poster
+
+- **Steps:** `extract_subject` → `selective_color` yellow → `draw_text` red, `font_style: brush`, font_size_ratio 0.4, `scale_y` 1.3, same-colour stroke to thicken → `composite`
+- **File:** `backend/presets/brush_script_poster.json`
+
+#### `neon_nights_script` — Neon nights script
+
+- **Steps:** `extract_subject` → night `color_grade` on background (magenta tint, sunset split-tone) → `selective_color` magenta → `draw_text` pale-pink core + hot-pink stroke, `font_style: signature`, `angle` −8, `glow_ratio` 0.025 → cyan `glow_line_border` on subject → `composite` → grain
+- **File:** `backend/presets/neon_nights_script.json`
+
+#### `mission_passed_title` — Mission passed title
+
+- **Steps:** `extract_subject` → night `color_grade` (exposure −0.8) → `selective_color` blue → `draw_text` gold [255, 200, 40] with black stroke (stroke_ratio 0.01), `font_style: bold_display`, `angle` −4, `scale_y` 1.5 → `composite` → grain
+- **File:** `backend/presets/mission_passed_title.json`
+
+#### `wanted_stencil_title` — Wanted stencil title
+
+- **Steps:** `extract_subject` → dark `color_grade` (exposure −0.9) → `selective_color` red (others 0.25) → `draw_text` red with black stroke, `font_style: stencil`, `scale_y` 1.6 → `composite` → `halation` → grain
+- **File:** `backend/presets/wanted_stencil_title.json`
+
+#### `retrowave_neon_title` — Retrowave neon title
+
+- **Steps:** `extract_subject` → purple night `color_grade` → `selective_color` purple → `draw_text` pale-cyan, `font_style: neon_lines` (caps only), pink `glow_color`, `glow_ratio` 0.03 → pink `glow_line_border` on subject → `composite` → grain
+- **File:** `backend/presets/retrowave_neon_title.json`
+
+#### `art_deco_marquee` — Art deco marquee
+
+- **Steps:** `extract_subject` → teal night `color_grade` → `selective_color` teal → `draw_text` gold [255, 195, 60], `font_style: marquee` (caps only), `box: double` (box_ratio 0.004, box_pad_ratio 0.03) → `composite` → warm `halation` → grain
+- **File:** `backend/presets/art_deco_marquee.json`
+
+#### `velvet_ticket_title` — Velvet ticket title
+
+- **Steps:** `extract_subject` → sunset `color_grade` (magenta / orange split) → `selective_color` magenta → `draw_text` cream, `font_style: signature`, `box: double` in gold [235, 190, 90], box_radius_ratio 0.03, `angle` −3 → `composite` → `vignette` → grain
+- **File:** `backend/presets/velvet_ticket_title.json`
+
+
 ## Built-in filters
 
 | Filter | What it does | Common params |
@@ -290,7 +346,8 @@ Ten looks recreated from popular Prequel app filters, aimed at a professionally 
 | `film_dust` | Seeded scanned-film dust: white (and some dark) specks, curly hairs, faint vertical scratches; sizes are fractions of the short side | `on`, `amount` (0–1 speck count), `hairs`, `scratches`, `opacity`, `seed` |
 | `chromatic_aberration` | Radial lens fringing: red scaled out, green half, blue fixed, so colour edges split more toward the corners (no border) | `on`, `amount` (fraction of size, ≤ 0.05) |
 | `blur` | Gaussian blur by `radius_ratio` × short side; large radii run on a shrunken copy (flat cost). RGBA blurs with premultiplied alpha (no dark edges toward transparency). `exclude` names a layer (e.g. `subject`) whose alpha, grown by `exclude_grow`, gets zero weight, so the blurred background fills the cut-out hole from its surroundings | `on`, `radius_ratio`, `exclude` (layer name), `exclude_grow` (fraction of short side; default 0.004) |
-| `draw_text` | Paint a string onto a layer | `on`, `text` (`$text` / `$datetime` / `$date` / `$time` — stamps use the photo's EXIF capture time, else now), `font_size`, `color`/`rgb`, `align` (`center`/`top`/`bottom`/`top_left`/`top_right`/`bottom_left`/`bottom_right`), `font_style` (`sans`/`flow`/`stamp` — bold mono date imprint), `font_path` (optional TTF/OTF/TTC; overrides `font_style`), `margin`, `x`, `y`, `stroke_width` (px), or `font_size_ratio` / `margin_ratio` / `stroke_ratio` (fractions of the short side — prefer these); too-wide text shrinks to fit |
+| `selective_color` | Push one colour family (HSV hue band) and optionally mute the rest; near-greys get little weight; numpy in ≤ 4 MP strips | `on`, `hue` (degrees, name `red`/`orange`/`yellow`/`green`/`cyan`/`teal`/`blue`/`purple`/`magenta`/`pink`, or [r,g,b]), `width` (band half-width, degrees), `saturation` (in-band ×), `lightness` (in-band lift 0–1), `others` (out-of-band saturation ×; 0 = grey), `pull` (0–1, rotate in-band hues toward the target) |
+| `draw_text` | Paint a string onto a layer | `on`, `text` (`$text` / `$datetime` / `$date` / `$time` — stamps use the photo's EXIF capture time, else now), `font_size`, `color`/`rgb`, `align` (`center`/`top`/`bottom`/`top_left`/`top_right`/`bottom_left`/`bottom_right`), `font_style` (`sans`/`flow`/`stamp` — bold mono date imprint; poster styles `poster` (Impact → bundled Anton), `brush` (Brush Script → bundled Yellowtail), `slab`, `signature`, `bold_display`, `stencil`, caps-only `neon_lines` / `marquee`), `font_path` (optional TTF/OTF/TTC; overrides `font_style`), `margin`, `x`, `y`, `stroke_width` (px), or `font_size_ratio` / `margin_ratio` / `stroke_ratio` (fractions of the short side — prefer these); too-wide text shrinks to fit. Poster extras: `scale_y` (vertical stretch), `angle` (tilt, degrees), `glow_ratio` (≤ 0.05) / `glow_color` (neon halo, fixed brightness), `box` (`frame`/`double`/`corners`/`label`) with `box_color`, `box_fill` ([r,g,b(,a)]), `box_ratio`, `box_pad_ratio`, `box_radius_ratio` — the box stretches, tilts and glows with the text |
 
 Layers are named images in memory. Typical keys: `image`, `subject`, `background`.
 

@@ -300,6 +300,7 @@ FILTERS: dict[str, FilterHandler] = {
     "halftone": _run_simple(F.halftone),
     "paper_texture": _run_simple(F.paper_texture),
     "color_grade": _run_simple(F.color_grade),
+    "selective_color": _run_simple(F.selective_color),
     "vignette": _run_simple(F.vignette),
     "bloom": _run_simple(F.bloom),
     "halation": _run_simple(F.halation),

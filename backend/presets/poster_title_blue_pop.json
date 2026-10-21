@@ -1,0 +1,49 @@
+{
+  "name": "poster_title_blue_pop",
+  "label": "Poster title: blue pop",
+  "description": "Subject cut out; background blues (sky) boosted while other colours mute; tall orange poster title behind the subject.",
+  "ar": "non-square",
+  "text_input": "yes",
+  "default_text": "TITLE",
+  "text_character_limit": 16,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "selective_color",
+      "on": "background",
+      "hue": "blue",
+      "width": 45,
+      "saturation": 1.7,
+      "lightness": 0.05,
+      "others": 0.5,
+      "pull": 0.4
+    },
+    {
+      "filter": "draw_text",
+      "on": "background",
+      "text": "$text",
+      "color": [
+        255,
+        120,
+        0
+      ],
+      "align": "top",
+      "font_size_ratio": 0.34,
+      "scale_y": 1.9,
+      "margin_ratio": 0.03,
+      "font_style": "poster"
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "name": "retrowave_neon_title",
+  "label": "Retrowave neon title",
+  "description": "Purple night background; cyan multi-line neon title with a pink glow behind the subject; pink rim light on the subject.",
+  "ar": "non-square",
+  "text_input": "yes",
+  "default_text": "TITLE",
+  "text_character_limit": 16,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "color_grade",
+      "on": "background",
+      "exposure": -0.6,
+      "contrast": 0.25,
+      "black_lift": 0.02,
+      "tint": 0.25,
+      "temperature": -0.2
+    },
+    {
+      "filter": "selective_color",
+      "on": "background",
+      "hue": "purple",
+      "width": 50,
+      "saturation": 2.0,
+      "lightness": 0.15,
+      "others": 0.5,
+      "pull": 0.5
+    },
+    {
+      "filter": "draw_text",
+      "on": "background",
+      "text": "$text",
+      "color": [
+        200,
+        250,
+        255
+      ],
+      "align": "top",
+      "font_size_ratio": 0.3,
+      "margin_ratio": 0.04,
+      "scale_y": 1.5,
+      "glow_color": [
+        255,
+        40,
+        200
+      ],
+      "glow_ratio": 0.03,
+      "font_style": "neon_lines"
+    },
+    {
+      "filter": "glow_line_border",
+      "on": "subject",
+      "color": [
+        255,
+        40,
+        200
+      ],
+      "width_ratio": 0.004,
+      "blur_ratio": 0.006
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0,
+      "grain": 0.05,
+      "stains": 0,
+      "fade": 0
+    }
+  ]
+}

@@ -77,7 +77,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     init_db(db)
     first = seed_default_presets(db_path=db)
     second = seed_default_presets(db_path=db)
-    assert len(first) == 30
+    assert len(first) == 40
     names = {row["preset_name"] for row in first}
     assert names == {
         "bw_bg_glowing_subject",
@@ -110,6 +110,16 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "tungsten_night_film",
         "muted_chrome_film",
         "studio_spotlight",
+        "poster_title_yellow_pop",
+        "poster_title_blue_pop",
+        "retro_70s_poster",
+        "brush_script_poster",
+        "neon_nights_script",
+        "mission_passed_title",
+        "wanted_stencil_title",
+        "retrowave_neon_title",
+        "art_deco_marquee",
+        "velvet_ticket_title",
     }
     by_name = {row["preset_name"]: row for row in first}
     assert by_name["bw_bg_glowing_subject"]["ar"] == "non-square"
@@ -122,6 +132,9 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     assert by_name["warm_faded_print"]["text_input"] == "no"
     assert by_name["warm_faded_print"]["default_text"] == ""
     assert by_name["warm_faded_print"]["text_character_limit"] == 0
+    assert by_name["art_deco_marquee"]["text_input"] == "yes"
+    assert by_name["art_deco_marquee"]["default_text"] == "TITLE"
+    assert by_name["art_deco_marquee"]["text_character_limit"] == 16
     for name in (
         "full_hd",
         "4k_crisp",
@@ -157,6 +170,16 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     assert second == []
     names_in_order = [row["preset_name"] for row in list_presets(db_path=db)]
     assert names_in_order == [
+        "velvet_ticket_title",
+        "art_deco_marquee",
+        "retrowave_neon_title",
+        "wanted_stencil_title",
+        "mission_passed_title",
+        "neon_nights_script",
+        "brush_script_poster",
+        "retro_70s_poster",
+        "poster_title_blue_pop",
+        "poster_title_yellow_pop",
         "studio_spotlight",
         "muted_chrome_film",
         "tungsten_night_film",
@@ -189,7 +212,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "bw_bg_glowing_subject",
     ]
     popular = list_popular(db_path=db)
-    assert len(popular) == 30
+    assert len(popular) == 40
     assert all(row["used_count"] == 0 for row in popular)
 
 
@@ -239,6 +262,16 @@ def test_seed_default_presets_syncs_text_fields(tmp_path: Path) -> None:
         "tungsten_night_film",
         "muted_chrome_film",
         "studio_spotlight",
+        "poster_title_yellow_pop",
+        "poster_title_blue_pop",
+        "retro_70s_poster",
+        "brush_script_poster",
+        "neon_nights_script",
+        "mission_passed_title",
+        "wanted_stencil_title",
+        "retrowave_neon_title",
+        "art_deco_marquee",
+        "velvet_ticket_title",
     ]
     synced = get_preset_by_name("bw_bg_glowing_subject", db_path=db)
     assert synced is not None

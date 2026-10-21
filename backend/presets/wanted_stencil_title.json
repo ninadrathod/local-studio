@@ -1,0 +1,77 @@
+{
+  "name": "wanted_stencil_title",
+  "label": "Wanted stencil title",
+  "description": "Dark night background with reds boosted and the rest muted; tall red stencil title with a black outline behind the subject; film halation.",
+  "ar": "non-square",
+  "text_input": "yes",
+  "default_text": "TITLE",
+  "text_character_limit": 16,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "color_grade",
+      "on": "background",
+      "exposure": -0.9,
+      "contrast": 0.25,
+      "black_lift": 0.02
+    },
+    {
+      "filter": "selective_color",
+      "on": "background",
+      "hue": "red",
+      "width": 50,
+      "saturation": 2.0,
+      "lightness": 0.15,
+      "others": 0.25,
+      "pull": 0.5
+    },
+    {
+      "filter": "draw_text",
+      "on": "background",
+      "text": "$text",
+      "color": [
+        230,
+        25,
+        35
+      ],
+      "align": "top",
+      "font_size_ratio": 0.34,
+      "margin_ratio": 0.04,
+      "scale_y": 1.6,
+      "stroke_color": [
+        10,
+        10,
+        10
+      ],
+      "stroke_ratio": 0.006,
+      "font_style": "stencil"
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    },
+    {
+      "filter": "halation",
+      "on": "image",
+      "threshold": 0.55,
+      "radius_ratio": 0.015,
+      "amount": 0.8
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0,
+      "grain": 0.05,
+      "stains": 0,
+      "fade": 0
+    }
+  ]
+}

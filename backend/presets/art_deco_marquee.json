@@ -1,0 +1,80 @@
+{
+  "name": "art_deco_marquee",
+  "label": "Art deco marquee",
+  "description": "Dark teal night background; gold marquee title inside a thin gold double frame behind the subject; warm halation.",
+  "ar": "non-square",
+  "text_input": "yes",
+  "default_text": "TITLE",
+  "text_character_limit": 16,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "color_grade",
+      "on": "background",
+      "exposure": -0.8,
+      "contrast": 0.25,
+      "black_lift": 0.02,
+      "temperature": -0.2
+    },
+    {
+      "filter": "selective_color",
+      "on": "background",
+      "hue": "teal",
+      "width": 50,
+      "saturation": 2.0,
+      "lightness": 0.15,
+      "others": 0.5,
+      "pull": 0.5
+    },
+    {
+      "filter": "draw_text",
+      "on": "background",
+      "text": "$text",
+      "color": [
+        255,
+        195,
+        60
+      ],
+      "align": "top",
+      "font_size_ratio": 0.3,
+      "margin_ratio": 0.05,
+      "scale_y": 1.4,
+      "box": "double",
+      "box_ratio": 0.004,
+      "box_pad_ratio": 0.03,
+      "font_style": "marquee"
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    },
+    {
+      "filter": "halation",
+      "on": "image",
+      "threshold": 0.55,
+      "radius_ratio": 0.012,
+      "amount": 0.6,
+      "color": [
+        255,
+        160,
+        40
+      ]
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0,
+      "grain": 0.05,
+      "stains": 0,
+      "fade": 0
+    }
+  ]
+}

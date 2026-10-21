@@ -62,6 +62,7 @@ def test_filter_registry_is_name_lookup() -> None:
         "ink_edges",
         "halftone",
         "paper_texture",
+        "selective_color",
     }
 
 
@@ -1421,3 +1422,139 @@ def test_studio_spotlight_darkens_background_around_subject() -> None:
     assert grade["exposure"] < 0 and grade["saturation"] < 1
     assert any(s["filter"] == "blur" and s.get("exclude") == "subject" for s in bg)
     assert steps.index(next(s for s in steps if s["filter"] == "composite")) > steps.index(grade)
+
+
+def _saturation(rgb: tuple[int, int, int]) -> float:
+    hi, lo = max(rgb), min(rgb)
+    return 0.0 if hi == 0 else (hi - lo) / hi
+
+
+def test_selective_color_boosts_target_and_mutes_others() -> None:
+    img = Image.new("RGB", (3, 1))
+    img.putpixel((0, 0), (200, 180, 90))  # muted yellow
+    img.putpixel((1, 0), (60, 90, 200))  # blue
+    img.putpixel((2, 0), (128, 128, 128))  # grey
+    out = F.selective_color(img, hue="yellow", saturation=1.8, others=0.3)
+    assert _saturation(out.getpixel((0, 0))) > _saturation(img.getpixel((0, 0))) + 0.15
+    assert _saturation(out.getpixel((1, 0))) < _saturation(img.getpixel((1, 0))) * 0.5
+    assert out.getpixel((2, 0)) == (128, 128, 128)
+
+
+def test_selective_color_hue_forms_and_alpha() -> None:
+    img = Image.new("RGBA", (2, 1), (60, 90, 200, 255))
+    img.putpixel((1, 0), (60, 90, 200, 0))
+    by_name = F.selective_color(img, hue="blue")
+    assert by_name.mode == "RGBA" and by_name.getpixel((1, 0))[3] == 0
+    assert by_name.tobytes() == F.selective_color(img, hue=220).tobytes()
+    assert F.selective_color(img, hue=[0, 0, 255]).size == img.size
+    with pytest.raises(ValueError, match="Unknown hue"):
+        F.selective_color(img, hue="chartreuse-ish")
+
+
+def _ink_bbox(image: Image.Image, background: int = 0) -> tuple[int, int, int, int]:
+    bbox = image.convert("L").point(lambda v: 255 if abs(v - background) > 40 else 0).getbbox()
+    assert bbox is not None
+    return bbox
+
+
+def test_draw_text_scale_y_stretches_vertically() -> None:
+    canvas = Image.new("RGB", (400, 400), (0, 0, 0))
+    plain = _ink_bbox(F.draw_text(canvas, text="Hi", font_size=60, align="top"))
+    tall = _ink_bbox(F.draw_text(canvas, text="Hi", font_size=60, align="top", scale_y=2.0))
+    assert abs((tall[3] - tall[1]) / (plain[3] - plain[1]) - 2) < 0.2
+    assert abs((tall[2] - tall[0]) - (plain[2] - plain[0])) <= 2
+
+
+def test_draw_text_box_styles_frame_the_text() -> None:
+    canvas = Image.new("RGB", (400, 300), (0, 0, 0))
+    plain = _ink_bbox(F.draw_text(canvas, text="Hi", font_size=60))
+    for style in ("frame", "double", "corners"):
+        boxed = _ink_bbox(F.draw_text(canvas, text="Hi", font_size=60, box=style, box_ratio=0.01, box_pad_ratio=0.05))
+        assert boxed[0] < plain[0] - 10 and boxed[2] > plain[2] + 10, style
+        assert boxed[1] < plain[1] - 10 and boxed[3] > plain[3] + 10, style
+    label = F.draw_text(canvas, text="Hi", font_size=60, color=[255, 255, 255], box="label", box_fill=[200, 0, 0])
+    assert (200, 0, 0, 255) in [px for _, px in label.getcolors(1 << 16)]
+    with pytest.raises(ValueError, match="Unknown box"):
+        F.draw_text(canvas, text="Hi", box="circle")
+
+
+def test_draw_text_glow_lights_pixels_around_text() -> None:
+    canvas = Image.new("RGB", (400, 200), (0, 0, 0))
+    plain = F.draw_text(canvas, text="Hi", font_size=60, color=[255, 255, 255])
+    glow = F.draw_text(canvas, text="Hi", font_size=60, color=[255, 255, 255], glow_color=[255, 0, 200], glow_ratio=0.05)
+    x0, y0, x1, y1 = _ink_bbox(plain)
+    probe = (x1 + 6, (y0 + y1) // 2)
+    assert plain.getpixel(probe)[:3] == (0, 0, 0)
+    r, g, b = glow.getpixel(probe)[:3]
+    assert r > 20 and b > 20 and g < r
+
+
+def test_draw_text_angle_tilts_text() -> None:
+    canvas = Image.new("RGB", (400, 400), (0, 0, 0))
+    flat = _ink_bbox(F.draw_text(canvas, text="Hello", font_size=50))
+    tilted = _ink_bbox(F.draw_text(canvas, text="Hello", font_size=50, angle=-15))
+    assert tilted[3] - tilted[1] > (flat[3] - flat[1]) + 20
+
+
+def test_display_font_styles_resolve_to_files() -> None:
+    for style, candidates in F._DISPLAY_FONT_CANDIDATES.items():
+        bundled = [p for p in candidates if p.startswith(str(F._FONTS_DIR))]
+        assert bundled and all(Path(p).is_file() for p in bundled), style
+        font = F._load_font(40, style)
+        assert Path(font.path).is_file(), style
+
+
+POSTER_TITLE_PRESETS = (
+    "poster_title_yellow_pop",
+    "poster_title_blue_pop",
+    "retro_70s_poster",
+    "brush_script_poster",
+    "neon_nights_script",
+    "mission_passed_title",
+    "wanted_stencil_title",
+    "retrowave_neon_title",
+    "art_deco_marquee",
+    "velvet_ticket_title",
+)
+
+
+@pytest.mark.parametrize("name", POSTER_TITLE_PRESETS)
+def test_poster_title_presets_shape(name: str) -> None:
+    data = load_preset(PRESETS / f"{name}.json")
+    assert data["name"] == name
+    assert (data["ar"], data["text_input"], data["default_text"], data["text_character_limit"]) == (
+        "non-square",
+        "yes",
+        "TITLE",
+        16,
+    )
+    steps = data["steps"]
+    assert all(step["filter"] in FILTERS for step in steps)
+    assert steps[0]["filter"] == "extract_subject"
+    title = next(i for i, s in enumerate(steps) if s["filter"] == "draw_text")
+    comp = next(i for i, s in enumerate(steps) if s["filter"] == "composite")
+    # Title is painted on the background before the subject goes back on top.
+    assert steps[title]["on"] == "background" and title < comp
+    assert steps[title]["text"] == "$text"
+    assert steps[title]["font_style"] in F._DISPLAY_FONT_CANDIDATES
+    assert "font_path" not in steps[title]
+    assert any(s["filter"] == "selective_color" and s["on"] == "background" for s in steps)
+
+
+def test_draw_text_xy_keeps_stretch_and_box() -> None:
+    canvas = Image.new("RGB", (400, 400), (0, 0, 0))
+    plain = _ink_bbox(F.draw_text(canvas, text="Hi", font_size=60, x=40, y=50))
+    tall = _ink_bbox(F.draw_text(canvas, text="Hi", font_size=60, x=40, y=50, scale_y=2.0))
+    boxed = _ink_bbox(F.draw_text(canvas, text="Hi", font_size=60, x=40, y=50, box="frame", box_ratio=0.01))
+    assert (tall[3] - tall[1]) > 1.6 * (plain[3] - plain[1])
+    assert abs(boxed[0] - 40) <= 3 and abs(boxed[1] - 50) <= 3
+    assert boxed[2] - boxed[0] > plain[2] - plain[0] + 10
+
+
+def test_draw_text_glow_radius_is_capped() -> None:
+    canvas = Image.new("RGB", (400, 200), (0, 0, 0))
+    capped = F.draw_text(canvas, text="Hi", font_size=60, color=[255, 255, 255], glow_ratio=F._MAX_TEXT_GLOW_RATIO)
+    huge = F.draw_text(canvas, text="Hi", font_size=60, color=[255, 255, 255], glow_ratio=5.0)
+    assert huge.tobytes() == capped.tobytes()
+    with pytest.raises(TypeError):
+        F.draw_text(canvas, text="Hi", glow_ratio=0.02, glow_strength=3.0)

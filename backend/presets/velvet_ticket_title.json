@@ -1,0 +1,90 @@
+{
+  "name": "velvet_ticket_title",
+  "label": "Velvet ticket title",
+  "description": "Magenta-orange sunset grade; cream brush-script title inside a thin rounded gold double frame, tilted, behind the subject; vignette.",
+  "ar": "non-square",
+  "text_input": "yes",
+  "default_text": "TITLE",
+  "text_character_limit": 16,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "color_grade",
+      "on": "background",
+      "exposure": -0.5,
+      "contrast": 0.25,
+      "black_lift": 0.02,
+      "split": 0.55,
+      "shadows": [
+        70,
+        20,
+        120
+      ],
+      "highlights": [
+        255,
+        150,
+        80
+      ]
+    },
+    {
+      "filter": "selective_color",
+      "on": "background",
+      "hue": "magenta",
+      "width": 50,
+      "saturation": 2.0,
+      "lightness": 0.15,
+      "others": 0.6,
+      "pull": 0.5
+    },
+    {
+      "filter": "draw_text",
+      "on": "background",
+      "text": "$text",
+      "color": [
+        255,
+        245,
+        235
+      ],
+      "align": "top",
+      "font_size_ratio": 0.36,
+      "margin_ratio": 0.05,
+      "scale_y": 1.15,
+      "box": "double",
+      "box_ratio": 0.003,
+      "box_pad_ratio": 0.025,
+      "box_color": [
+        235,
+        190,
+        90
+      ],
+      "box_radius_ratio": 0.03,
+      "angle": -3,
+      "font_style": "signature"
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    },
+    {
+      "filter": "vignette",
+      "on": "image",
+      "amount": 0.3
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0,
+      "grain": 0.05,
+      "stains": 0,
+      "fade": 0
+    }
+  ]
+}
