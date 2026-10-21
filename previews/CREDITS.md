@@ -291,3 +291,73 @@ is required where the license says so; CC0 and public-domain sources need none.
 - **Photographer:** [Rucksack Magazine](https://unsplash.com/@rucksackmag) (via Wikimedia Commons Unsplash CC0 archive)
 - **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
 - **Files:** `pre-edit/velvet_ticket_title.jpg` → `post-edit/velvet_ticket_title.png` (preset `velvet_ticket_title`)
+
+## `marker_frame_doodle`
+
+- **Photograph:** [Grouchy Persian cat (Unsplash)](https://commons.wikimedia.org/wiki/File:Grouchy_Persian_cat_(Unsplash).jpg)
+- **Photographer:** [Stefan Ivanov](https://unsplash.com/@stefanivanov) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/marker_frame_doodle.jpg` → `post-edit/marker_frame_doodle.png` (preset `marker_frame_doodle`)
+
+## `sunny_sketchbook_doodle`
+
+- **Photograph:** [Hot Air Balloon (Unsplash)](https://commons.wikimedia.org/wiki/File:Hot_Air_Balloon_(Unsplash).jpg)
+- **Photographer:** [Kupono Kuwamura](https://unsplash.com/@kuponokuwamura) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/sunny_sketchbook_doodle.jpg` → `post-edit/sunny_sketchbook_doodle.png` (preset `sunny_sketchbook_doodle`)
+
+## `neon_doodle_nights`
+
+- **Photograph:** [Petunia and the city night lights (Unsplash)](https://commons.wikimedia.org/wiki/File:Petunia_and_the_city_night_lights_(Unsplash).jpg)
+- **Photographer:** [Matthew Henry](https://unsplash.com/@matthewhenry) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/neon_doodle_nights.jpg` → `post-edit/neon_doodle_nights.png` (preset `neon_doodle_nights`)
+
+## `chalkboard_doodle`
+
+- **Photograph:** [Kick, Push (Unsplash)](https://commons.wikimedia.org/wiki/File:Kick,_Push_(Unsplash).jpg)
+- **Photographer:** [Sean Pollock](https://unsplash.com/@seanpollock) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/chalkboard_doodle.jpg` → `post-edit/chalkboard_doodle.png` (preset `chalkboard_doodle`)
+
+## `love_notes_doodle`
+
+- **Photograph:** [Love session (Unsplash)](https://commons.wikimedia.org/wiki/File:Love_session_(Unsplash).jpg)
+- **Photographer:** [Artsy Vibes](https://unsplash.com/@artsyvibes) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/love_notes_doodle.jpg` → `post-edit/love_notes_doodle.png` (preset `love_notes_doodle`)
+
+## `retro_70s_doodle`
+
+- **Photograph:** [São Paulo vintage VW van (Unsplash)](https://commons.wikimedia.org/wiki/File:S%C3%A3o_Paulo_vintage_VW_van_(Unsplash).jpg)
+- **Photographer:** [Francis Farago](https://unsplash.com/@farago) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/retro_70s_doodle.jpg` → `post-edit/retro_70s_doodle.png` (preset `retro_70s_doodle`)
+
+## `comic_pop_doodle`
+
+- **Photograph:** [Red and orange hot air balloon (Unsplash)](https://commons.wikimedia.org/wiki/File:Red_and_orange_hot_air_balloon_(Unsplash).jpg)
+- **Photographer:** [Aaron Burden](https://unsplash.com/@aaronburden) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/comic_pop_doodle.jpg` → `post-edit/comic_pop_doodle.png` (preset `comic_pop_doodle`)
+
+## `scrapbook_doodle`
+
+- **Photograph:** [London, United Kingdom (Unsplash E8isPVnn Vs)](https://commons.wikimedia.org/wiki/File:London,_United_Kingdom_(Unsplash_E8isPVnn_Vs).jpg)
+- **Photographer:** [Blubel](https://unsplash.com/@blubel) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/scrapbook_doodle.jpg` → `post-edit/scrapbook_doodle.png` (preset `scrapbook_doodle`)
+
+## `cyanotype_doodle`
+
+- **Photograph:** [Kyoto Botanical Garden, Kyoto, Japan (Unsplash)](https://commons.wikimedia.org/wiki/File:Kyoto_Botanical_Garden,_Kyoto,_Japan_(Unsplash).jpg)
+- **Photographer:** [Kwang Mathurosemontri](https://unsplash.com/@gemini_zucha89) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/cyanotype_doodle.jpg` → `post-edit/cyanotype_doodle.png` (preset `cyanotype_doodle`)
+
+## `confetti_pastel_doodle`
+
+- **Photograph:** [Woman With Balloons (Unsplash)](https://commons.wikimedia.org/wiki/File:Woman_With_Balloons_(Unsplash).jpg)
+- **Photographer:** [Tatiana Niño](https://unsplash.com/@agencia1810) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/confetti_pastel_doodle.jpg` → `post-edit/confetti_pastel_doodle.png` (preset `confetti_pastel_doodle`)

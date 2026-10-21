@@ -1,0 +1,86 @@
+{
+  "name": "cyanotype_doodle",
+  "label": "Cyanotype doodle",
+  "description": "Blue duotone with a thin white frame, white rings, a spiral and sparkles.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "grayscale",
+      "on": "image"
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "contrast": 0.2,
+      "split": 1.0,
+      "shadows": [
+        10,
+        40,
+        110
+      ],
+      "highlights": [
+        200,
+        230,
+        255
+      ]
+    },
+    {
+      "filter": "doodle_frame",
+      "on": "image",
+      "style": "line",
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "stroke": 0.004
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "rings",
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "x": 0.87,
+      "y": 0.13,
+      "size": 0.14,
+      "stroke": 0.006,
+      "count": 3
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "spiral",
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "x": 0.13,
+      "y": 0.87,
+      "size": 0.12,
+      "stroke": 0.006
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "stars",
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "x": 0.13,
+      "y": 0.13,
+      "size": 0.2,
+      "stroke": 0.008,
+      "count": 3
+    }
+  ]
+}

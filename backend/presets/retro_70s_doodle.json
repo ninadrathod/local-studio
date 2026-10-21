@@ -1,0 +1,86 @@
+{
+  "name": "retro_70s_doodle",
+  "label": "Retro 70s doodle",
+  "description": "Warm faded print on paper with a mustard double frame, orange flowers and brown dots.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "temperature": 0.35,
+      "contrast": -0.1,
+      "black_lift": 0.08,
+      "saturation": 0.85
+    },
+    {
+      "filter": "doodle_frame",
+      "on": "image",
+      "style": "double",
+      "color": [
+        225,
+        165,
+        40
+      ]
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "flower",
+      "color": [
+        230,
+        100,
+        40
+      ],
+      "x": 0.12,
+      "y": 0.12,
+      "size": 0.15,
+      "stroke": 0.008
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "flower",
+      "color": [
+        230,
+        100,
+        40
+      ],
+      "x": 0.88,
+      "y": 0.88,
+      "size": 0.13,
+      "stroke": 0.008,
+      "seed": 4
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "dots",
+      "color": [
+        120,
+        70,
+        40
+      ],
+      "x": 0.87,
+      "y": 0.13,
+      "size": 0.2,
+      "stroke": 0.008,
+      "count": 5
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "color": [
+        250,
+        235,
+        205
+      ],
+      "tint": 0.25,
+      "grain": 0.05,
+      "stains": 0.08,
+      "fade": 0.08
+    }
+  ]
+}
