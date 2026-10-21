@@ -14,13 +14,15 @@ Requires helper deps:
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
 from PIL import Image
 
-# u2net (~176MB) — much smaller than rembg's default bria-rmbg (~1GB)
-DEFAULT_MODEL = "u2net"
+# u2net (~176MB) — much smaller than rembg's default bria-rmbg (~1GB).
+# LIGHTWEIGHT=1 (low-RAM hosts): u2netp (~5MB) — about half the peak memory, rougher edges.
+DEFAULT_MODEL = "u2netp" if os.environ.get("LIGHTWEIGHT", "0").strip() == "1" else "u2net"
 _SESSION = None
 
 

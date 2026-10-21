@@ -1558,3 +1558,18 @@ def test_draw_text_glow_radius_is_capped() -> None:
     assert huge.tobytes() == capped.tobytes()
     with pytest.raises(TypeError):
         F.draw_text(canvas, text="Hi", glow_ratio=0.02, glow_strength=3.0)
+
+
+def test_ai_upscale_lightweight_uses_plain_resize(monkeypatch) -> None:
+    import upscale_model
+
+    def no_model(*args, **kwargs):
+        raise AssertionError("Real-ESRGAN must not run with LIGHTWEIGHT=1")
+
+    monkeypatch.setattr(upscale_model, "super_resolve", no_model)
+    monkeypatch.setenv("LIGHTWEIGHT", "1")
+    small = Image.new("RGB", (30, 20), (1, 2, 3))
+    out = F.ai_upscale(small, long_edge=90)
+    assert out.size == (90, 60) and out.getpixel((45, 30)) == (1, 2, 3)
+    big = Image.new("RGB", (200, 100))
+    assert F.ai_upscale(big, long_edge=90).size == (200, 100)  # never shrinks
