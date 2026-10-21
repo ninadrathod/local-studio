@@ -479,3 +479,24 @@ def test_list_popular_skips_orphan_rows(tmp_path: Path) -> None:
             "used_count": 0,
         }
     ]
+
+
+def test_init_db_copies_legacy_db_once(tmp_path: Path, monkeypatch) -> None:
+    init_mod = sys.modules["database.init_db"]  # the package re-exports the init_db function
+
+    legacy = tmp_path / "presets.db"
+    live = tmp_path / "presets.local.db"
+    monkeypatch.setattr(init_mod, "LEGACY_DB_PATH", legacy)
+    monkeypatch.setattr(init_mod, "DB_PATH", live)
+    init_db(legacy)
+    add_preset("demo", "backend/presets/demo.json", ["x"], db_path=legacy)
+    increment_used_count_by_name("demo", db_path=legacy)
+
+    init_db(live)
+    assert [r["used_count"] for r in list_popular(db_path=live)] == [1]
+
+    # Once the live DB exists it is never overwritten from the legacy copy.
+    increment_used_count_by_name("demo", db_path=live)
+    init_db(live)
+    assert [r["used_count"] for r in list_popular(db_path=live)] == [2]
+    assert [r["used_count"] for r in list_popular(db_path=legacy)] == [1]

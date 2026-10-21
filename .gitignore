@@ -20,6 +20,14 @@ previews/_candidates/
 **/*.onnx
 backend/helpers/models/
 
+# run.sh server logs
+logs/
+
+# Local preset DB (created/seeded by setup.sh and run.sh; holds per-install popular counts).
+# backend/database/presets.db stays committed but frozen (legacy seed for old clones).
+backend/database/presets.local.db
+backend/database/presets.local.db-journal
+
 # numba / runtime junk
 *.ses
 :memory:.ses

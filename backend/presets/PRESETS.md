@@ -19,7 +19,7 @@ and `filters.draw_text`).
 | `backend/helpers/download_model.py` | Warm-cache `u2net` during setup |
 | `backend/fonts/` | Bundled open-licensed display fonts (OFL / Apache, licence next to each) used by `draw_text` `font_style` |
 | `backend/helpers/upscale_model.py` | Real-ESRGAN weights → local ONNX (`~/.local-studio/models/`) + tiled 4× inference for `ai_upscale`; `python upscale_model.py` warms the cache |
-| `backend/database/` | SQLite metadata (`presets.db`, `db_ops.py`) |
+| `backend/database/` | SQLite metadata (local `presets.local.db`, `db_ops.py`, `prepare_db.py`) |
 | `previews/pre-edit/` + `previews/post-edit/` + `previews/presets.json` | Before/after gallery assets per DB preset + name→path map (sources in `previews/CREDITS.md`) |
 | `previews/_candidates/` | Gitignored create-preset comparison HTML (POC / fonts / gallery); not shipped |
 | `.cursor/skills/create-preset/scripts/render_candidates.py` | Writes those HTML pages using `apply_preset_file` + `draw_text` |
@@ -34,7 +34,7 @@ python backend/helpers/apply_preset.py path/to/photo.jpg -p PRESET_NAME -o out.p
 
 `PRESET_NAME` is a file under `backend/presets/` (with or without `.json`), or a full path to a JSON file.
 
-Via API (name must exist in `presets.db`):
+Via API (name must exist in the preset DB):
 
 ```bash
 curl -s -X POST "http://localhost:8000/api/apply-preset" \
@@ -416,7 +416,9 @@ Rules of thumb:
 
 ## Database metadata
 
-Table `presets` in `backend/database/presets.db`:
+`backend/database/presets.local.db` is **local and gitignored**: `scripts/setup.sh` and `scripts/run.sh` call `backend/database/prepare_db.py`, which creates/migrates it and runs `seed_default_presets()` (adds missing shipped presets, syncs their metadata, never resets `popular` counts). The seed list in `db_ops.py` is the source of truth for shipped presets. `presets.db` stays committed but **frozen** (legacy: never written, never change or delete it) so clones from before this change can `git pull` cleanly; its rows and counts are copied into `presets.local.db` the first time that file is created.
+
+Table `presets` in `backend/database/presets.local.db`:
 
 | Column | Meaning |
 |--------|---------|
@@ -465,7 +467,7 @@ print(list_popular())
 10. Agent then ships code:
    - adds helpers/filters only if needed (register in `FILTERS`; no API if/else)
    - writes `backend/presets/<name>.json` (include `"ar"` and `text_input` / `default_text` / `text_character_limit`)
-   - inserts a row with `add_preset(..., ar=..., text_input=..., default_text=..., text_character_limit=...)` (also creates a `popular` row at `used_count` 0)
+   - adds an entry to `seed_default_presets()` in `backend/database/db_ops.py` (name, path, keywords, `ar`, text fields) and runs `python backend/database/prepare_db.py`, which inserts it (plus a `popular` row at `used_count` 0) into the local DB
    - updates this file + CONTEXT/ARCHITECTURE (+ tests if needed)
 11. Gallery previews (gated — see create-preset skill step 8):
    - search open-licensed candidates that suit the preset

@@ -136,7 +136,7 @@ backend/.venv/bin/python .claude/skills/create-preset/scripts/render_candidates.
   - `text_character_limit` (integer **1–200**)
 - If **no**, set `default_text: ""` and `text_character_limit: 0`.
 - When `text_input` is `yes`, at least one step must use `"$text"` in a string parameter (typically `"text": "$text"` on `draw_text`).
-- Wait until the user **finalizes** these fields. JSON, DB (`add_preset`), and `previews/presets.json` must all match.
+- Wait until the user **finalizes** these fields. JSON, the `seed_default_presets()` entry, and `previews/presets.json` must all match.
 
 ### 6a. HD pre-pass
 
@@ -164,25 +164,13 @@ backend/.venv/bin/python .claude/skills/create-preset/scripts/render_candidates.
 
 1. Add any new filter ops under `backend/helpers/filters.py` and register them in `backend/helpers/apply_preset.py` `FILTERS` (use `_run_simple` for single-layer ops). Keep helpers modular. Do not add per-filter if/else in the API or the step runner.
 2. Write `backend/presets/<final_name>.json` with `name`, `label`, `description`, `ar` (`square` or `non-square`), `text_input` (`yes` or `no`), `default_text`, `text_character_limit`, and `steps`. Each step’s `"filter"` is the helper function name; remaining keys are that helper’s parameters. Use `"$text"` in a param when the step should receive the user string. If 6a was **yes**, `steps[0]` is the finalized `ai_upscale` step and later pixel-sized params are the HD-scaled values.
-3. Insert a DB row:
+3. Register the DB row. The live DB (`presets.local.db`) is local and gitignored, and the committed `presets.db` is a frozen legacy copy (never edit it), so the **seed list is the source of truth**: append an entry to `defaults` in `seed_default_presets()` (`backend/database/db_ops.py`) with `preset_name`, `preset_path` (`backend/presets/<final_name>.json`), the finalized `keywords`, `ar`, `text_input`, `default_text`, and `text_character_limit`. Then add it to your local DB (every other install picks it up on its next `setup.sh` / `run.sh`):
 
 ```bash
-source backend/.venv/bin/activate
-python -c "
-import sys
-sys.path.insert(0, 'backend')
-from database.db_ops import add_preset
-print(add_preset(
-    '<final_name>',
-    'backend/presets/<final_name>.json',
-    <final_keywords_list>,
-    ar='<square|non-square>',
-    text_input='<yes|no>',
-    default_text='<default or empty>',
-    text_character_limit=<n>,
-))
-"
+backend/.venv/bin/python backend/database/prepare_db.py
 ```
+
+Update the expected names/counts in `test-suite/test_database.py` (seed tests) to include the new preset.
 
 4. Update `backend/presets/PRESETS.md`, `CONTEXT.md`, and `ARCHITECTURE.md` for the new preset/filter.
 5. Add/adjust `test-suite/` coverage when new filter behavior needs it.
@@ -210,7 +198,7 @@ Understand what the shipped preset does, then pick photos where that effect actu
 - Do not invent extra HTTP routes unless asked — apply by DB name via existing `POST /api/apply-preset` (optional multipart `text` when needed).
 - Do not finalize name/keywords/`ar`/text fields/HD pre-pass/fonts/DB/files/gallery assets before the user confirms each gate.
 - HD pre-pass means one `ai_upscale` step at index 0 — reuse that helper; never write a separate upscaler or call a cloud API.
-- Keep `ar` and text-input fields in sync across preset JSON, `add_preset(...)`, and `previews/presets.json`.
+- Keep `ar` and text-input fields in sync across preset JSON, the `seed_default_presets()` entry, and `previews/presets.json`.
 - Gallery previews must be open-licensed, square **720×720**, with matching pre-edit and post-edit crops.
 - If a needed look cannot be done with current filters, say so in step 1–2 and propose a small new helper filter before POC.
 - Studio UX assumes **select preset first**, then upload; presets with `text_input=yes` show a constrained text field before generate.

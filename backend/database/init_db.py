@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
+import shutil
 import sqlite3
 from pathlib import Path
 
 DATABASE_DIR = Path(__file__).resolve().parent
-DB_PATH = DATABASE_DIR / "presets.db"
+# Live database: local to each install and gitignored, so `git pull` never
+# conflicts with the download counts the app writes.
+DB_PATH = DATABASE_DIR / "presets.local.db"
+# Older releases committed and wrote `presets.db`. It stays in the repo frozen
+# (never written again) so existing clones can pull cleanly; its rows and
+# counts are copied into DB_PATH once, the first time DB_PATH is created.
+LEGACY_DB_PATH = DATABASE_DIR / "presets.db"
 SCHEMA_PATH = DATABASE_DIR / "schema.sql"
 
 
@@ -60,6 +67,8 @@ def init_db(db_path: Path = DB_PATH) -> Path:
     """Create the database file and apply schema.sql. Returns the db path."""
     schema = SCHEMA_PATH.read_text(encoding="utf-8")
     db_path.parent.mkdir(parents=True, exist_ok=True)
+    if db_path == DB_PATH and not db_path.exists() and LEGACY_DB_PATH.exists():
+        shutil.copyfile(LEGACY_DB_PATH, db_path)
 
     with sqlite3.connect(db_path) as conn:
         conn.execute("PRAGMA foreign_keys = ON")
