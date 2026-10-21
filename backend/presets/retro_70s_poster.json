@@ -1,0 +1,70 @@
+{
+  "name": "retro_70s_poster",
+  "label": "Retro 70s poster",
+  "description": "Subject cut out; background oranges boosted; tall teal slab-serif title behind the subject, then a faded warm grade on sun-faded paper.",
+  "ar": "non-square",
+  "text_input": "yes",
+  "default_text": "TITLE",
+  "text_character_limit": 16,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "selective_color",
+      "on": "background",
+      "hue": "orange",
+      "width": 45,
+      "saturation": 1.6,
+      "lightness": 0.1,
+      "others": 0.5,
+      "pull": 0.4
+    },
+    {
+      "filter": "draw_text",
+      "on": "background",
+      "text": "$text",
+      "color": [
+        0,
+        120,
+        125
+      ],
+      "align": "top",
+      "font_size_ratio": 0.34,
+      "margin_ratio": 0.03,
+      "scale_y": 1.9,
+      "font_style": "slab"
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "temperature": 0.3,
+      "contrast": -0.1,
+      "black_lift": 0.08,
+      "saturation": 0.9
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "color": [
+        250,
+        235,
+        205
+      ],
+      "tint": 0.3,
+      "grain": 0.06,
+      "stains": 0.1,
+      "fade": 0.12
+    }
+  ]
+}

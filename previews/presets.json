@@ -1,5 +1,95 @@
 [
   {
+    "preset_name": "velvet_ticket_title",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "TITLE",
+    "text_character_limit": 16,
+    "pre_edit_image": "previews/pre-edit/velvet_ticket_title.jpg",
+    "post_edit_image": "previews/post-edit/velvet_ticket_title.png"
+  },
+  {
+    "preset_name": "art_deco_marquee",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "TITLE",
+    "text_character_limit": 16,
+    "pre_edit_image": "previews/pre-edit/art_deco_marquee.jpg",
+    "post_edit_image": "previews/post-edit/art_deco_marquee.png"
+  },
+  {
+    "preset_name": "retrowave_neon_title",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "TITLE",
+    "text_character_limit": 16,
+    "pre_edit_image": "previews/pre-edit/retrowave_neon_title.jpg",
+    "post_edit_image": "previews/post-edit/retrowave_neon_title.png"
+  },
+  {
+    "preset_name": "wanted_stencil_title",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "TITLE",
+    "text_character_limit": 16,
+    "pre_edit_image": "previews/pre-edit/wanted_stencil_title.jpg",
+    "post_edit_image": "previews/post-edit/wanted_stencil_title.png"
+  },
+  {
+    "preset_name": "mission_passed_title",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "TITLE",
+    "text_character_limit": 16,
+    "pre_edit_image": "previews/pre-edit/mission_passed_title.jpg",
+    "post_edit_image": "previews/post-edit/mission_passed_title.png"
+  },
+  {
+    "preset_name": "neon_nights_script",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "TITLE",
+    "text_character_limit": 16,
+    "pre_edit_image": "previews/pre-edit/neon_nights_script.jpg",
+    "post_edit_image": "previews/post-edit/neon_nights_script.png"
+  },
+  {
+    "preset_name": "brush_script_poster",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "TITLE",
+    "text_character_limit": 16,
+    "pre_edit_image": "previews/pre-edit/brush_script_poster.jpg",
+    "post_edit_image": "previews/post-edit/brush_script_poster.png"
+  },
+  {
+    "preset_name": "retro_70s_poster",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "TITLE",
+    "text_character_limit": 16,
+    "pre_edit_image": "previews/pre-edit/retro_70s_poster.jpg",
+    "post_edit_image": "previews/post-edit/retro_70s_poster.png"
+  },
+  {
+    "preset_name": "poster_title_blue_pop",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "TITLE",
+    "text_character_limit": 16,
+    "pre_edit_image": "previews/pre-edit/poster_title_blue_pop.jpg",
+    "post_edit_image": "previews/post-edit/poster_title_blue_pop.png"
+  },
+  {
+    "preset_name": "poster_title_yellow_pop",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "TITLE",
+    "text_character_limit": 16,
+    "pre_edit_image": "previews/pre-edit/poster_title_yellow_pop.jpg",
+    "post_edit_image": "previews/post-edit/poster_title_yellow_pop.png"
+  },
+  {
     "preset_name": "studio_spotlight",
     "ar": "non-square",
     "text_input": "no",

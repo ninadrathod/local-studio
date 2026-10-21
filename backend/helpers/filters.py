@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import math
 from functools import lru_cache
+from pathlib import Path
 from typing import Sequence
 
 from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageStat
@@ -60,12 +61,48 @@ _STAMP_FONT_CANDIDATES = (
 )
 
 
+# Open-licensed display fonts shipped with the repo (OFL / Apache; licences sit next to them).
+_FONTS_DIR = Path(__file__).resolve().parents[1] / "fonts"
+
+
+def _bundled(name: str) -> str:
+    return str(_FONTS_DIR / name)
+
+
+# Poster-title display styles. `poster` and `brush` prefer the system Impact /
+# Brush Script (macOS, Windows) and fall back to bundled open lookalikes.
+_DISPLAY_FONT_CANDIDATES: dict[str, tuple[str, ...]] = {
+    "poster": (
+        "/System/Library/Fonts/Supplemental/Impact.ttf",
+        "/Library/Fonts/Impact.ttf",
+        "C:/Windows/Fonts/impact.ttf",
+        "/usr/share/fonts/truetype/msttcorefonts/Impact.ttf",
+        _bundled("Anton-Regular.ttf"),
+    ),
+    "brush": (
+        "/System/Library/Fonts/Supplemental/Brush Script.ttf",
+        "C:/Windows/Fonts/BRUSHSCI.TTF",
+        _bundled("Yellowtail-Regular.ttf"),
+    ),
+    "slab": (_bundled("AlfaSlabOne-Regular.ttf"),),
+    "signature": (_bundled("MrDafoe-Regular.ttf"),),
+    "bold_display": (_bundled("PassionOne-Bold.ttf"),),
+    "stencil": (_bundled("BlackOpsOne-Regular.ttf"),),
+    # Monoton and Bungee only have capitals: lowercase input renders as caps.
+    "neon_lines": (_bundled("Monoton-Regular.ttf"),),
+    "marquee": (_bundled("Bungee-Regular.ttf"),),
+}
+
+
 def _font_candidates(style: str) -> tuple[str, ...]:
     text = (style or "sans").strip().lower()
     if text in {"flow", "script", "hand", "cursive"}:
         return _FLOW_FONT_CANDIDATES
     if text in {"stamp", "mono", "typewriter"}:
         return _STAMP_FONT_CANDIDATES
+    if text in _DISPLAY_FONT_CANDIDATES:
+        # Plain sans as a last resort if the bundled file is missing.
+        return _DISPLAY_FONT_CANDIDATES[text] + _SANS_FONT_CANDIDATES
     return _SANS_FONT_CANDIDATES
 
 
@@ -1232,6 +1269,109 @@ def color_grade(
     return _keep_alpha(graded, image)
 
 
+# Named hue centres (degrees on the HSV wheel) for `selective_color`.
+_HUE_NAMES = {
+    "red": 0.0,
+    "orange": 30.0,
+    "yellow": 48.0,
+    "green": 120.0,
+    "cyan": 180.0,
+    "teal": 175.0,
+    "blue": 220.0,
+    "purple": 275.0,
+    "magenta": 300.0,
+    "pink": 330.0,
+}
+
+
+def _hue_degrees(hue: float | str | Sequence[int]) -> float:
+    """Hue centre from degrees, a name in `_HUE_NAMES`, or an [r, g, b] colour."""
+    if isinstance(hue, str):
+        key = hue.strip().lower()
+        if key not in _HUE_NAMES:
+            raise ValueError(f"Unknown hue '{hue}'. Use degrees, [r, g, b], or one of: {', '.join(_HUE_NAMES)}")
+        return _HUE_NAMES[key]
+    if isinstance(hue, (int, float)):
+        return float(hue) % 360
+    import colorsys
+
+    r, g, b = (max(0, min(255, int(c))) / 255 for c in hue)
+    return colorsys.rgb_to_hsv(r, g, b)[0] * 360
+
+
+def selective_color(
+    image: Image.Image,
+    hue: float | str | Sequence[int] = "yellow",
+    width: float = 35.0,
+    saturation: float = 1.6,
+    lightness: float = 0.1,
+    others: float = 1.0,
+    pull: float = 0.0,
+) -> Image.Image:
+    """
+    Push one colour family and (optionally) mute the rest.
+
+    - `hue`: target as degrees (0–360), a name (`red`, `orange`, `yellow`, `green`,
+      `cyan`, `teal`, `blue`, `purple`, `magenta`, `pink`) or an [r, g, b] colour.
+    - `width`: half-width of the hue band in degrees; weight eases to 0 at the edge.
+    - `saturation`: saturation multiplier inside the band (1 = unchanged).
+    - `lightness`: brightness lift inside the band (0–1, fraction of value).
+    - `others`: saturation multiplier outside the band (1 = unchanged, 0 = grey).
+    - `pull`: 0–1, rotate in-band hues toward the target (tighter, purer colour).
+
+    Near-grey pixels get little weight, so white walls and skies don't pick up the colour.
+    Runs in strips (flat memory at any resolution); keeps alpha.
+    """
+    import numpy as np
+
+    out = _as_rgb(image)
+    centre = _hue_degrees(hue) / 360
+    band = max(1.0, min(180.0, float(width))) / 360
+    sat_in = max(0.0, float(saturation))
+    sat_out = max(0.0, float(others))
+    lift = max(0.0, min(1.0, float(lightness)))
+    rotate = max(0.0, min(1.0, float(pull)))
+
+    w, h = out.size
+    rows = max(1, _GRADE_STRIP_PIXELS // max(1, w))
+    result = Image.new("RGB", out.size)
+    for top in range(0, h, rows):
+        box = (0, top, w, min(h, top + rows))
+        rgb = np.asarray(out.crop(box), dtype=np.float32) / 255
+        r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+        v = rgb.max(axis=-1)
+        c = v - rgb.min(axis=-1)
+        s = np.where(v > 0, c / np.maximum(v, 1e-6), 0)
+        safe = np.maximum(c, 1e-6)
+        hh = np.where(
+            v == r,
+            ((g - b) / safe) % 6,
+            np.where(v == g, (b - r) / safe + 2, (r - g) / safe + 4),
+        ) / 6
+        hh = np.where(c > 0, hh, 0)
+
+        # Signed circular distance to the target, in turns (−0.5 … 0.5).
+        diff = (centre - hh + 0.5) % 1 - 0.5
+        t = np.clip(1 - np.abs(diff) / band, 0, 1)
+        weight = t * t * (3 - 2 * t) * np.clip(c / 0.06, 0, 1)
+
+        hh = (hh + rotate * weight * diff) % 1
+        s = np.clip(s * (sat_out + (sat_in - sat_out) * weight), 0, 1)
+        v = np.clip(v * (1 + lift * weight), 0, 1)
+
+        # HSV → RGB.
+        i = np.floor(hh * 6).astype(np.int32) % 6
+        f = hh * 6 - np.floor(hh * 6)
+        p, q, tt = v * (1 - s), v * (1 - s * f), v * (1 - s * (1 - f))
+        choices = [
+            np.stack(x, axis=-1)
+            for x in ((v, tt, p), (q, v, p), (p, v, tt), (p, q, v), (tt, p, v), (v, p, q))
+        ]
+        px = np.choose(i[..., None], choices)
+        result.paste(Image.fromarray(np.clip(px * 255 + 0.5, 0, 255).astype(np.uint8), "RGB"), box[:2])
+    return _keep_alpha(result, image)
+
+
 def vignette(
     image: Image.Image,
     amount: float = 0.25,
@@ -1635,6 +1775,134 @@ def place_on_canvas(
     return canvas
 
 
+_BOX_STYLES = {"none", "frame", "double", "corners", "label"}
+# Neon title halo: brightness is fixed (part of the look, not a preset knob) and
+# the radius is capped so a preset can't ask for a frame-sized glow layer.
+_TEXT_GLOW_STRENGTH = 1.9
+_MAX_TEXT_GLOW_RATIO = 0.05
+
+
+def _frame_text_layer(
+    layer: Image.Image,
+    style: str,
+    line: int,
+    padding: int,
+    color: tuple[int, int, int],
+    fill: tuple[int, ...] | None,
+    radius: int,
+) -> Image.Image:
+    """Grow a text layer by `padding` + `line` and draw a thin box behind / around the text.
+
+    `frame`: one outline; `double`: outline plus an inner hairline; `corners`:
+    viewfinder brackets only; `label`: solid `fill` (default `color`) plate.
+    """
+    inset = padding + line
+    w, h = layer.width + 2 * inset, layer.height + 2 * inset
+    out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(out)
+    outer = (line // 2, line // 2, w - 1 - line // 2, h - 1 - line // 2)
+    ink = (*color, 255)
+    if style == "label" or fill is not None:
+        plate = tuple(fill) if fill is not None else ink
+        if len(plate) == 3:
+            plate = (*plate, 255)
+        draw.rounded_rectangle((0, 0, w - 1, h - 1), radius=radius, fill=plate)
+    if style in {"frame", "double"}:
+        draw.rounded_rectangle(outer, radius=radius, outline=ink, width=line)
+    if style == "double":
+        gap = max(2, line * 3)
+        thin = max(1, line // 2)
+        draw.rounded_rectangle(
+            (outer[0] + gap, outer[1] + gap, outer[2] - gap, outer[3] - gap),
+            radius=max(0, radius - gap),
+            outline=ink,
+            width=thin,
+        )
+    if style == "corners":
+        arm = max(line * 4, int(min(w, h) * 0.28))
+        x0, y0, x1, y1 = outer
+        for cx, cy, dx, dy in ((x0, y0, 1, 1), (x1, y0, -1, 1), (x0, y1, 1, -1), (x1, y1, -1, -1)):
+            draw.line([(cx, cy + dy * arm), (cx, cy), (cx + dx * arm, cy)], fill=ink, width=line, joint="curve")
+    out.alpha_composite(layer, (inset, inset))
+    return out
+
+
+def _paste_text_block(
+    canvas: Image.Image,
+    value: str,
+    draw_kwargs: dict,
+    bbox: tuple[int, int, int, int],
+    stretch: float,
+    angle: float,
+    glow: float,
+    glow_rgb: tuple[int, int, int],
+    mode: str,
+    pad: int,
+    box: dict | None = None,
+    xy: tuple[int, int] | None = None,
+) -> Image.Image:
+    """Render text on its own layer, stretch it, frame it, tilt it, add a neon glow, and paste it.
+
+    Placement follows `align`, or `xy` (top-left of the text / box) when given.
+    """
+    cw, ch = canvas.size
+    text_w, text_h = max(1, bbox[2] - bbox[0]), max(1, bbox[3] - bbox[1])
+    layer = Image.new("RGBA", (text_w, text_h), (0, 0, 0, 0))
+    ImageDraw.Draw(layer).text((-bbox[0], -bbox[1]), value, **draw_kwargs)
+    out_h = max(1, min(int(round(text_h * stretch)), int(ch * 0.95)))
+    if out_h != text_h:
+        layer = layer.resize((text_w, out_h), Image.Resampling.LANCZOS)
+    if box:
+        # Font bboxes carry ascender/descender room; crop to the inked glyphs so padding is even.
+        inked = layer.getchannel("A").getbbox()
+        if inked:
+            layer = layer.crop(inked)
+        layer = _frame_text_layer(layer, **box)
+        if layer.height > ch:
+            layer = layer.resize((layer.width, int(ch * 0.95)), Image.Resampling.LANCZOS)
+    if angle:
+        layer = layer.rotate(float(angle), resample=Image.Resampling.BICUBIC, expand=True)
+    # Room for the glow to fade out inside the layer instead of being cut at its edge.
+    spread = int(math.ceil(glow * 3)) if glow > 0 else 0
+    if spread:
+        padded = Image.new("RGBA", (layer.width + 2 * spread, layer.height + 2 * spread), (0, 0, 0, 0))
+        padded.paste(layer, (spread, spread))
+        layer = padded
+    lw, lh = layer.size
+
+    if xy is not None:
+        left, top = xy[0] - spread, xy[1] - spread
+    else:
+        if mode in {"top_left", "left_top", "bottom_left", "left_bottom"}:
+            left = pad - spread
+        elif mode in {"top_right", "right_top", "bottom_right", "right_bottom"}:
+            left = cw - pad - lw + spread
+        else:
+            left = (cw - lw) / 2
+        if mode in {"top", "top_left", "left_top", "top_right", "right_top"}:
+            top = pad - spread
+        elif mode in {"bottom", "bottom_center", "bottom_left", "left_bottom", "bottom_right", "right_bottom"}:
+            top = ch - pad - lh + spread
+        else:
+            top = (ch - lh) / 2
+    pos = (int(round(left)), int(round(top)))
+
+    if spread:
+        # Neon halo: blurred alpha in `glow_rgb`, screened onto the canvas twice
+        # (wide soft bloom + tighter hot ring) before the crisp text goes on top.
+        alpha = layer.getchannel("A")
+        halo = Image.new("L", canvas.size, 0)
+        for radius, gain in ((glow, _TEXT_GLOW_STRENGTH), (glow * 0.35, _TEXT_GLOW_STRENGTH * 0.8)):
+            soft = alpha.filter(ImageFilter.GaussianBlur(max(0.5, radius)))
+            soft = soft.point(lambda v, g=gain: min(255, int(v * g)))
+            halo.paste(ImageChops.lighter(halo.crop((*pos, pos[0] + lw, pos[1] + lh)), soft), pos)
+        tint = Image.new("RGB", canvas.size, glow_rgb)
+        lit = ImageChops.screen(canvas.convert("RGB"), ImageChops.multiply(tint, Image.merge("RGB", (halo,) * 3)))
+        canvas = Image.merge("RGBA", (*lit.split(), canvas.getchannel("A")))
+    canvas.alpha_composite(layer, (max(0, pos[0]), max(0, pos[1])), (max(0, -pos[0]), max(0, -pos[1])))
+    return canvas
+
+
 def draw_text(
     image: Image.Image,
     text: str = "",
@@ -1652,6 +1920,16 @@ def draw_text(
     font_size_ratio: float | None = None,
     stroke_ratio: float | None = None,
     margin_ratio: float | None = None,
+    scale_y: float = 1.0,
+    angle: float = 0.0,
+    glow_ratio: float = 0.0,
+    glow_color: Sequence[int] | None = None,
+    box: str = "none",
+    box_color: Sequence[int] | None = None,
+    box_fill: Sequence[int] | None = None,
+    box_ratio: float = 0.003,
+    box_pad_ratio: float = 0.025,
+    box_radius_ratio: float = 0.0,
 ) -> Image.Image:
     """
     Draw `text` onto an image.
@@ -1660,9 +1938,24 @@ def draw_text(
     params (fractions of the short side) override them so text keeps its
     proportions from phone to DSLR size.
 
+    `scale_y` stretches the glyphs vertically (e.g. 1.8 for tall poster
+    lettering; capped so the text fits 95% of the height). `angle` tilts the
+    text (degrees, counter-clockwise). `glow_ratio` (fraction of the short side,
+    capped at 0.05) adds a fixed-brightness neon halo in `glow_color` (default:
+    the stroke colour, else the fill) screened under the text.
+
+    `box` puts the text in a thin box: `frame`, `double`, `corners` (viewfinder
+    brackets) or `label` (solid plate in `box_fill`, default `box_color`).
+    `box_color` defaults to the text colour; `box_ratio` (line), `box_pad_ratio`
+    (gap to the text) and `box_radius_ratio` (rounded corners) are fractions of
+    the short side. The box stretches, tilts and glows with the text.
+
     `align`: `center`, `top`, `bottom`, `top_right`, `top_left`, `bottom_right`, `bottom_left`, `bottom_center`
     (ignored when both `x` and `y` are set — then those are top-left).
     `font_style`: `sans` (default), `flow` / `script` for handwriting look, or `stamp` for a bold mono film-camera date imprint.
+    Poster-title styles: `poster` (Impact → bundled Anton), `brush` (Brush Script →
+    bundled Yellowtail), `slab`, `signature`, `bold_display`, `stencil`, and the
+    caps-only `neon_lines` / `marquee` (bundled under `backend/fonts/`).
     `font_path`: optional `.ttf` / `.otf` / `.ttc` file; when set, it is used
     instead of `font_style`.
     """
@@ -1685,6 +1978,23 @@ def draw_text(
     font = _load_font(size, style, path or None)
     draw = ImageDraw.Draw(canvas)
     max_width = int(canvas.size[0] * 0.9)
+    frame = None
+    box_style = (box or "none").strip().lower()
+    if box_style not in _BOX_STYLES:
+        raise ValueError(f"Unknown box '{box}'. Use one of: {', '.join(sorted(_BOX_STYLES))}")
+    if box_style != "none":
+        line = max(1, int(round(_ratio_px(box_ratio, canvas.size, 3))))
+        padding = max(0, int(round(_ratio_px(box_pad_ratio, canvas.size, 16))))
+        frame = {
+            "style": box_style,
+            "line": line,
+            "padding": padding,
+            "color": _rgb_tint(box_color, None, tint),
+            "fill": tuple(int(c) for c in box_fill) if box_fill is not None else None,
+            "radius": int(round(_ratio_px(box_radius_ratio, canvas.size, 0))),
+        }
+        # The box needs its padding + line on both sides inside the 90% width.
+        max_width = max(8, max_width - 2 * (padding + line))
     for _ in range(12):
         bbox = draw.textbbox((0, 0), value, font=font, stroke_width=stroke)
         text_w = bbox[2] - bbox[0]
@@ -1703,8 +2013,13 @@ def draw_text(
     if stroke_fill is not None:
         draw_kwargs["stroke_fill"] = stroke_fill
 
-    if x is not None and y is not None:
-        draw.text((int(x), int(y)), value, **draw_kwargs)
+    stretch = max(0.1, float(scale_y))
+    glow = _ratio_px(min(float(glow_ratio), _MAX_TEXT_GLOW_RATIO), canvas.size, 0.0) if glow_ratio else 0.0
+    layered = stretch != 1.0 or bool(angle) or glow > 0 or frame is not None
+    xy = (int(x), int(y)) if x is not None and y is not None else None
+
+    if xy is not None and not layered:
+        draw.text(xy, value, **draw_kwargs)
         return canvas
 
     pad = max(0, int(round(_ratio_px(margin_ratio, canvas.size, margin))))
@@ -1712,6 +2027,13 @@ def draw_text(
     bbox = draw.textbbox((0, 0), value, font=font, stroke_width=stroke)
     text_w = bbox[2] - bbox[0]
     text_h = bbox[3] - bbox[1]
+
+    if layered:
+        glow_rgb = _rgb_tint(glow_color, None, stroke_fill[:3] if stroke_fill else tint)
+        return _paste_text_block(
+            canvas, value, draw_kwargs, bbox, stretch, float(angle or 0), glow, glow_rgb,
+            mode, pad, frame, xy,
+        )
 
     def _draw_at(px: float, py: float, anchor: str) -> None:
         try:

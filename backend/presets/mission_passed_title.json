@@ -1,0 +1,71 @@
+{
+  "name": "mission_passed_title",
+  "label": "Mission passed title",
+  "description": "Deep-blue night background; tall gold game-cover title with a heavy black outline, slightly tilted, behind the subject.",
+  "ar": "non-square",
+  "text_input": "yes",
+  "default_text": "TITLE",
+  "text_character_limit": 16,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "color_grade",
+      "on": "background",
+      "exposure": -0.8,
+      "contrast": 0.25,
+      "black_lift": 0.02
+    },
+    {
+      "filter": "selective_color",
+      "on": "background",
+      "hue": "blue",
+      "width": 50,
+      "saturation": 2.0,
+      "lightness": 0.15,
+      "others": 0.5,
+      "pull": 0.5
+    },
+    {
+      "filter": "draw_text",
+      "on": "background",
+      "text": "$text",
+      "color": [
+        255,
+        200,
+        40
+      ],
+      "align": "top",
+      "font_size_ratio": 0.36,
+      "margin_ratio": 0.04,
+      "scale_y": 1.5,
+      "stroke_color": [
+        10,
+        10,
+        10
+      ],
+      "stroke_ratio": 0.01,
+      "angle": -4,
+      "font_style": "bold_display"
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0,
+      "grain": 0.05,
+      "stains": 0,
+      "fade": 0
+    }
+  ]
+}
