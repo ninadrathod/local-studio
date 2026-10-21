@@ -22,13 +22,19 @@ cd local-studio
 ./scripts/setup.sh
 ```
 
-3. Run the API and frontend:
+3. Create your settings file (`.env` is gitignored) and adjust the values in it:
+
+```bash
+cp .env.example .env
+```
+
+4. Run the API and frontend:
 
 ```bash
 ./scripts/run.sh
 ```
 
-4. Open [http://localhost:5500](http://localhost:5500), pick a preset, upload an image, and click **Generate edit**.
+5. Open [http://localhost:5500](http://localhost:5500), pick a preset, upload an image, and click **Generate edit**.
 
 The servers run in the background (they keep running after you close the terminal); logs are in `logs/api.log` and `logs/frontend.log`. Stop both with:
 
@@ -70,10 +76,11 @@ echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 free -h   # "Swap:" should now show ~3G (more if the OS already had swap)
 ```
 
-4. Set up and start:
+4. Set up, create your settings file, and start:
 
 ```bash
 ./scripts/setup.sh
+cp .env.example .env
 ./scripts/run.sh
 ```
 
@@ -99,6 +106,14 @@ sudo ufw allow 5500,8000/tcp
 ```
 
 Check it with `crontab -l` and `tail ~/local-studio-update.log`. Midnight uses the system timezone (`timedatectl`; change with `sudo timedatectl set-timezone <Region/City>`). To remove the schedule, delete those two lines with `crontab -e`.
+
+7. Low-RAM devices: turn on lightweight mode (every input image is downscaled to ≤ 2 megapixels before editing). Set it in `.env`, which `run.sh` reads on every start, including the scheduled restarts:
+
+```bash
+cp -n .env.example .env
+sed -i 's/^LIGHTWEIGHT=.*/LIGHTWEIGHT=1/' .env
+./scripts/stop.sh && ./scripts/run.sh
+```
 
 </details>
 

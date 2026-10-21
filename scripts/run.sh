@@ -36,6 +36,14 @@ port_in_use() {
   fi
 }
 
+# Settings from .env (copy of .env.example), exported so the servers inherit them.
+if [[ -f "${ROOT_DIR}/.env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "${ROOT_DIR}/.env"
+  set +a
+fi
+
 if [[ ! -x "${PYTHON}" ]]; then
   echo "Error: backend/.venv not found or incomplete. Run ./scripts/setup.sh first." >&2
   exit 1
