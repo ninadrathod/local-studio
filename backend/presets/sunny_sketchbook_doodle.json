@@ -1,0 +1,75 @@
+{
+  "name": "sunny_sketchbook_doodle",
+  "label": "Sunny sketchbook doodle",
+  "description": "Warm lift with a yellow sun, white cloud, pink hearts and an orange flower doodled in the corners.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "temperature": 0.2,
+      "exposure": 0.1,
+      "vibrance": 0.2
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "sun",
+      "color": [
+        255,
+        205,
+        40
+      ],
+      "x": 0.13,
+      "y": 0.13,
+      "size": 0.17,
+      "stroke": 0.008
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "cloud",
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "x": 0.86,
+      "y": 0.12,
+      "size": 0.17,
+      "stroke": 0.008
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "hearts",
+      "color": [
+        255,
+        90,
+        150
+      ],
+      "x": 0.87,
+      "y": 0.87,
+      "size": 0.2,
+      "stroke": 0.008,
+      "count": 3
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "flower",
+      "color": [
+        255,
+        140,
+        40
+      ],
+      "x": 0.12,
+      "y": 0.88,
+      "size": 0.14,
+      "stroke": 0.008
+    }
+  ]
+}

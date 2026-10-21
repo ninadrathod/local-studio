@@ -1,0 +1,71 @@
+{
+  "name": "love_notes_doodle",
+  "label": "Love notes doodle",
+  "description": "Blush pastel grade, pink wavy frame and red hearts in two corners.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "tint": 0.35,
+      "exposure": 0.12,
+      "contrast": -0.2,
+      "black_lift": 0.06,
+      "split": 0.5,
+      "shadows": [
+        150,
+        100,
+        140
+      ],
+      "highlights": [
+        255,
+        205,
+        215
+      ]
+    },
+    {
+      "filter": "doodle_frame",
+      "on": "image",
+      "style": "waves",
+      "color": [
+        255,
+        150,
+        185
+      ]
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "hearts",
+      "color": [
+        230,
+        40,
+        80
+      ],
+      "x": 0.13,
+      "y": 0.13,
+      "size": 0.213,
+      "stroke": 0.008,
+      "count": 4
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "hearts",
+      "color": [
+        230,
+        40,
+        80
+      ],
+      "x": 0.87,
+      "y": 0.87,
+      "size": 0.188,
+      "stroke": 0.008,
+      "count": 3,
+      "seed": 3
+    }
+  ]
+}

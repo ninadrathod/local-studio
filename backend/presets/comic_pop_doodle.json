@@ -1,0 +1,80 @@
+{
+  "name": "comic_pop_doodle",
+  "label": "Comic pop doodle",
+  "description": "Punchy colour with light halftone dots, black zigzag frame, yellow lightning bolts and red dots.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "contrast": 0.35,
+      "saturation": 1.35,
+      "vibrance": 0.2
+    },
+    {
+      "filter": "halftone",
+      "on": "image",
+      "mode": "cmyk",
+      "cell": 0.008,
+      "mix": 0.2,
+      "gcr": 0.4
+    },
+    {
+      "filter": "doodle_frame",
+      "on": "image",
+      "style": "zigzag",
+      "color": [
+        20,
+        20,
+        20
+      ]
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "bolt",
+      "color": [
+        255,
+        205,
+        40
+      ],
+      "x": 0.87,
+      "y": 0.14,
+      "size": 0.16,
+      "stroke": 0.01
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "bolt",
+      "color": [
+        255,
+        205,
+        40
+      ],
+      "x": 0.13,
+      "y": 0.86,
+      "size": 0.12,
+      "stroke": 0.009,
+      "angle": 20
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "dots",
+      "color": [
+        230,
+        30,
+        40
+      ],
+      "x": 0.13,
+      "y": 0.13,
+      "size": 0.2,
+      "stroke": 0.008,
+      "count": 6
+    }
+  ]
+}

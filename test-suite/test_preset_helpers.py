@@ -63,6 +63,7 @@ def test_filter_registry_is_name_lookup() -> None:
         "halftone",
         "paper_texture",
         "selective_color",
+        "doodle_frame",
     }
 
 
@@ -485,7 +486,7 @@ def test_doodle_subject_anchor_centres_on_around_layer() -> None:
 def test_doodle_rejects_bad_params() -> None:
     base = Image.new("RGB", (50, 50))
     with pytest.raises(ValueError):
-        F.doodle(base, style="hearts")
+        F.doodle(base, style="unicorn")
     with pytest.raises(ValueError):
         F.doodle(base, anchor="middle_ish")
     with pytest.raises(ValueError):
@@ -1573,3 +1574,75 @@ def test_ai_upscale_lightweight_uses_plain_resize(monkeypatch) -> None:
     assert out.size == (90, 60) and out.getpixel((45, 30)) == (1, 2, 3)
     big = Image.new("RGB", (200, 100))
     assert F.ai_upscale(big, long_edge=90).size == (200, 100)  # never shrinks
+
+
+@pytest.mark.parametrize("style", F.DOODLE_STYLES)
+def test_doodle_styles_draw_only_near_their_anchor(style: str) -> None:
+    canvas = Image.new("RGB", (400, 300), (40, 40, 40))
+    out = F.doodle(canvas, style=style, color=[255, 255, 255], x=0.15, y=0.2, size=0.2, count=4, angle=15)
+    bbox = _ink_bbox(out, background=40)
+    assert bbox[2] < 200 and bbox[3] < 150  # stays in the top-left quarter
+
+
+def test_doodle_unknown_style_raises() -> None:
+    with pytest.raises(ValueError, match="style must be one of"):
+        F.doodle(Image.new("RGB", (50, 50)), style="dragon")
+
+
+@pytest.mark.parametrize("style", F.DOODLE_FRAME_STYLES)
+def test_doodle_frame_hugs_the_border(style: str) -> None:
+    canvas = Image.new("RGB", (400, 300), (40, 40, 40))
+    out = F.doodle_frame(canvas, style=style, color=[255, 255, 255])
+    assert out.size == canvas.size and out.mode == "RGB"
+    gray = out.convert("L")
+    assert gray.crop((120, 90, 280, 210)).getextrema() == (40, 40)  # centre untouched
+    assert gray.crop((0, 0, 400, 40)).getextrema()[1] > 200  # ink near the top edge
+
+
+def test_doodle_frame_auto_color_and_bad_style() -> None:
+    light = F.doodle_frame(Image.new("RGB", (200, 200), (240, 240, 240)), color="auto")
+    assert light.convert("L").crop((0, 0, 200, 20)).getextrema()[0] < 100  # dark ink on light
+    with pytest.raises(ValueError, match="style must be one of"):
+        F.doodle_frame(Image.new("RGB", (50, 50)), style="lace")
+
+
+DOODLE_BORDER_PRESETS = (
+    "marker_frame_doodle",
+    "sunny_sketchbook_doodle",
+    "neon_doodle_nights",
+    "chalkboard_doodle",
+    "love_notes_doodle",
+    "retro_70s_doodle",
+    "comic_pop_doodle",
+    "scrapbook_doodle",
+    "cyanotype_doodle",
+    "confetti_pastel_doodle",
+)
+
+
+@pytest.mark.parametrize("name", DOODLE_BORDER_PRESETS)
+def test_doodle_border_presets_shape(name: str) -> None:
+    data = load_preset(PRESETS / f"{name}.json")
+    assert data["name"] == name
+    assert (data["ar"], data["text_input"], data["default_text"], data["text_character_limit"]) == ("non-square", "no", "", 0)
+    steps = data["steps"]
+    assert all(step["filter"] in FILTERS for step in steps)
+    assert not any(step["filter"] in ("extract_subject", "ai_upscale") for step in steps)
+    doodles = [s for s in steps if s["filter"] == "doodle"]
+    assert doodles
+    for s in doodles:  # every doodle sits near an edge, never mid-frame
+        assert min(s["x"], 1 - s["x"], s["y"], 1 - s["y"]) <= 0.15, s
+
+
+def test_doodle_border_preset_runs_end_to_end() -> None:
+    data = load_preset(PRESETS / "sunny_sketchbook_doodle.json")
+    out = apply_steps(Image.new("RGB", (300, 200), (90, 120, 150)), data["steps"])
+    assert out.size == (300, 200)
+
+
+def test_doodle_frame_keeps_rgba_transparency_off_the_frame() -> None:
+    clear = Image.new("RGBA", (200, 160), (0, 0, 0, 0))
+    out = F.doodle_frame(clear, style="line", color=[255, 0, 0])
+    assert out.mode == "RGBA"
+    assert out.getchannel("A").crop((50, 50, 150, 110)).getextrema() == (0, 0)  # centre still transparent
+    assert out.getchannel("A").crop((0, 0, 200, 15)).getextrema()[1] == 255  # frame is opaque ink
