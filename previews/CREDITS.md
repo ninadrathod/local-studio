@@ -291,3 +291,73 @@ is required where the license says so; CC0 and public-domain sources need none.
 - **Photographer:** [Rucksack Magazine](https://unsplash.com/@rucksackmag) (via Wikimedia Commons Unsplash CC0 archive)
 - **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
 - **Files:** `pre-edit/velvet_ticket_title.jpg` → `post-edit/velvet_ticket_title.png` (preset `velvet_ticket_title`)
+
+## `print_film_2383`
+
+- **Photograph:** [Blonde model near autumn trees (Unsplash)](https://commons.wikimedia.org/wiki/File:Blonde_model_near_autumn_trees_(Unsplash).jpg)
+- **Photographer:** [Christopher Campbell](https://unsplash.com/@chrisjoelcampbell) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/print_film_2383.jpg` → `post-edit/print_film_2383.png` (preset `print_film_2383`)
+
+## `cross_process`
+
+- **Photograph:** [Man on bike on road (Unsplash)](https://commons.wikimedia.org/wiki/File:Man_on_bike_on_road_(Unsplash).jpg)
+- **Photographer:** [Daniel Peragine](https://unsplash.com/@danieljperagine) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/cross_process.jpg` → `post-edit/cross_process.png` (preset `cross_process`)
+
+## `hdr_clarity_pop`
+
+- **Photograph:** [Matterhorn sunset 2016 (Unsplash)](https://commons.wikimedia.org/wiki/File:Matterhorn_sunset_2016_(Unsplash).jpg)
+- **Photographer:** [Sam Ferrara](https://unsplash.com/@samferrara) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/hdr_clarity_pop.jpg` → `post-edit/hdr_clarity_pop.png` (preset `hdr_clarity_pop`)
+
+## `bleach_bypass`
+
+- **Photograph:** [Man wearing motorcycle helmet (Unsplash)](https://commons.wikimedia.org/wiki/File:Man_wearing_motorcycle_helmet_(Unsplash).jpg)
+- **Photographer:** [Cameron Kirby](https://unsplash.com/@ckirby) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/bleach_bypass.jpg` → `post-edit/bleach_bypass.png` (preset `bleach_bypass`)
+
+## `mocha_moody`
+
+- **Photograph:** [Woman lying in autumn leaves (Unsplash)](https://commons.wikimedia.org/wiki/File:Woman_lying_in_autumn_leaves_(Unsplash).jpg)
+- **Photographer:** [Neal Kharawala](https://unsplash.com/@nealk) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/mocha_moody.jpg` → `post-edit/mocha_moody.png` (preset `mocha_moody`)
+
+## `lavender_dusk`
+
+- **Photograph:** [Lavender Fields (Unsplash)](https://commons.wikimedia.org/wiki/File:Lavender_Fields_(Unsplash).jpg)
+- **Photographer:** [Vero Photoart](https://unsplash.com/@verophotoart) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/lavender_dusk.jpg` → `post-edit/lavender_dusk.png` (preset `lavender_dusk`)
+
+## `hdr_noir_mono`
+
+- **Photograph:** [Shadowed Portrait (Unsplash)](https://commons.wikimedia.org/wiki/File:Shadowed_Portrait_(Unsplash).jpg)
+- **Photographer:** [WillSpirit SBLN](https://unsplash.com/@willspirit) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/hdr_noir_mono.jpg` → `post-edit/hdr_noir_mono.png` (preset `hdr_noir_mono`)
+
+## `mint_pastel_film`
+
+- **Photograph:** [Fall Fashion (Unsplash)](https://commons.wikimedia.org/wiki/File:Fall_Fashion_(Unsplash).jpg)
+- **Photographer:** [freestocks.org](https://unsplash.com/@freestocks) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/mint_pastel_film.jpg` → `post-edit/mint_pastel_film.png` (preset `mint_pastel_film`)
+
+## `shutter_drag`
+
+- **Photograph:** [Orange cyclist (Unsplash)](https://commons.wikimedia.org/wiki/File:Orange_cyclist_(Unsplash).jpg)
+- **Photographer:** [Jack Alexander](https://unsplash.com/@jackalexander_) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/shutter_drag.jpg` → `post-edit/shutter_drag.png` (preset `shutter_drag`)
+
+## `speed_pan`
+
+- **Photograph:** [Two people on motorcycle (Unsplash)](https://commons.wikimedia.org/wiki/File:Two_people_on_motorcycle_(Unsplash).jpg)
+- **Photographer:** [Abigail Keenan](https://unsplash.com/@akeenster) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/speed_pan.jpg` → `post-edit/speed_pan.png` (preset `speed_pan`)

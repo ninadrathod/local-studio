@@ -1,0 +1,118 @@
+{
+  "name": "shutter_drag",
+  "label": "Shutter drag",
+  "description": "Subject streaks like a fast-moving object at a slow shutter (trail behind, faint flash-frozen copy on top); cool contrast curve, recovered highlights.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "motion_blur",
+      "on": "subject",
+      "length_ratio": 0.14,
+      "angle": 0,
+      "trail": 0.85,
+      "fade": 0.55,
+      "freeze": 0.35
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    },
+    {
+      "filter": "shadows_highlights",
+      "on": "image",
+      "shadows": 0.3,
+      "highlights": -0.45
+    },
+    {
+      "filter": "tone_curve",
+      "on": "image",
+      "master": [
+        [
+          0,
+          6
+        ],
+        [
+          60,
+          44
+        ],
+        [
+          128,
+          128
+        ],
+        [
+          200,
+          214
+        ],
+        [
+          255,
+          250
+        ]
+      ],
+      "red": [
+        [
+          0,
+          0
+        ],
+        [
+          128,
+          126
+        ],
+        [
+          255,
+          255
+        ]
+      ],
+      "green": [
+        [
+          0,
+          6
+        ],
+        [
+          128,
+          130
+        ],
+        [
+          255,
+          252
+        ]
+      ],
+      "blue": [
+        [
+          0,
+          22
+        ],
+        [
+          128,
+          136
+        ],
+        [
+          255,
+          238
+        ]
+      ]
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "saturation": 0.9,
+      "vibrance": 0.2
+    },
+    {
+      "filter": "vignette",
+      "on": "image",
+      "amount": 0.25
+    }
+  ]
+}

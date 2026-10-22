@@ -1,0 +1,90 @@
+{
+  "name": "cross_process",
+  "label": "Cross process",
+  "description": "HD pass, then classic cross-processed slide: hard red S-curve, yellow-green highlights, lifted blue blacks, punchy colour.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "shadows_highlights",
+      "on": "image",
+      "shadows": 0.15,
+      "highlights": -0.25
+    },
+    {
+      "filter": "tone_curve",
+      "on": "image",
+      "red": [
+        [
+          0,
+          0
+        ],
+        [
+          64,
+          40
+        ],
+        [
+          128,
+          140
+        ],
+        [
+          192,
+          225
+        ],
+        [
+          255,
+          255
+        ]
+      ],
+      "green": [
+        [
+          0,
+          0
+        ],
+        [
+          64,
+          52
+        ],
+        [
+          128,
+          135
+        ],
+        [
+          192,
+          212
+        ],
+        [
+          255,
+          250
+        ]
+      ],
+      "blue": [
+        [
+          0,
+          45
+        ],
+        [
+          128,
+          118
+        ],
+        [
+          255,
+          200
+        ]
+      ]
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "saturation": 1.15
+    }
+  ]
+}

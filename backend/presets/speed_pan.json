@@ -1,0 +1,103 @@
+{
+  "name": "speed_pan",
+  "label": "Speed pan",
+  "description": "Panning shot: subject sharp, background streaked horizontally; warm punchy S-curve with opened shadows and a vignette.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "motion_blur",
+      "on": "background",
+      "length_ratio": 0.09,
+      "angle": 0,
+      "trail": 0,
+      "exclude": "subject"
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    },
+    {
+      "filter": "shadows_highlights",
+      "on": "image",
+      "shadows": 0.35,
+      "highlights": -0.5
+    },
+    {
+      "filter": "tone_curve",
+      "on": "image",
+      "master": [
+        [
+          0,
+          0
+        ],
+        [
+          50,
+          36
+        ],
+        [
+          128,
+          132
+        ],
+        [
+          205,
+          224
+        ],
+        [
+          255,
+          252
+        ]
+      ],
+      "red": [
+        [
+          0,
+          0
+        ],
+        [
+          128,
+          136
+        ],
+        [
+          255,
+          255
+        ]
+      ],
+      "blue": [
+        [
+          0,
+          10
+        ],
+        [
+          128,
+          122
+        ],
+        [
+          255,
+          240
+        ]
+      ]
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "saturation": 1.05,
+      "vibrance": 0.25
+    },
+    {
+      "filter": "vignette",
+      "on": "image",
+      "amount": 0.3
+    }
+  ]
+}

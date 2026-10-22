@@ -1,0 +1,67 @@
+{
+  "name": "hdr_noir_mono",
+  "label": "HDR noir mono",
+  "description": "HD pass, then dramatic black & white: big shadow lift + highlight recovery, steep S-curve, vignette.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "shadows_highlights",
+      "on": "image",
+      "shadows": 0.55,
+      "highlights": -0.75,
+      "radius_ratio": 0.03,
+      "local": 0.75
+    },
+    {
+      "filter": "grayscale",
+      "on": "image"
+    },
+    {
+      "filter": "tone_curve",
+      "on": "image",
+      "master": [
+        [
+          0,
+          0
+        ],
+        [
+          45,
+          22
+        ],
+        [
+          128,
+          128
+        ],
+        [
+          205,
+          232
+        ],
+        [
+          255,
+          255
+        ]
+      ]
+    },
+    {
+      "filter": "sharpen",
+      "on": "image",
+      "radius": 4.0,
+      "percent": 40,
+      "threshold": 2
+    },
+    {
+      "filter": "vignette",
+      "on": "image",
+      "amount": 0.35
+    }
+  ]
+}
