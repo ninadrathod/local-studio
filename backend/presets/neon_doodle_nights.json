@@ -1,0 +1,80 @@
+{
+  "name": "neon_doodle_nights",
+  "label": "Neon doodle nights",
+  "description": "Darker cool grade, hot-pink dashed frame, cyan spiral and sparkles, a yellow lightning bolt, soft glow.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "exposure": -0.5,
+      "temperature": -0.3,
+      "tint": 0.15,
+      "contrast": 0.2
+    },
+    {
+      "filter": "doodle_frame",
+      "on": "image",
+      "style": "dashes",
+      "color": [
+        255,
+        90,
+        150
+      ],
+      "stroke": 0.007
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "spiral",
+      "color": [
+        40,
+        220,
+        255
+      ],
+      "x": 0.13,
+      "y": 0.13,
+      "size": 0.13,
+      "stroke": 0.008
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "stars",
+      "color": [
+        40,
+        220,
+        255
+      ],
+      "x": 0.86,
+      "y": 0.14,
+      "size": 0.2,
+      "stroke": 0.008,
+      "count": 4
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "bolt",
+      "color": [
+        255,
+        205,
+        40
+      ],
+      "x": 0.87,
+      "y": 0.86,
+      "size": 0.15,
+      "stroke": 0.009
+    },
+    {
+      "filter": "bloom",
+      "on": "image",
+      "threshold": 0.55,
+      "radius_ratio": 0.02,
+      "amount": 0.7
+    }
+  ]
+}

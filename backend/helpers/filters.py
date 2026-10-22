@@ -575,6 +575,10 @@ _DOODLE_SUPERSAMPLE = 2
 # supersampling adds little and 2× would quadruple memory.
 _DOODLE_SUPERSAMPLE_MAX_PIXELS = 4_000_000
 DOODLE_MAX_COUNT = 12
+DOODLE_STYLES = (
+    "xo", "rings", "wiggles", "stars", "hearts", "arrow", "sun",
+    "cloud", "zigzag", "dots", "flower", "spiral", "bolt",
+)
 # `color: "auto"` inks dark on light backgrounds (mean luma above the threshold),
 # white otherwise, so a white marker never vanishes on a pale wall.
 DOODLE_AUTO_LUMA_THRESHOLD = 150
@@ -714,6 +718,226 @@ def _wobble_circle(rng, cx: float, cy: float, radius: float, jitter: float) -> l
     return pts
 
 
+def _heart_points(cx: float, cy: float, size: float, tilt: float = 0.0) -> list[tuple[float, float]]:
+    import math
+
+    pts = []
+    for i in range(65):
+        t = 2 * math.pi * i / 64
+        x = 16 * math.sin(t) ** 3
+        y = -(13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t))
+        x, y = x / 17 * size, y / 17 * size
+        pts.append((cx + x * math.cos(tilt) - y * math.sin(tilt), cy + x * math.sin(tilt) + y * math.cos(tilt)))
+    return pts
+
+
+def _draw_extra_doodle(draw, mode, rng, cx, cy, span, line_w, fill, n, angle, wob) -> None:
+    """Simple marker doodles for `doodle` styles beyond xo/rings/wiggles/stars/hearts/dots."""
+    import math
+
+    theta = math.radians(angle)
+    cos_t, sin_t = math.cos(theta), math.sin(theta)
+
+    def rot(u: float, v: float) -> tuple[float, float]:
+        return cx + u * cos_t - v * sin_t, cy + u * sin_t + v * cos_t
+
+    j = line_w * wob * 2
+    if mode == "arrow":
+        # Gently curved shaft along `angle`, head at the far end.
+        shaft = [rot((t - 0.5) * span, -span * 0.12 * math.sin(math.pi * t)) for t in (k / 24 for k in range(25))]
+        _stroke(draw, shaft, line_w, fill)
+        tip = shaft[-1]
+        back = math.atan2(tip[1] - shaft[-4][1], tip[0] - shaft[-4][0]) + math.pi
+        head = span * 0.16
+        for side in (-0.5, 0.5):
+            end = (tip[0] + head * math.cos(back + side), tip[1] + head * math.sin(back + side))
+            _stroke(draw, _wobble_line(rng, tip, end, j, 4), line_w, fill)
+    elif mode == "sun":
+        core = span * 0.2
+        _stroke(draw, _wobble_circle(rng, cx, cy, core, j), line_w, fill)
+        rays = max(8, n)
+        for k in range(rays):
+            a = 2 * math.pi * k / rays + rng.uniform(-0.08, 0.08)
+            r0, r1 = core * 1.45, core * rng.uniform(2.1, 2.5)
+            _stroke(draw, _wobble_line(rng, (cx + r0 * math.cos(a), cy + r0 * math.sin(a)),
+                                       (cx + r1 * math.cos(a), cy + r1 * math.sin(a)), j, 4), line_w, fill)
+    elif mode == "cloud":
+        # Outer outline of three overlapping puffs above a flat base.
+        u = span / 2
+        puffs = [(-0.42 * u, 0.05 * u, 0.36 * u), (0.0, -0.18 * u, 0.48 * u), (0.42 * u, 0.02 * u, 0.38 * u)]
+        base_y = cy + 0.3 * u
+
+        def covered(px: float, py: float, skip: int) -> bool:
+            return any(
+                k != skip and (px - cx - ox) ** 2 + (py - cy - oy) ** 2 < r * r * 0.995
+                for k, (ox, oy, r) in enumerate(puffs)
+            )
+
+        for k, (ox, oy, r) in enumerate(puffs):
+            arc: list[tuple[float, float]] = []
+            for i in range(121):
+                t = 2 * math.pi * i / 120
+                px, py = cx + ox + r * math.cos(t), cy + oy + r * math.sin(t)
+                if py <= base_y and not covered(px, py, k):
+                    arc.append((px, py))
+                elif len(arc) > 1:
+                    _stroke(draw, arc, line_w, fill)
+                    arc = []
+                else:
+                    arc = []
+            if len(arc) > 1:
+                _stroke(draw, arc, line_w, fill)
+        half_base = math.sqrt(max(0.0, puffs[0][2] ** 2 - (base_y - cy - puffs[0][1]) ** 2))
+        left = cx + puffs[0][0] - half_base
+        half_base = math.sqrt(max(0.0, puffs[2][2] ** 2 - (base_y - cy - puffs[2][1]) ** 2))
+        right = cx + puffs[2][0] + half_base
+        _stroke(draw, _wobble_line(rng, (left, base_y), (right, base_y), j, 8), line_w, fill)
+    elif mode == "zigzag":
+        gap = line_w * 3.4
+        teeth = 7
+        for i in range(n):
+            offset = (i - (n - 1) / 2) * gap
+            pts = [rot((k / (2 * teeth) - 0.5) * span, offset + (line_w * 1.6 if k % 2 else -line_w * 1.6)) for k in range(2 * teeth + 1)]
+            _stroke(draw, pts, line_w, fill)
+    elif mode == "flower":
+        petals = max(5, n)
+        center = span * 0.1
+        petal = span * 0.17
+        for k in range(petals):
+            a = 2 * math.pi * k / petals
+            px, py = cx + (center + petal) * math.cos(a), cy + (center + petal) * math.sin(a)
+            pts = []
+            for i in range(33):
+                t = 2 * math.pi * i / 32
+                u, v = petal * math.cos(t), petal * 0.55 * math.sin(t)
+                pts.append((px + u * math.cos(a) - v * math.sin(a), py + u * math.sin(a) + v * math.cos(a)))
+            _stroke(draw, pts, line_w, fill)
+        _stroke(draw, _wobble_circle(rng, cx, cy, center, j), line_w, fill)
+    elif mode == "spiral":
+        turns = 2.6
+        pts = []
+        for i in range(161):
+            t = i / 160
+            r = span * 0.5 * t
+            a = 2 * math.pi * turns * t + theta
+            pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
+        _stroke(draw, pts, line_w, fill)
+    elif mode == "bolt":
+        u = span / 2
+        shape = [(0.15, -1.0), (-0.45, 0.1), (-0.02, 0.1), (-0.25, 1.0), (0.5, -0.2), (0.05, -0.2), (0.15, -1.0)]
+        _stroke(draw, [rot(x * u * 0.95, y * u) for x, y in shape], line_w, fill)
+
+
+DOODLE_FRAME_STYLES = ("line", "double", "dashes", "dots", "zigzag", "waves", "corners")
+
+
+def doodle_frame(
+    image: Image.Image,
+    style: str = "line",
+    color: Sequence[int] | str | None = None,
+    rgb: Sequence[int] | None = None,
+    inset: float = 0.035,
+    stroke: float = 0.006,
+    jitter: float = 0.12,
+    opacity: float = 1.0,
+    seed: int = 7,
+) -> Image.Image:
+    """
+    Hand-drawn border just inside the image edges.
+
+    `style`: `line` (wobbly rectangle, corners overshoot like a marker), `double`,
+    `dashes`, `dots`, `zigzag`, `waves`, or `corners` (bracket marks only).
+    `inset` and `stroke` are fractions of the short side. `color: "auto"` inks dark
+    on light borders and white on dark ones. The frame is drawn into a one-channel
+    mask (2× and downsampled up to 4 MP for marker-smooth edges, 1× above) and the
+    ink is painted through it onto a single copy, so a 61 MP frame costs one image
+    copy plus a 1-byte mask rather than several RGBA layers.
+    """
+    import math
+    import random
+
+    mode = (style or "line").strip().lower()
+    if mode not in DOODLE_FRAME_STYLES:
+        raise ValueError(f"style must be one of {', '.join(DOODLE_FRAME_STYLES)}")
+    w, h = image.size
+    short = min(w, h)
+    pad = max(2.0, float(inset) * short)
+    stroke_px = max(1.0, float(stroke) * short)
+    ss = _DOODLE_SUPERSAMPLE if w * h <= _DOODLE_SUPERSAMPLE_MAX_PIXELS else 1
+    line_w = max(2, int(round(stroke_px * ss)))
+    alpha = int(round(255 * max(0.0, min(1.0, float(opacity)))))
+    if isinstance(color, str):
+        if color.strip().lower() != "auto":
+            raise ValueError("color must be an [r, g, b] list or 'auto'")
+        band = max(1, int(pad * 2))
+        strips = [image.crop((0, 0, w, band)).convert("L"), image.crop((0, h - band, w, h)).convert("L")]
+        luma = sum(ImageStat.Stat(s_).mean[0] for s_ in strips) / len(strips)
+        ink = DOODLE_DARK_INK if luma > DOODLE_AUTO_LUMA_THRESHOLD else (255, 255, 255)
+    else:
+        ink = _rgb_tint(color, rgb, (255, 255, 255))
+    fill = alpha  # coverage in the one-channel mask; the ink colour is applied at paste time
+    rng = random.Random(int(seed))
+    j = line_w * float(jitter) * 3
+
+    layer = Image.new("L", (w * ss, h * ss), 0)
+    draw = ImageDraw.Draw(layer)
+    x0, y0, x1, y1 = pad * ss, pad * ss, (w - pad) * ss, (h - pad) * ss
+    sides = [((x0, y0), (x1, y0)), ((x1, y0), (x1, y1)), ((x1, y1), (x0, y1)), ((x0, y1), (x0, y0))]
+
+    def along(a, b, t):
+        return a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t
+
+    for a, b in sides:
+        length = math.hypot(b[0] - a[0], b[1] - a[1])
+        nx, ny = (b[1] - a[1]) / length, -(b[0] - a[0]) / length  # outward-ish normal
+        if mode in {"line", "double"}:
+            over = line_w * 2.5
+            ux, uy = (b[0] - a[0]) / length, (b[1] - a[1]) / length
+            start, end = (a[0] - ux * over, a[1] - uy * over), (b[0] + ux * over * 0.4, b[1] + uy * over * 0.4)
+            _stroke(draw, _wobble_line(rng, start, end, j, 16), line_w, fill)
+            if mode == "double":
+                gap = line_w * 2.6
+                s2 = (start[0] - nx * gap, start[1] - ny * gap)
+                e2 = (end[0] - nx * gap, end[1] - ny * gap)
+                _stroke(draw, _wobble_line(rng, s2, e2, j, 16), max(1, line_w // 2), fill)
+        elif mode == "dashes":
+            dash, gap = line_w * 6, line_w * 4
+            t = 0.0
+            while t < length:
+                t1 = min(length, t + dash)
+                _stroke(draw, _wobble_line(rng, along(a, b, t / length), along(a, b, t1 / length), j * 0.5, 3), line_w, fill)
+                t = t1 + gap
+        elif mode == "dots":
+            step = line_w * 4
+            for k in range(int(length // step) + 1):
+                px, py = along(a, b, min(1.0, k * step / length))
+                r = line_w * 0.75
+                draw.ellipse((px - r, py - r, px + r, py + r), fill=fill)
+        elif mode in {"zigzag", "waves"}:
+            period = line_w * 8
+            amp = line_w * 1.8
+            count = max(2, int(length / period))
+            pts = []
+            for k in range(count * 8 + 1):
+                t = k / (count * 8)
+                px, py = along(a, b, t)
+                phase = 2 * math.pi * count * t
+                off = amp * (math.sin(phase) if mode == "waves" else (2 / math.pi) * math.asin(math.sin(phase)))
+                pts.append((px + nx * off, py + ny * off))
+            _stroke(draw, pts, line_w, fill)
+    if mode == "corners":
+        arm = short * ss * 0.12
+        for cx_, cy_, dx, dy in ((x0, y0, 1, 1), (x1, y0, -1, 1), (x0, y1, 1, -1), (x1, y1, -1, -1)):
+            _stroke(draw, _wobble_line(rng, (cx_, cy_ + dy * arm), (cx_, cy_), j, 6), line_w, fill)
+            _stroke(draw, _wobble_line(rng, (cx_, cy_), (cx_ + dx * arm, cy_), j, 6), line_w, fill)
+
+    if ss > 1:
+        layer = layer.resize((w, h), Image.Resampling.LANCZOS)
+    out = image.copy() if image.mode in {"RGB", "RGBA"} else image.convert("RGB")
+    out.paste((*ink, 255) if out.mode == "RGBA" else ink, (0, 0, w, h), layer)
+    return out
+
+
 def doodle(
     image: Image.Image,
     style: str = "xo",
@@ -738,7 +962,11 @@ def doodle(
 
     `style`: `xo` (3×3 tic-tac-toe of X/O), `rings` (`count` concentric circles),
     `wiggles` (`count` parallel wavy lines, rotated by `angle` degrees),
-    `stars` (`count` four-point sparkles).
+    `stars` (`count` four-point sparkles), `hearts` (`count` outlined hearts),
+    `arrow` (one curved arrow pointing along `angle`), `sun` (circle + rays; `count`
+    rays, at least 8), `cloud` (one puffy outline), `zigzag` (`count` parallel
+    zigzags along `angle`), `dots` (`count` scattered filled dots), `flower`
+    (petals, at least 5), `spiral` (one loose spiral), `bolt` (lightning outline).
     Placement: `anchor` (corner/edge name, `center`, or `subject` = centre of the
     `around` layer's alpha bbox) or explicit `x` / `y` fractions (0–1).
     `size` and `stroke` are fractions of the image's short side, so the look
@@ -752,8 +980,8 @@ def doodle(
     import random
 
     mode = (style or "xo").strip().lower()
-    if mode not in {"xo", "rings", "wiggles", "stars"}:
-        raise ValueError("style must be one of xo, rings, wiggles, stars")
+    if mode not in DOODLE_STYLES:
+        raise ValueError(f"style must be one of {', '.join(DOODLE_STYLES)}")
     n = int(count)
     if not 1 <= n <= DOODLE_MAX_COUNT:
         raise ValueError(f"count must be between 1 and {DOODLE_MAX_COUNT}")
@@ -841,11 +1069,18 @@ def doodle(
                 v = offset + amp * math.sin(2 * math.pi * waves * t + i * 0.6)
                 pts.append((cx + u * cos_t - v * sin_t, cy + u * sin_t + v * cos_t))
             _stroke(draw, pts, line_w, fill)
-    else:
+    elif mode in {"stars", "hearts", "dots"}:
         for i in range(n):
             ang = rng.uniform(0, 2 * math.pi)
             dist = span / 2 * (0.25 + 0.75 * (i / max(1, n - 1))) if n > 1 else 0.0
             sx, sy = cx + dist * math.cos(ang), cy + dist * math.sin(ang)
+            if mode == "hearts":
+                _stroke(draw, _heart_points(sx, sy, span * rng.uniform(0.09, 0.14), rng.uniform(-0.3, 0.3)), line_w, fill)
+                continue
+            if mode == "dots":
+                r = span * rng.uniform(0.025, 0.05) + line_w / 2
+                draw.ellipse((sx - r, sy - r, sx + r, sy + r), fill=fill)
+                continue
             arm = span * rng.uniform(0.09, 0.14)
             pinch = arm * 0.18
             star = []
@@ -854,6 +1089,8 @@ def doodle(
                 r = arm if k % 2 == 0 else pinch
                 star.append((sx + r * math.cos(t), sy + r * math.sin(t)))
             draw.polygon(star, fill=fill)
+    else:
+        _draw_extra_doodle(draw, mode, rng, cx, cy, span, line_w, fill, n, float(angle), wob)
 
     if ss > 1:
         layer = layer.resize((rw, rh), Image.Resampling.LANCZOS)

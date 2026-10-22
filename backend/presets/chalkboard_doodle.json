@@ -1,0 +1,82 @@
+{
+  "name": "chalkboard_doodle",
+  "label": "Chalkboard doodle",
+  "description": "Black and white with extra contrast and grain; white dotted frame, tic-tac-toe, curved arrow and sparkles.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "grayscale",
+      "on": "image"
+    },
+    {
+      "filter": "contrast",
+      "on": "image",
+      "amount": 1.15
+    },
+    {
+      "filter": "doodle_frame",
+      "on": "image",
+      "style": "dots",
+      "color": [
+        255,
+        255,
+        255
+      ]
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "xo",
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "x": 0.86,
+      "y": 0.14,
+      "size": 0.15,
+      "stroke": 0.006
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "arrow",
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "x": 0.15,
+      "y": 0.88,
+      "size": 0.18,
+      "stroke": 0.008,
+      "angle": -20
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "stars",
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "x": 0.13,
+      "y": 0.13,
+      "size": 0.2,
+      "stroke": 0.008,
+      "count": 3
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0,
+      "grain": 0.05,
+      "stains": 0,
+      "fade": 0
+    }
+  ]
+}

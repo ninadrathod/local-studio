@@ -1,0 +1,78 @@
+{
+  "name": "scrapbook_doodle",
+  "label": "Scrapbook doodle",
+  "description": "Cream paper texture, brown corner brackets, teal arrow and tic-tac-toe, coral wiggles.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "color": [
+        245,
+        235,
+        215
+      ],
+      "tint": 0.3,
+      "grain": 0.06,
+      "stains": 0.1,
+      "fade": 0.06
+    },
+    {
+      "filter": "doodle_frame",
+      "on": "image",
+      "style": "corners",
+      "color": [
+        90,
+        60,
+        40
+      ]
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "arrow",
+      "color": [
+        20,
+        140,
+        140
+      ],
+      "x": 0.15,
+      "y": 0.12,
+      "size": 0.17,
+      "stroke": 0.008,
+      "angle": 25
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "xo",
+      "color": [
+        20,
+        140,
+        140
+      ],
+      "x": 0.87,
+      "y": 0.87,
+      "size": 0.14,
+      "stroke": 0.006
+    },
+    {
+      "filter": "doodle",
+      "on": "image",
+      "style": "wiggles",
+      "color": [
+        240,
+        110,
+        90
+      ],
+      "x": 0.13,
+      "y": 0.88,
+      "size": 0.15,
+      "stroke": 0.008,
+      "angle": -10
+    }
+  ]
+}

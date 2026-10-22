@@ -77,7 +77,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     init_db(db)
     first = seed_default_presets(db_path=db)
     second = seed_default_presets(db_path=db)
-    assert len(first) == 50
+    assert len(first) == 60
     names = {row["preset_name"] for row in first}
     assert names == {
         "bw_bg_glowing_subject",
@@ -120,6 +120,16 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "retrowave_neon_title",
         "art_deco_marquee",
         "velvet_ticket_title",
+        "marker_frame_doodle",
+        "sunny_sketchbook_doodle",
+        "neon_doodle_nights",
+        "chalkboard_doodle",
+        "love_notes_doodle",
+        "retro_70s_doodle",
+        "comic_pop_doodle",
+        "scrapbook_doodle",
+        "cyanotype_doodle",
+        "confetti_pastel_doodle",
         "print_film_2383",
         "cross_process",
         "hdr_clarity_pop",
@@ -200,6 +210,16 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "hdr_clarity_pop",
         "cross_process",
         "print_film_2383",
+        "confetti_pastel_doodle",
+        "cyanotype_doodle",
+        "scrapbook_doodle",
+        "comic_pop_doodle",
+        "retro_70s_doodle",
+        "love_notes_doodle",
+        "chalkboard_doodle",
+        "neon_doodle_nights",
+        "sunny_sketchbook_doodle",
+        "marker_frame_doodle",
         "velvet_ticket_title",
         "art_deco_marquee",
         "retrowave_neon_title",
@@ -242,7 +262,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "bw_bg_glowing_subject",
     ]
     popular = list_popular(db_path=db)
-    assert len(popular) == 50
+    assert len(popular) == 60
     assert all(row["used_count"] == 0 for row in popular)
 
 
@@ -302,6 +322,16 @@ def test_seed_default_presets_syncs_text_fields(tmp_path: Path) -> None:
         "retrowave_neon_title",
         "art_deco_marquee",
         "velvet_ticket_title",
+        "marker_frame_doodle",
+        "sunny_sketchbook_doodle",
+        "neon_doodle_nights",
+        "chalkboard_doodle",
+        "love_notes_doodle",
+        "retro_70s_doodle",
+        "comic_pop_doodle",
+        "scrapbook_doodle",
+        "cyanotype_doodle",
+        "confetti_pastel_doodle",
         "print_film_2383",
         "cross_process",
         "hdr_clarity_pop",

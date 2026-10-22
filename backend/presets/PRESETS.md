@@ -313,6 +313,70 @@ Ten poster looks: subject cut out (`single_subject: true`) → one colour family
 - **Steps:** `extract_subject` → sunset `color_grade` (magenta / orange split) → `selective_color` magenta → `draw_text` cream, `font_style: signature`, `box: double` in gold [235, 190, 90], box_radius_ratio 0.03, `angle` −3 → `composite` → `vignette` → grain
 - **File:** `backend/presets/velvet_ticket_title.json`
 
+### Border doodles (no cutout)
+
+Ten looks that keep the photo intact: an optional colour treatment, then a few simple hand-drawn marks (`doodle` at explicit `x`/`y` within ~0.15 of an edge) and/or a hand-drawn border (`doodle_frame`). No `extract_subject`, no HD pass, so they are fast and light (good with `LIGHTWEIGHT=1`). All are `ar: non-square`, `text_input: no`, seeded via `seed_default_presets()` / setup.
+
+#### `marker_frame_doodle` — Marker frame doodle
+
+- **Idea:** White hand-drawn marker border with sparkles and a spiral in the corners.
+- **Steps:** `doodle_frame` line auto → `doodle` stars [255, 255, 255] at (0.86, 0.13) → `doodle` spiral [255, 255, 255] at (0.12, 0.88)
+- **File:** `backend/presets/marker_frame_doodle.json`
+
+#### `sunny_sketchbook_doodle` — Sunny sketchbook doodle
+
+- **Idea:** Warm lift with a yellow sun, white cloud, pink hearts and an orange flower doodled in the corners.
+- **Steps:** `color_grade` → `doodle` sun [255, 205, 40] at (0.13, 0.13) → `doodle` cloud [255, 255, 255] at (0.86, 0.12) → `doodle` hearts [255, 90, 150] at (0.87, 0.87) → `doodle` flower [255, 140, 40] at (0.12, 0.88)
+- **File:** `backend/presets/sunny_sketchbook_doodle.json`
+
+#### `neon_doodle_nights` — Neon doodle nights
+
+- **Idea:** Darker cool grade, hot-pink dashed frame, cyan spiral and sparkles, a yellow lightning bolt, soft glow.
+- **Steps:** `color_grade` → `doodle_frame` dashes [255, 90, 150] → `doodle` spiral [40, 220, 255] at (0.13, 0.13) → `doodle` stars [40, 220, 255] at (0.86, 0.14) → `doodle` bolt [255, 205, 40] at (0.87, 0.86) → `bloom`
+- **File:** `backend/presets/neon_doodle_nights.json`
+
+#### `chalkboard_doodle` — Chalkboard doodle
+
+- **Idea:** Black and white with extra contrast and grain; white dotted frame, tic-tac-toe, curved arrow and sparkles.
+- **Steps:** `grayscale` → `contrast` → `doodle_frame` dots [255, 255, 255] → `doodle` xo [255, 255, 255] at (0.86, 0.14) → `doodle` arrow [255, 255, 255] at (0.15, 0.88) → `doodle` stars [255, 255, 255] at (0.13, 0.13) → `paper_texture`
+- **File:** `backend/presets/chalkboard_doodle.json`
+
+#### `love_notes_doodle` — Love notes doodle
+
+- **Idea:** Blush pastel grade, pink wavy frame and red hearts in two corners.
+- **Steps:** `color_grade` → `doodle_frame` waves [255, 150, 185] → `doodle` hearts [230, 40, 80] at (0.13, 0.13) → `doodle` hearts [230, 40, 80] at (0.87, 0.87)
+- **File:** `backend/presets/love_notes_doodle.json`
+
+#### `retro_70s_doodle` — Retro 70s doodle
+
+- **Idea:** Warm faded print on paper with a mustard double frame, orange flowers and brown dots.
+- **Steps:** `color_grade` → `doodle_frame` double [225, 165, 40] → `doodle` flower [230, 100, 40] at (0.12, 0.12) → `doodle` flower [230, 100, 40] at (0.88, 0.88) → `doodle` dots [120, 70, 40] at (0.87, 0.13) → `paper_texture`
+- **File:** `backend/presets/retro_70s_doodle.json`
+
+#### `comic_pop_doodle` — Comic pop doodle
+
+- **Idea:** Punchy colour with light halftone dots, black zigzag frame, yellow lightning bolts and red dots.
+- **Steps:** `color_grade` → `halftone` → `doodle_frame` zigzag [20, 20, 20] → `doodle` bolt [255, 205, 40] at (0.87, 0.14) → `doodle` bolt [255, 205, 40] at (0.13, 0.86) → `doodle` dots [230, 30, 40] at (0.13, 0.13)
+- **File:** `backend/presets/comic_pop_doodle.json`
+
+#### `scrapbook_doodle` — Scrapbook doodle
+
+- **Idea:** Cream paper texture, brown corner brackets, teal arrow and tic-tac-toe, coral wiggles.
+- **Steps:** `paper_texture` → `doodle_frame` corners [90, 60, 40] → `doodle` arrow [20, 140, 140] at (0.15, 0.12) → `doodle` xo [20, 140, 140] at (0.87, 0.87) → `doodle` wiggles [240, 110, 90] at (0.13, 0.88)
+- **File:** `backend/presets/scrapbook_doodle.json`
+
+#### `cyanotype_doodle` — Cyanotype doodle
+
+- **Idea:** Blue duotone with a thin white frame, white rings, a spiral and sparkles.
+- **Steps:** `grayscale` → `color_grade` → `doodle_frame` line [255, 255, 255] → `doodle` rings [255, 255, 255] at (0.87, 0.13) → `doodle` spiral [255, 255, 255] at (0.13, 0.87) → `doodle` stars [255, 255, 255] at (0.13, 0.13)
+- **File:** `backend/presets/cyanotype_doodle.json`
+
+#### `confetti_pastel_doodle` — Confetti pastel doodle
+
+- **Idea:** Bright airy grade with pastel confetti dots in every corner, a lilac zigzag on top and a mint wave below.
+- **Steps:** `color_grade` → `doodle` dots [255, 150, 190] at (0.12, 0.13) → `doodle` dots [120, 220, 190] at (0.88, 0.13) → `doodle` dots [255, 210, 90] at (0.12, 0.87) → `doodle` dots [180, 150, 255] at (0.88, 0.87) → `doodle` zigzag [180, 150, 255] at (0.5, 0.07) → `doodle` wiggles [120, 210, 180] at (0.5, 0.94)
+- **File:** `backend/presets/confetti_pastel_doodle.json`
+
 
 ### Tone curves & motion
 
@@ -397,7 +461,8 @@ Ten looks built on point curves (`tone_curve`) and local shadow / highlight reco
 | `sharpen` | Unsharp mask | `on`, `radius`, `percent`, `threshold` |
 | `denoise` | Median filter (noise / JPEG blocking) | `on`, `size` (odd ≥ 3) |
 | `ai_upscale` | Local Real-ESRGAN 4× super-resolution, then Lanczos to target (keeps aspect + alpha; never shrinks; with `LIGHTWEIGHT=1` the model is skipped and it is a plain Lanczos `upscale` to the same target) | `on`, `long_edge` (default 1920), `max_scale` (4), `denoise` (0 keep grain – 1 smoothest; 0.5), `max_input_pixels` (1 000 000), `tile` (256) |
-| `doodle` | One hand-drawn white (or tinted) doodle; sizes are fractions of the short side so it scales with resolution; seeded wobble is deterministic; draws only its own region (2× supersampled up to 4 MP regions, 1× above) |  `on`, `style` (`xo`/`rings`/`wiggles`/`stars`), `anchor` (`top_right`/`top_left`/`bottom_left`/`bottom_right`/`top`/`bottom`/`left`/`right`/`center`/`subject`), `around` (layer whose alpha bbox centres `anchor: subject`), `x`/`y` (0–1, override anchor), `size`, `stroke`, `count` (1–12), `angle` (wiggles), `color`/`rgb` (`[r, g, b]`, or `color: "auto"` = dark ink when the region's mean luma > 150, else white), `avoid_subject` (with `around`: a corner/edge anchor the subject covers > 8% of moves to its first clear mirror — x-flip, y-flip, then both), `avoid_busy` (also skip mirrors whose background is cluttered — mean edge strength > 8 on a blurred ≤128 px copy, so fine texture doesn't count; works without `around`), `opacity`, `jitter`, `seed` |
+| `doodle` | One hand-drawn white (or tinted) doodle; sizes are fractions of the short side so it scales with resolution; seeded wobble is deterministic; draws only its own region (2× supersampled up to 4 MP regions, 1× above) |  `on`, `style` (`xo`/`rings`/`wiggles`/`stars`/`hearts`/`arrow`/`sun`/`cloud`/`zigzag`/`dots`/`flower`/`spiral`/`bolt`; `count` = marks, rays or petals, `angle` rotates wiggles/zigzag/arrow), `anchor` (`top_right`/`top_left`/`bottom_left`/`bottom_right`/`top`/`bottom`/`left`/`right`/`center`/`subject`), `around` (layer whose alpha bbox centres `anchor: subject`), `x`/`y` (0–1, override anchor), `size`, `stroke`, `count` (1–12), `angle` (wiggles), `color`/`rgb` (`[r, g, b]`, or `color: "auto"` = dark ink when the region's mean luma > 150, else white), `avoid_subject` (with `around`: a corner/edge anchor the subject covers > 8% of moves to its first clear mirror — x-flip, y-flip, then both), `avoid_busy` (also skip mirrors whose background is cluttered — mean edge strength > 8 on a blurred ≤128 px copy, so fine texture doesn't count; works without `around`), `opacity`, `jitter`, `seed` |
+| `doodle_frame` | Hand-drawn border just inside the edges (marker wobble); drawn into a 1-channel mask and painted onto one copy, so memory stays ≈ one image copy (2× supersampled up to 4 MP, 1× above) | `on`, `style` (`line`/`double`/`dashes`/`dots`/`zigzag`/`waves`/`corners`), `color`/`rgb` or `"auto"` (dark ink on light borders, white on dark), `inset`, `stroke` (fractions of the short side), `jitter`, `opacity`, `seed` |
 | `posterize` | Flatten each RGB channel to N levels (comic colour bands); optional median smooth first | `on`, `levels` (2–32), `smooth` (0 or odd ≥ 3) |
 | `ink_edges` | Comic ink outlines via difference of Gaussians on luminance; scales with resolution; RGBA is flattened on white first so hidden pixels don't create edges | `on`, `detail` (blur, fraction of short side), `threshold` (lower = more lines), `thickness` (fraction of short side), `color`/`rgb`, `opacity` |
 | `halftone` | Printed dot screen: `mono` (one ink at `angle`) or `cmyk` (process inks at 15/75/0/45° with grey-component replacement); dot area ≈ ink coverage; processed at ≤ 2400 px long edge then resized back; pitch auto-enlarges if a screen would need > 160k dots; transparent pixels print as paper | `on`, `mode`, `cell` (dot pitch, 0.002–0.1 of short side), `angle`, `paper`, `ink`, `mix` (blend back over original), `gcr` (0–1, share of grey on black plate) |

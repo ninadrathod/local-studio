@@ -318,6 +318,7 @@ FILTERS: dict[str, FilterHandler] = {
     "denoise": _run_simple(F.denoise),
     "ai_upscale": _run_simple(F.ai_upscale),
     "doodle": _run_doodle,
+    "doodle_frame": _run_simple(F.doodle_frame),
 }
 
 

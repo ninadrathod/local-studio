@@ -90,6 +90,96 @@
     "post_edit_image": "previews/post-edit/speed_pan.png"
   },
   {
+    "preset_name": "confetti_pastel_doodle",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/confetti_pastel_doodle.jpg",
+    "post_edit_image": "previews/post-edit/confetti_pastel_doodle.png"
+  },
+  {
+    "preset_name": "cyanotype_doodle",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/cyanotype_doodle.jpg",
+    "post_edit_image": "previews/post-edit/cyanotype_doodle.png"
+  },
+  {
+    "preset_name": "scrapbook_doodle",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/scrapbook_doodle.jpg",
+    "post_edit_image": "previews/post-edit/scrapbook_doodle.png"
+  },
+  {
+    "preset_name": "comic_pop_doodle",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/comic_pop_doodle.jpg",
+    "post_edit_image": "previews/post-edit/comic_pop_doodle.png"
+  },
+  {
+    "preset_name": "retro_70s_doodle",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/retro_70s_doodle.jpg",
+    "post_edit_image": "previews/post-edit/retro_70s_doodle.png"
+  },
+  {
+    "preset_name": "love_notes_doodle",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/love_notes_doodle.jpg",
+    "post_edit_image": "previews/post-edit/love_notes_doodle.png"
+  },
+  {
+    "preset_name": "chalkboard_doodle",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/chalkboard_doodle.jpg",
+    "post_edit_image": "previews/post-edit/chalkboard_doodle.png"
+  },
+  {
+    "preset_name": "neon_doodle_nights",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/neon_doodle_nights.jpg",
+    "post_edit_image": "previews/post-edit/neon_doodle_nights.png"
+  },
+  {
+    "preset_name": "sunny_sketchbook_doodle",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/sunny_sketchbook_doodle.jpg",
+    "post_edit_image": "previews/post-edit/sunny_sketchbook_doodle.png"
+  },
+  {
+    "preset_name": "marker_frame_doodle",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/marker_frame_doodle.jpg",
+    "post_edit_image": "previews/post-edit/marker_frame_doodle.png"
+  },
+  {
     "preset_name": "velvet_ticket_title",
     "ar": "non-square",
     "text_input": "yes",
