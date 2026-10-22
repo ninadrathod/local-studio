@@ -1,0 +1,106 @@
+{
+  "name": "print_film_2383",
+  "label": "Print film 2383",
+  "description": "HD pass, then cinema print-film curves: lifted blue blacks, warm compressed highlights, recovered skies, opened shadows.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "shadows_highlights",
+      "on": "image",
+      "shadows": 0.25,
+      "highlights": -0.45
+    },
+    {
+      "filter": "tone_curve",
+      "on": "image",
+      "master": [
+        [
+          0,
+          8
+        ],
+        [
+          60,
+          48
+        ],
+        [
+          128,
+          130
+        ],
+        [
+          200,
+          212
+        ],
+        [
+          255,
+          245
+        ]
+      ],
+      "red": [
+        [
+          0,
+          0
+        ],
+        [
+          128,
+          134
+        ],
+        [
+          255,
+          255
+        ]
+      ],
+      "green": [
+        [
+          0,
+          4
+        ],
+        [
+          128,
+          128
+        ],
+        [
+          255,
+          250
+        ]
+      ],
+      "blue": [
+        [
+          0,
+          26
+        ],
+        [
+          110,
+          112
+        ],
+        [
+          200,
+          186
+        ],
+        [
+          255,
+          225
+        ]
+      ]
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "saturation": 0.95,
+      "vibrance": 0.15
+    },
+    {
+      "filter": "vignette",
+      "on": "image",
+      "amount": 0.2
+    }
+  ]
+}

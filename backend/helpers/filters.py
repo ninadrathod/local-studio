@@ -1376,9 +1376,11 @@ def paper_texture(
     return _keep_alpha(out, image)
 
 
-# Per-pixel grading (split tone, vibrance) runs in horizontal strips so a
-# 61 MP frame never needs more than one strip of float32 working memory.
-_GRADE_STRIP_PIXELS = 4_000_000
+# Per-pixel grading (split tone, vibrance, shadows / highlights) runs in horizontal
+# strips so a frame never needs more than one strip of float32 working memory. Each
+# strip holds ~a dozen float temporaries (~100 B/pixel), so 1 MP keeps a pass near
+# 100 MB — small enough for a 1 GB LIGHTWEIGHT host next to the rembg model.
+_GRADE_STRIP_PIXELS = 1_000_000
 # Rec. 709 luma weights.
 _LUMA = (0.2126, 0.7152, 0.0722)
 
@@ -1496,19 +1498,198 @@ def color_grade(
                 current = np.max(np.abs(chroma), axis=-1, keepdims=True)
                 factor = factor * (1 + vib * np.clip(1 - current * 3, 0, 1))
             px = yy + chroma * factor
-        # Bring out-of-range pixels back by shrinking chroma toward their own luma
-        # (hue and brightness kept) instead of clipping channels one by one, which
-        # would shift hue and dull bright split-toned highlights.
-        y = np.clip(px @ luma, 0, 1)[..., None]
-        chroma = px - y
-        over = np.max(chroma, axis=-1, keepdims=True)
-        under = np.min(chroma, axis=-1, keepdims=True)
-        with np.errstate(divide="ignore", invalid="ignore"):
-            fit_hi = np.where(over > 0, (1 - y) / over, 1.0)
-            fit_lo = np.where(under < 0, -y / under, 1.0)
-        px = y + chroma * np.clip(np.minimum(fit_hi, fit_lo), 0, 1)
+        px = _fit_gamut(px, luma)
         graded.paste(Image.fromarray(np.clip(px * 255 + 0.5, 0, 255).astype(np.uint8), "RGB"), box[:2])
     return _keep_alpha(graded, image)
+
+
+def _fit_gamut(px: "np.ndarray", luma: "np.ndarray") -> "np.ndarray":
+    """
+    Bring out-of-range pixels (float RGB 0–1) back by shrinking chroma toward their
+    own luma (hue and brightness kept) instead of clipping channels one by one,
+    which would shift hue and dull bright highlights.
+    """
+    import numpy as np
+
+    y = np.clip(px @ luma, 0, 1)[..., None]
+    chroma = px - y
+    over = np.max(chroma, axis=-1, keepdims=True)
+    under = np.min(chroma, axis=-1, keepdims=True)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        fit_hi = np.where(over > 0, (1 - y) / over, 1.0)
+        fit_lo = np.where(under < 0, -y / under, 1.0)
+    return y + chroma * np.clip(np.minimum(fit_hi, fit_lo), 0, 1)
+
+
+def _curve_table(points: Sequence[Sequence[float]] | None) -> list[float]:
+    """
+    256-entry curve (values 0–255) through `points` ([[x, y], …], 0–255) using
+    monotone cubic (Fritsch–Carlson) interpolation, so the curve never overshoots
+    between points. Flat beyond the first / last point; identity when `points` is empty.
+    """
+    if not points:
+        return [float(v) for v in range(256)]
+    pts = sorted((max(0.0, min(255.0, float(x))), max(0.0, min(255.0, float(y)))) for x, y in points)
+    xs, ys = [pts[0][0]], [pts[0][1]]
+    for x, y in pts[1:]:
+        if x > xs[-1]:
+            xs.append(x)
+            ys.append(y)
+    if len(xs) == 1:
+        return [ys[0]] * 256
+    n = len(xs)
+    slopes = [(ys[i + 1] - ys[i]) / (xs[i + 1] - xs[i]) for i in range(n - 1)]
+    tangents = [slopes[0]] + [
+        0.0 if slopes[i - 1] * slopes[i] <= 0 else (slopes[i - 1] + slopes[i]) / 2 for i in range(1, n - 1)
+    ] + [slopes[-1]]
+    for i, m in enumerate(slopes):
+        if m == 0:
+            tangents[i] = tangents[i + 1] = 0.0
+            continue
+        a, b = tangents[i] / m, tangents[i + 1] / m
+        if a * a + b * b > 9:
+            k = 3 / math.hypot(a, b)
+            tangents[i], tangents[i + 1] = k * a * m, k * b * m
+    table = []
+    seg = 0
+    for v in range(256):
+        if v <= xs[0]:
+            table.append(ys[0])
+            continue
+        if v >= xs[-1]:
+            table.append(ys[-1])
+            continue
+        while xs[seg + 1] < v:
+            seg += 1
+        h = xs[seg + 1] - xs[seg]
+        t = (v - xs[seg]) / h
+        t2, t3 = t * t, t * t * t
+        table.append(
+            (2 * t3 - 3 * t2 + 1) * ys[seg]
+            + (t3 - 2 * t2 + t) * h * tangents[seg]
+            + (-2 * t3 + 3 * t2) * ys[seg + 1]
+            + (t3 - t2) * h * tangents[seg + 1]
+        )
+    return [max(0.0, min(255.0, y)) for y in table]
+
+
+def tone_curve(
+    image: Image.Image,
+    master: Sequence[Sequence[float]] | None = None,
+    red: Sequence[Sequence[float]] | None = None,
+    green: Sequence[Sequence[float]] | None = None,
+    blue: Sequence[Sequence[float]] | None = None,
+) -> Image.Image:
+    """
+    Photoshop / Lightroom style point curves. Each curve is a list of [input, output]
+    control points on 0–255 joined by a smooth monotone spline: `master` runs on all
+    three channels first, then `red` / `green` / `blue` per channel (e.g. lift the
+    blue curve's black point for blue shadows). Folded into one point table, so cost
+    is flat at any resolution; an omitted curve is the identity.
+    """
+    base = _curve_table(master)
+    channel = [_curve_table(c) for c in (red, green, blue)]
+
+    def through(v: int, band: int) -> float:
+        x = base[v]
+        lo = int(x)
+        hi = min(255, lo + 1)
+        return channel[band][lo] + (x - lo) * (channel[band][hi] - channel[band][lo])
+
+    return _keep_alpha(_as_rgb(image).point(_band_lut(through)), image)
+
+
+# Guided-filter edge threshold (variance on 0–1 luma): local contrast well above this
+# is kept as an edge, texture below it is smoothed.
+_GUIDED_EPS = 0.01
+
+
+def _box_mean(a: "np.ndarray", radius: int) -> "np.ndarray":
+    """Mean over a (2r+1)² window, shrinking at the borders (summed-area table)."""
+    import numpy as np
+
+    h, w = a.shape
+    sat = np.zeros((h + 1, w + 1), dtype=np.float64)
+    sat[1:, 1:] = a.cumsum(0).cumsum(1)
+    y0 = np.clip(np.arange(h) - radius, 0, h)
+    y1 = np.clip(np.arange(h) + radius + 1, 0, h)
+    x0 = np.clip(np.arange(w) - radius, 0, w)
+    x1 = np.clip(np.arange(w) + radius + 1, 0, w)
+    total = sat[y1][:, x1] - sat[y0][:, x1] - sat[y1][:, x0] + sat[y0][:, x0]
+    count = (y1 - y0)[:, None] * (x1 - x0)[None, :]
+    return (total / count).astype(np.float32)
+
+
+def _guided_coefficients(guide: "np.ndarray", radius: int, eps: float) -> tuple["np.ndarray", "np.ndarray"]:
+    """
+    Self-guided filter (He et al.) coefficients: smoothed = a · guide + b. Returning
+    the box-averaged a / b (not the result) lets the caller upscale them and apply
+    them to full-resolution luma — the "fast guided filter" — so edges stay crisp.
+    """
+    mean = _box_mean(guide, radius)
+    var = _box_mean(guide * guide, radius) - mean * mean
+    a = var / (var + eps)
+    b = mean - a * mean
+    return _box_mean(a, radius), _box_mean(b, radius)
+
+
+def shadows_highlights(
+    image: Image.Image,
+    shadows: float = 0.0,
+    highlights: float = 0.0,
+    radius_ratio: float = 0.02,
+    local: float = 0.6,
+) -> Image.Image:
+    """
+    Local shadow / highlight recovery (Lightroom Shadows & Highlights sliders).
+
+    `shadows` (−1 deepen … 1 open up) and `highlights` (−1 recover … 1 brighten) bend
+    brightness with a gamma whose strength follows a tone mask: dark regions get the
+    shadow move, bright regions the highlight move, mid-tones little of either, and
+    pure black / white stay put. The mask mixes each pixel's luma with an edge-aware
+    smoothing of it (`radius_ratio` × short side, `local` 0–1 share of the smoothed
+    luma), so a dark face in a bright frame lifts as a region rather than by pixel,
+    while a hard edge (building against sky) keeps its own side's move instead of
+    bleeding into a halo. The smoothing is a fast guided filter: coefficients are fitted
+    at ≤ 1024 px and applied against full-resolution luma, so cost is flat and the mask
+    stays sharp at edges. Colour scales with brightness (hue kept), and pixels that
+    would leave the gamut lose chroma instead of clipping.
+    """
+    import numpy as np
+
+    sh = max(-1.0, min(1.0, float(shadows)))
+    hi = max(-1.0, min(1.0, float(highlights)))
+    out = _as_rgb(image)
+    if sh == 0 and hi == 0:
+        return _keep_alpha(out, image)
+    mix = max(0.0, min(1.0, float(local)))
+    w, h = out.size
+    luma = np.array(_LUMA, dtype=np.float32)
+    small = np.asarray(_small_copy(out), dtype=np.float32) / 255 @ luma
+    # Box radius ≈ 2σ of the Gaussian this replaces, so the mask reaches as far.
+    radius = max(1, round(2 * float(radius_ratio) * min(small.shape)))
+    coef_a, coef_b = _guided_coefficients(small, radius, _GUIDED_EPS)
+    coef_a = Image.fromarray(coef_a, "F").resize((w, h), Image.Resampling.BILINEAR)
+    coef_b = Image.fromarray(coef_b, "F").resize((w, h), Image.Resampling.BILINEAR)
+    rows = max(1, _GRADE_STRIP_PIXELS // max(1, w))
+    result = Image.new("RGB", out.size)
+    for top in range(0, h, rows):
+        box = (0, top, w, min(h, top + rows))
+        px = np.asarray(out.crop(box), dtype=np.float32) / 255
+        y = np.clip(px @ luma, 0, 1)
+        smooth = np.asarray(coef_a.crop(box), dtype=np.float32) * y + np.asarray(coef_b.crop(box), dtype=np.float32)
+        m = (1 - mix) * y + mix * np.clip(smooth, 0, 1)
+        ws = np.clip(1 - m / 0.55, 0, 1) ** 1.6
+        wh = np.clip((m - 0.45) / 0.55, 0, 1) ** 1.6
+        # Positive moves brighten (gamma < 1); 0 and 1 are fixed points of any gamma.
+        gamma = 2.0 ** (-(1.3 * sh * ws + 1.1 * hi * wh))
+        target = np.power(y, gamma)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            ratio = np.where(y > 1e-4, target / y, 1.0)
+        px = px * ratio[..., None] + np.where(y > 1e-4, 0.0, target)[..., None]
+        px = _fit_gamut(px, luma)
+        result.paste(Image.fromarray(np.clip(px * 255 + 0.5, 0, 255).astype(np.uint8), "RGB"), box[:2])
+    return _keep_alpha(result, image)
 
 
 # Named hue centres (degrees on the HSV wheel) for `selective_color`.
@@ -1969,6 +2150,119 @@ def blur(
     out = out.convert("RGBA")
     out.putalpha(alpha)
     return out
+
+# Long edge for the motion-blur work copy: streaks hide fine detail, so a larger
+# frame is blurred at this size and scaled back up (flat cost at any resolution).
+# LIGHTWEIGHT=1 hosts (≤ 2 MP inputs, ~1 GB RAM shared with the rembg model) use the
+# smaller edge so the multi-channel work buffers stay under ~80 MB.
+_MOTION_WORK_EDGE = 1600
+_MOTION_WORK_EDGE_LIGHT = 1024
+
+
+def motion_blur(
+    image: Image.Image,
+    length_ratio: float = 0.06,
+    angle: float = 0.0,
+    trail: float = 0.0,
+    fade: float = 0.0,
+    freeze: float = 0.0,
+    exclude: Image.Image | None = None,
+    exclude_grow: float = 0.004,
+) -> Image.Image:
+    """
+    Directional (shutter) motion blur.
+
+    `length_ratio` is the streak length as a fraction of the short side (≤ 0.5); `angle` is
+    the direction of motion in degrees (0 → right, 90 → up). `trail` 0 smears both
+    ways (camera pan / shake), 1 only behind the motion (object streaking past);
+    `fade` 0–1 thins the streak toward its tail. `freeze` 0–1 mixes the sharp frame
+    back in (rear-curtain flash: a crisp subject riding its own blur). Frame edges
+    are extended, not filled with black (worked at ≤ 1600 px long edge, ≤ 1024 with
+    LIGHTWEIGHT=1, then scaled back); RGBA blurs with premultiplied alpha, so a
+    cut-out subject streaks into transparency without dark fringes. `exclude` (an
+    RGBA layer, e.g. the subject cutout; RGB images only) gives zero weight to the
+    pixels under its alpha, grown by `exclude_grow` × the short side, so a hole filled
+    with the subject's colours isn't smeared past the subject's outline (panning).
+    """
+    import numpy as np
+
+    # Capped at half the short side: the padded work copy grows with the streak.
+    length = max(0.0, min(0.5, float(length_ratio)))
+    keep = max(0.0, min(1.0, float(freeze)))
+    has_alpha = image.mode == "RGBA"
+    src = _as_rgba(image) if has_alpha else _as_rgb(image)
+    w, h = src.size
+    light = os.environ.get("LIGHTWEIGHT", "0").strip() == "1"
+    work_edge = _MOTION_WORK_EDGE_LIGHT if light else _MOTION_WORK_EDGE
+    scale = min(1.0, work_edge / max(w, h))
+    work = src if scale >= 1.0 else src.resize((max(1, round(w * scale)), max(1, round(h * scale))), Image.Resampling.BILINEAR)
+    px = np.asarray(work, dtype=np.float32) / 255
+    if has_alpha:
+        if exclude is not None:
+            raise ValueError("motion_blur: exclude works on RGB layers only")
+        px[..., :3] *= px[..., 3:4]
+    elif exclude is not None:
+        hole = _as_rgba(exclude).getchannel("A")
+        if hole.size != work.size:
+            hole = hole.resize(work.size, Image.Resampling.BILINEAR)
+        grow = max(0.0, float(exclude_grow)) * min(work.size)
+        if grow >= 0.5:
+            hole = _dilate(hole, grow)
+        keep_w = 1 - np.asarray(hole, dtype=np.float32)[..., None] / 255
+        # Channels: weighted colour, weight, plain colour (fallback deep inside the hole).
+        px = np.concatenate([px * keep_w, keep_w, px], axis=-1)
+    streak = length * min(work.size)
+    if streak < 1 or keep >= 1.0:
+        return src.copy()
+
+    rad = math.radians(float(angle))
+    # Image y points down, so "up" (90°) is −y. A pixel at p takes source colour from
+    # p + d·dir with d ≥ 0, so the streak lands behind the moving object.
+    dx, dy = math.cos(rad), -math.sin(rad)
+    tr = max(0.0, min(1.0, float(trail)))
+    fd = max(0.0, min(1.0, float(fade)))
+    samples = max(2, min(96, math.ceil(streak)))
+    pad = math.ceil(streak) + 1
+    padded = np.pad(px, ((pad, pad), (pad, pad), (0, 0)), mode="edge")
+    sh, sw = px.shape[:2]
+    # Reuse the source buffer as the accumulator and one scratch buffer for the
+    # weighted copy, so the loop allocates nothing per sample.
+    acc = px
+    acc.fill(0)
+    scratch = np.empty_like(acc)
+    total = 0.0
+    for i in range(samples):
+        s = i / (samples - 1)
+        d = streak * (s - 0.5 * (1 - tr))
+        weight = 1 - fd * s
+        ox, oy = round(d * dx), round(d * dy)
+        np.multiply(padded[pad + oy : pad + oy + sh, pad + ox : pad + ox + sw], weight, out=scratch)
+        acc += scratch
+        total += weight
+    del padded, scratch
+    acc /= total
+    if exclude is not None and not has_alpha:
+        weight = acc[..., 3:4]
+        # Ease into the plain streak where almost nothing outside the hole was sampled.
+        t = np.clip(weight / 0.06, 0, 1)
+        acc = acc[..., :3] / np.maximum(weight, 1e-4) * t + acc[..., 4:7] * (1 - t)
+    if has_alpha:
+        alpha = acc[..., 3:4]
+        acc[..., :3] = np.where(alpha > 1e-4, acc[..., :3] / np.maximum(alpha, 1e-4), 0)
+    mode = "RGBA" if has_alpha else "RGB"
+    out = Image.fromarray(np.clip(acc * 255 + 0.5, 0, 255).astype(np.uint8), mode)
+    if out.size != (w, h):
+        out = out.resize((w, h), Image.Resampling.BICUBIC)
+    if keep > 0:
+        if has_alpha:
+            # Sharp copy over its own streak, so the frozen subject stays crisp.
+            sharp = src.copy()
+            sharp.putalpha(src.getchannel("A").point(lambda v: round(v * keep)))
+            out = Image.alpha_composite(out, sharp)
+        else:
+            out = Image.blend(out, src, keep)
+    return out
+
 
 def composite(base: Image.Image, overlay: Image.Image) -> Image.Image:
     """Paste overlay (with alpha) on top of base."""

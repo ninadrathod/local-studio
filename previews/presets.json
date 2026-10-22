@@ -1,5 +1,95 @@
 [
   {
+    "preset_name": "print_film_2383",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/print_film_2383.jpg",
+    "post_edit_image": "previews/post-edit/print_film_2383.png"
+  },
+  {
+    "preset_name": "cross_process",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/cross_process.jpg",
+    "post_edit_image": "previews/post-edit/cross_process.png"
+  },
+  {
+    "preset_name": "hdr_clarity_pop",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/hdr_clarity_pop.jpg",
+    "post_edit_image": "previews/post-edit/hdr_clarity_pop.png"
+  },
+  {
+    "preset_name": "bleach_bypass",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/bleach_bypass.jpg",
+    "post_edit_image": "previews/post-edit/bleach_bypass.png"
+  },
+  {
+    "preset_name": "mocha_moody",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/mocha_moody.jpg",
+    "post_edit_image": "previews/post-edit/mocha_moody.png"
+  },
+  {
+    "preset_name": "lavender_dusk",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/lavender_dusk.jpg",
+    "post_edit_image": "previews/post-edit/lavender_dusk.png"
+  },
+  {
+    "preset_name": "hdr_noir_mono",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/hdr_noir_mono.jpg",
+    "post_edit_image": "previews/post-edit/hdr_noir_mono.png"
+  },
+  {
+    "preset_name": "mint_pastel_film",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/mint_pastel_film.jpg",
+    "post_edit_image": "previews/post-edit/mint_pastel_film.png"
+  },
+  {
+    "preset_name": "shutter_drag",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/shutter_drag.jpg",
+    "post_edit_image": "previews/post-edit/shutter_drag.png"
+  },
+  {
+    "preset_name": "speed_pan",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/speed_pan.jpg",
+    "post_edit_image": "previews/post-edit/speed_pan.png"
+  },
+  {
     "preset_name": "confetti_pastel_doodle",
     "ar": "non-square",
     "text_input": "no",

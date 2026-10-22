@@ -77,7 +77,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     init_db(db)
     first = seed_default_presets(db_path=db)
     second = seed_default_presets(db_path=db)
-    assert len(first) == 50
+    assert len(first) == 60
     names = {row["preset_name"] for row in first}
     assert names == {
         "bw_bg_glowing_subject",
@@ -130,6 +130,16 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "scrapbook_doodle",
         "cyanotype_doodle",
         "confetti_pastel_doodle",
+        "print_film_2383",
+        "cross_process",
+        "hdr_clarity_pop",
+        "bleach_bypass",
+        "mocha_moody",
+        "lavender_dusk",
+        "hdr_noir_mono",
+        "mint_pastel_film",
+        "shutter_drag",
+        "speed_pan",
     }
     by_name = {row["preset_name"]: row for row in first}
     assert by_name["bw_bg_glowing_subject"]["ar"] == "non-square"
@@ -173,6 +183,16 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "tungsten_night_film",
         "muted_chrome_film",
         "studio_spotlight",
+        "print_film_2383",
+        "cross_process",
+        "hdr_clarity_pop",
+        "bleach_bypass",
+        "mocha_moody",
+        "lavender_dusk",
+        "hdr_noir_mono",
+        "mint_pastel_film",
+        "shutter_drag",
+        "speed_pan",
     ):
         assert by_name[name]["ar"] == "non-square"
         assert by_name[name]["text_input"] == "no"
@@ -180,6 +200,16 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     assert second == []
     names_in_order = [row["preset_name"] for row in list_presets(db_path=db)]
     assert names_in_order == [
+        "speed_pan",
+        "shutter_drag",
+        "mint_pastel_film",
+        "hdr_noir_mono",
+        "lavender_dusk",
+        "mocha_moody",
+        "bleach_bypass",
+        "hdr_clarity_pop",
+        "cross_process",
+        "print_film_2383",
         "confetti_pastel_doodle",
         "cyanotype_doodle",
         "scrapbook_doodle",
@@ -232,7 +262,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "bw_bg_glowing_subject",
     ]
     popular = list_popular(db_path=db)
-    assert len(popular) == 50
+    assert len(popular) == 60
     assert all(row["used_count"] == 0 for row in popular)
 
 
@@ -302,6 +332,16 @@ def test_seed_default_presets_syncs_text_fields(tmp_path: Path) -> None:
         "scrapbook_doodle",
         "cyanotype_doodle",
         "confetti_pastel_doodle",
+        "print_film_2383",
+        "cross_process",
+        "hdr_clarity_pop",
+        "bleach_bypass",
+        "mocha_moody",
+        "lavender_dusk",
+        "hdr_noir_mono",
+        "mint_pastel_film",
+        "shutter_drag",
+        "speed_pan",
     ]
     synced = get_preset_by_name("bw_bg_glowing_subject", db_path=db)
     assert synced is not None

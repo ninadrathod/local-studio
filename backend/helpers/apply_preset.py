@@ -264,23 +264,23 @@ def _run_doodle(
     layers[step.get("as", on_key)] = F.doodle(layers[on_key], around=around, **call_params)
 
 
-def _run_blur(
-    layers: dict[str, Image.Image],
-    *,
-    index: int = 0,
-    **step: Any,
-) -> None:
-    on_key = step.get("on", "image")
-    if on_key not in layers:
-        raise KeyError(f"Step {index}: unknown layer '{on_key}'")
-    exclude_key = step.get("exclude")
-    if exclude_key is not None and exclude_key not in layers:
-        raise KeyError(f"Step {index}: unknown exclude layer '{exclude_key}'")
-    call_params = {
-        key: value for key, value in step.items() if key not in _LAYER_KEYS and key != "exclude"
-    }
-    exclude = layers[exclude_key] if exclude_key is not None else None
-    layers[step.get("as", on_key)] = F.blur(layers[on_key], exclude=exclude, **call_params)
+def _run_excluding(fn: Callable[..., Image.Image]) -> FilterHandler:
+    """Like `_run_simple`, but resolves an optional `exclude` layer name to its image."""
+
+    def run(layers: dict[str, Image.Image], *, index: int = 0, **step: Any) -> None:
+        on_key = step.get("on", "image")
+        if on_key not in layers:
+            raise KeyError(f"Step {index}: unknown layer '{on_key}'")
+        exclude_key = step.get("exclude")
+        if exclude_key is not None and exclude_key not in layers:
+            raise KeyError(f"Step {index}: unknown exclude layer '{exclude_key}'")
+        call_params = {
+            key: value for key, value in step.items() if key not in _LAYER_KEYS and key != "exclude"
+        }
+        exclude = layers[exclude_key] if exclude_key is not None else None
+        layers[step.get("as", on_key)] = fn(layers[on_key], exclude=exclude, **call_params)
+
+    return run
 
 
 # JSON `"filter"` name → function. Add new ops here; do not add if/else in the runner.
@@ -300,6 +300,8 @@ FILTERS: dict[str, FilterHandler] = {
     "halftone": _run_simple(F.halftone),
     "paper_texture": _run_simple(F.paper_texture),
     "color_grade": _run_simple(F.color_grade),
+    "tone_curve": _run_simple(F.tone_curve),
+    "shadows_highlights": _run_simple(F.shadows_highlights),
     "selective_color": _run_simple(F.selective_color),
     "vignette": _run_simple(F.vignette),
     "bloom": _run_simple(F.bloom),
@@ -307,7 +309,8 @@ FILTERS: dict[str, FilterHandler] = {
     "light_leak": _run_simple(F.light_leak),
     "film_dust": _run_simple(F.film_dust),
     "chromatic_aberration": _run_simple(F.chromatic_aberration),
-    "blur": _run_blur,
+    "motion_blur": _run_excluding(F.motion_blur),
+    "blur": _run_excluding(F.blur),
     "draw_text": _run_simple(F.draw_text),
     "place_on_canvas": _run_simple(F.place_on_canvas),
     "upscale": _run_simple(F.upscale),

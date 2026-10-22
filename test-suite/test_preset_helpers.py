@@ -1646,3 +1646,148 @@ def test_doodle_frame_keeps_rgba_transparency_off_the_frame() -> None:
     assert out.mode == "RGBA"
     assert out.getchannel("A").crop((50, 50, 150, 110)).getextrema() == (0, 0)  # centre still transparent
     assert out.getchannel("A").crop((0, 0, 200, 15)).getextrema()[1] == 255  # frame is opaque ink
+
+
+def test_curve_table_identity_monotone_and_through_points() -> None:
+    assert F._curve_table(None) == [float(v) for v in range(256)]
+    assert F._curve_table([[0, 0], [255, 255]])[77] == pytest.approx(77)
+    table = F._curve_table([[0, 20], [64, 50], [192, 210], [255, 240]])
+    assert table[0] == pytest.approx(20) and table[64] == pytest.approx(50)
+    assert table[192] == pytest.approx(210) and table[255] == pytest.approx(240)
+    assert all(b >= a for a, b in zip(table, table[1:]))  # no overshoot / dips
+
+
+def test_tone_curve_identity_per_channel_and_keeps_alpha() -> None:
+    src = _gradient()
+    assert F.tone_curve(src).tobytes() == src.tobytes()
+    grey = Image.new("RGB", (8, 8), (128, 128, 128))
+    out = F.tone_curve(grey, blue=[[0, 40], [128, 170], [255, 255]]).getpixel((0, 0))
+    assert out[:2] == (128, 128) and out[2] == 170
+    lifted = F.tone_curve(Image.new("RGB", (4, 4), (0, 0, 0)), master=[[0, 30], [255, 255]]).getpixel((0, 0))
+    assert lifted == (30, 30, 30)
+    rgba = _gradient().convert("RGBA")
+    rgba.putalpha(77)
+    out_rgba = F.tone_curve(rgba, master=[[0, 0], [128, 160], [255, 255]])
+    assert out_rgba.mode == "RGBA" and out_rgba.getchannel("A").getextrema() == (77, 77)
+
+
+def test_shadows_highlights_lifts_shadows_recovers_highlights_keeps_ends() -> None:
+    ramp = _ramp(256, 8)
+    assert F.shadows_highlights(ramp).tobytes() == ramp.tobytes()
+    out = F.shadows_highlights(ramp, shadows=0.8, highlights=-0.8, local=0)
+    dark, mid, bright = (out.getpixel((x, 4))[0] for x in (40, 128, 220))
+    assert dark > ramp.getpixel((40, 4))[0] + 15
+    assert bright < ramp.getpixel((220, 4))[0] - 8
+    assert abs(mid - 128) < abs(dark - 40)
+    assert out.getpixel((0, 4))[0] <= 1 and out.getpixel((255, 4))[0] >= 254
+    hue = F.shadows_highlights(Image.new("RGB", (8, 8), (60, 20, 10)), shadows=0.8).getpixel((4, 4))
+    assert hue[0] > hue[1] > hue[2]  # brighter, same hue order
+
+
+def test_motion_blur_streaks_along_angle_and_trails_behind() -> None:
+    img = Image.new("RGB", (200, 100), (0, 0, 0))
+    img.paste((255, 255, 255), (95, 45, 105, 55))
+    out = F.motion_blur(img, length_ratio=0.4, angle=0, trail=1.0)  # moving right
+    assert out.getpixel((70, 50))[0] > 20  # streak behind (left)
+    assert out.getpixel((140, 50))[0] == 0  # nothing ahead
+    assert out.getpixel((100, 20))[0] == 0  # no vertical spread
+    up = F.motion_blur(img, length_ratio=0.4, angle=90, trail=1.0)
+    assert up.getpixel((100, 75))[0] > 20 and up.getpixel((100, 25))[0] == 0
+    assert F.motion_blur(img, length_ratio=0).tobytes() == img.tobytes()
+    frozen = F.motion_blur(img, length_ratio=0.4, trail=1.0, freeze=0.5)
+    assert frozen.getpixel((100, 50))[0] > out.getpixel((100, 50))[0]
+
+
+def test_motion_blur_rgba_streaks_into_transparency_without_dark_fringe() -> None:
+    img = Image.new("RGBA", (200, 100), (0, 0, 0, 0))
+    img.paste((250, 200, 40, 255), (90, 30, 110, 70))
+    out = F.motion_blur(img, length_ratio=0.3, angle=0, trail=1.0, fade=0.5)
+    r, g, b, a = out.getpixel((80, 50))
+    assert 0 < a < 255 and (r, g, b) == pytest.approx((250, 200, 40), abs=3)
+    assert out.getpixel((150, 50))[3] == 0
+
+
+TONE_CURVE_PRESETS = {
+    "print_film_2383": True,
+    "cross_process": True,
+    "hdr_clarity_pop": True,
+    "bleach_bypass": True,
+    "mocha_moody": True,
+    "lavender_dusk": True,
+    "hdr_noir_mono": True,
+    "mint_pastel_film": True,
+    "shutter_drag": False,
+    "speed_pan": False,
+}
+
+
+@pytest.mark.parametrize("name,hd", TONE_CURVE_PRESETS.items())
+def test_tone_curve_preset_files(name: str, hd: bool) -> None:
+    data = load_preset(PRESETS / f"{name}.json")
+    assert data["name"] == name
+    assert data["ar"] == "non-square" and data["text_input"] == "no"
+    assert data["default_text"] == "" and data["text_character_limit"] == 0
+    steps = data["steps"]
+    has_hd = steps[0] == {"filter": "ai_upscale", "on": "image", "long_edge": 1920, "denoise": 0.3}
+    assert has_hd is hd
+    assert all(s["filter"] in FILTERS for s in steps)
+    assert any(s["filter"] == "shadows_highlights" for s in steps)
+    assert any(s["filter"] == "tone_curve" for s in steps)
+    if not hd:
+        assert any(s["filter"] == "motion_blur" for s in steps)
+
+
+@pytest.mark.parametrize("name", [n for n, hd in TONE_CURVE_PRESETS.items() if hd])
+def test_tone_curve_presets_apply_without_upscale(name: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    from apply_preset import FILTERS as REG, _run_simple
+
+    monkeypatch.setitem(REG, "ai_upscale", _run_simple(lambda image, **kw: F.upscale(image, long_edge=kw.get("long_edge", 1920))))
+    source = _gradient(640, 480)
+    out = apply_preset(source, PRESETS / f"{name}.json")
+    assert out.size == (1920, 1440)
+    assert out.tobytes() != F.upscale(source, long_edge=1920).convert(out.mode).tobytes()
+
+
+def test_shadows_highlights_has_no_halo_at_hard_edges() -> None:
+    img = Image.new("RGB", (400, 200), (40, 40, 40))
+    img.paste((225, 225, 225), (200, 0, 400, 200))
+    out = F.shadows_highlights(img, shadows=0.7, highlights=-0.7, radius_ratio=0.03, local=0.7)
+    far_dark, near_dark = out.getpixel((60, 100))[0], out.getpixel((196, 100))[0]
+    far_bright, near_bright = out.getpixel((340, 100))[0], out.getpixel((204, 100))[0]
+    assert far_dark > 55  # shadows still lifted
+    assert near_dark >= far_dark - 6  # no dark band hugging the edge
+    assert near_bright <= far_bright + 4  # no bright band on the other side
+
+
+def test_shadows_highlights_strips_match_single_pass(monkeypatch: pytest.MonkeyPatch) -> None:
+    base = _gradient(120, 80)
+    whole = F.shadows_highlights(base, shadows=0.6, highlights=-0.6)
+    monkeypatch.setattr(F, "_GRADE_STRIP_PIXELS", 120 * 7)
+    assert F.shadows_highlights(base, shadows=0.6, highlights=-0.6).tobytes() == whole.tobytes()
+
+
+def test_motion_blur_exclude_keeps_hole_colour_out_of_the_streak() -> None:
+    bg = Image.new("RGB", (200, 100), (0, 0, 255))
+    bg.paste((255, 255, 0), (80, 20, 120, 80))  # subject-coloured fill in the hole
+    subject = Image.new("RGBA", (200, 100), (0, 0, 0, 0))
+    subject.paste((255, 255, 0, 255), (80, 20, 120, 80))
+    plain = F.motion_blur(bg, length_ratio=0.5, angle=0)
+    kept = F.motion_blur(bg, length_ratio=0.5, angle=0, exclude=subject)
+    assert plain.getpixel((65, 50))[0] > 40  # yellow smeared past the outline
+    assert kept.getpixel((65, 50))[0] < 10 and kept.getpixel((65, 50))[2] > 240
+    with pytest.raises(ValueError, match="RGB"):
+        F.motion_blur(subject, exclude=subject)
+
+
+def test_speed_pan_streak_excludes_subject() -> None:
+    steps = load_preset(PRESETS / "speed_pan.json")["steps"]
+    step = next(s for s in steps if s["filter"] == "motion_blur")
+    assert step["on"] == "background" and step["exclude"] == "subject"
+
+
+def test_motion_blur_lightweight_uses_smaller_work_copy(monkeypatch: pytest.MonkeyPatch) -> None:
+    img = _gradient(1400, 300)
+    full = F.motion_blur(img, length_ratio=0.2)
+    monkeypatch.setenv("LIGHTWEIGHT", "1")
+    light = F.motion_blur(img, length_ratio=0.2)
+    assert light.size == full.size and light.tobytes() != full.tobytes()

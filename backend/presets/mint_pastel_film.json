@@ -1,0 +1,108 @@
+{
+  "name": "mint_pastel_film",
+  "label": "Mint pastel film",
+  "description": "HD pass, then fuji-pastel style: mint-green lifted shadows, airy matte curve, soft highlights, low saturation, fine grain.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "shadows_highlights",
+      "on": "image",
+      "shadows": 0.45,
+      "highlights": -0.5
+    },
+    {
+      "filter": "tone_curve",
+      "on": "image",
+      "master": [
+        [
+          0,
+          26
+        ],
+        [
+          64,
+          74
+        ],
+        [
+          128,
+          142
+        ],
+        [
+          200,
+          214
+        ],
+        [
+          255,
+          244
+        ]
+      ],
+      "red": [
+        [
+          0,
+          0
+        ],
+        [
+          128,
+          118
+        ],
+        [
+          255,
+          250
+        ]
+      ],
+      "green": [
+        [
+          0,
+          22
+        ],
+        [
+          128,
+          138
+        ],
+        [
+          255,
+          255
+        ]
+      ],
+      "blue": [
+        [
+          0,
+          16
+        ],
+        [
+          128,
+          132
+        ],
+        [
+          255,
+          236
+        ]
+      ]
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "saturation": 0.78,
+      "vibrance": 0.25,
+      "temperature": -0.08,
+      "tint": -0.1
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0,
+      "stains": 0,
+      "fade": 0,
+      "grain": 0.04,
+      "seed": 7
+    }
+  ]
+}

@@ -378,6 +378,70 @@ Ten looks that keep the photo intact: an optional colour treatment, then a few s
 - **File:** `backend/presets/confetti_pastel_doodle.json`
 
 
+### Tone curves & motion
+
+Ten looks built on point curves (`tone_curve`) and local shadow / highlight recovery (`shadows_highlights`); the last two add a directional shutter `motion_blur`. All are `ar: non-square`, `text_input: no`, seeded via `seed_default_presets()` / setup. The eight grades start with the HD pass `{ "filter": "ai_upscale", "long_edge": 1920, "denoise": 0.3 }`; `shutter_drag` and `speed_pan` skip it on purpose (motion blur hides the extra detail, and with `LIGHTWEIGHT=1` the enlarged cut-out would push a 1 GB host past its RAM). Grades run in ~3.7 s / ~0.9 GiB peak at 24 MP; the motion presets ~6 s / ~2.9 GiB (rembg cutout), and ~0.83–0.9 GiB with `LIGHTWEIGHT=1` at 2 MP (like `portrait_bokeh`).
+
+#### `print_film_2383` — Print film 2383
+
+- **Idea:** HD pass, then cinema print-film curves: lifted blue blacks, warm compressed highlights, recovered skies, opened shadows.
+- **Steps:** HD → `shadows_highlights` (+0.25 / -0.45) → `tone_curve` (master 0→8 60→48 128→130 200→212 255→245; red 0→0 128→134 255→255; green 0→4 128→128 255→250; blue 0→26 110→112 200→186 255→225) → `color_grade` (saturation 0.95, vibrance 0.15) → `vignette` 0.2
+- **File:** `backend/presets/print_film_2383.json`
+
+#### `cross_process` — Cross process
+
+- **Idea:** HD pass, then classic cross-processed slide: hard red S-curve, yellow-green highlights, lifted blue blacks, punchy colour.
+- **Steps:** HD → `shadows_highlights` (+0.15 / -0.25) → `tone_curve` (red 0→0 64→40 128→140 192→225 255→255; green 0→0 64→52 128→135 192→212 255→250; blue 0→45 128→118 255→200) → `color_grade` (saturation 1.15)
+- **File:** `backend/presets/cross_process.json`
+
+#### `hdr_clarity_pop` — HDR clarity pop
+
+- **Idea:** HD pass, then strong local shadow lift + highlight recovery, then an S-curve to restore punch — detailed, high dynamic range look.
+- **Steps:** HD → `shadows_highlights` (+0.7 / -0.7, radius_ratio 0.03, local 0.7) → `tone_curve` (master 0→0 40→30 128→132 215→230 255→255) → `color_grade` (vibrance 0.35) → `sharpen` (radius 4.0, percent 50, threshold 2)
+- **File:** `backend/presets/hdr_clarity_pop.json`
+
+#### `bleach_bypass` — Bleach bypass
+
+- **Idea:** HD pass, then silver-retention look: half saturation, steep contrast curve, recovered highlights, cool-neutral cast.
+- **Steps:** HD → `shadows_highlights` (-0.1 / -0.35) → `color_grade` (saturation 0.45, contrast 0.2) → `tone_curve` (master 0→0 50→30 128→128 200→222 255→252; blue 0→6 255→245) → `vignette` 0.25
+- **File:** `backend/presets/bleach_bypass.json`
+
+#### `mocha_moody` — Mocha moody
+
+- **Idea:** HD pass, then brown, matte moody edit: faded blacks, pulled whites, warm-brown curves, muted colour, deep highlight recovery.
+- **Steps:** HD → `shadows_highlights` (+0.3 / -0.65) → `tone_curve` (master 0→38 70→72 180→176 255→226; red 0→10 128→138 255→248; green 0→2 128→120 255→232; blue 0→0 128→100 255→196) → `color_grade` (saturation 0.62, temperature 0.1)
+- **File:** `backend/presets/mocha_moody.json`
+
+#### `lavender_dusk` — Lavender dusk
+
+- **Idea:** HD pass, then dreamy violet curves: blue lifted throughout, green dipped in mids, soft lifted blacks, gentle lavender bloom.
+- **Steps:** HD → `shadows_highlights` (+0.35 / -0.4) → `tone_curve` (master 0→16 128→134 255→248; red 0→10 128→132 255→250; green 0→0 96→84 180→174 255→240; blue 0→36 128→142 255→255) → `color_grade` (saturation 0.85, vibrance 0.2) → `bloom` (threshold 0.65, radius_ratio 0.03, amount 0.3, color [230, 210, 255])
+- **File:** `backend/presets/lavender_dusk.json`
+
+#### `hdr_noir_mono` — HDR noir mono
+
+- **Idea:** HD pass, then dramatic black & white: big shadow lift + highlight recovery, steep S-curve, vignette.
+- **Steps:** HD → `shadows_highlights` (+0.55 / -0.75, radius_ratio 0.03, local 0.75) → `grayscale` → `tone_curve` (master 0→0 45→22 128→128 205→232 255→255) → `sharpen` (radius 4.0, percent 40, threshold 2) → `vignette` 0.35
+- **File:** `backend/presets/hdr_noir_mono.json`
+
+#### `mint_pastel_film` — Mint pastel film
+
+- **Idea:** HD pass, then fuji-pastel style: mint-green lifted shadows, airy matte curve, soft highlights, low saturation, fine grain.
+- **Steps:** HD → `shadows_highlights` (+0.45 / -0.5) → `tone_curve` (master 0→26 64→74 128→142 200→214 255→244; red 0→0 128→118 255→250; green 0→22 128→138 255→255; blue 0→16 128→132 255→236) → `color_grade` (saturation 0.78, vibrance 0.25, temperature -0.08, tint -0.1) → grain 0.04
+- **File:** `backend/presets/mint_pastel_film.json`
+
+#### `shutter_drag` — Shutter drag
+
+- **Idea:** Subject streaks like a fast-moving object at a slow shutter (trail behind, faint flash-frozen copy on top); cool contrast curve, recovered highlights.
+- **Steps:** `extract_subject` (`single_subject: true`) → `motion_blur` on subject (length_ratio 0.14, angle 0, trail 0.85, fade 0.55, freeze 0.35) → `composite` → `shadows_highlights` (+0.3 / -0.45) → `tone_curve` (master 0→6 60→44 128→128 200→214 255→250; red 0→0 128→126 255→255; green 0→6 128→130 255→252; blue 0→22 128→136 255→238) → `color_grade` (saturation 0.9, vibrance 0.2) → `vignette` 0.25
+- **File:** `backend/presets/shutter_drag.json`
+
+#### `speed_pan` — Speed pan
+
+- **Idea:** Panning shot: subject sharp, background streaked horizontally; warm punchy S-curve with opened shadows and a vignette.
+- **Steps:** `extract_subject` (`single_subject: true`) → `motion_blur` on background (length_ratio 0.09, angle 0, trail 0) → `composite` → `shadows_highlights` (+0.35 / -0.5) → `tone_curve` (master 0→0 50→36 128→132 205→224 255→252; red 0→0 128→136 255→255; blue 0→10 128→122 255→240) → `color_grade` (saturation 1.05, vibrance 0.25) → `vignette` 0.3
+- **File:** `backend/presets/speed_pan.json`
+
 ## Built-in filters
 
 | Filter | What it does | Common params |
@@ -403,7 +467,10 @@ Ten looks that keep the photo intact: an optional colour treatment, then a few s
 | `ink_edges` | Comic ink outlines via difference of Gaussians on luminance; scales with resolution; RGBA is flattened on white first so hidden pixels don't create edges | `on`, `detail` (blur, fraction of short side), `threshold` (lower = more lines), `thickness` (fraction of short side), `color`/`rgb`, `opacity` |
 | `halftone` | Printed dot screen: `mono` (one ink at `angle`) or `cmyk` (process inks at 15/75/0/45° with grey-component replacement); dot area ≈ ink coverage; processed at ≤ 2400 px long edge then resized back; pitch auto-enlarges if a screen would need > 160k dots; transparent pixels print as paper | `on`, `mode`, `cell` (dot pitch, 0.002–0.1 of short side), `angle`, `paper`, `ink`, `mix` (blend back over original), `gcr` (0–1, share of grey on black plate) |
 | `paper_texture` | Age onto paper: multiply tint, seeded fine grain (scales with resolution), low-frequency stains (grid follows aspect ratio), fade toward paper; tone steps run as point tables, grain is applied tile by tile | `on`, `color`/`rgb`, `tint`, `grain`, `stains`, `fade` (0–1 each), `seed` |
-| `color_grade` | Photographic grade in one pass: white balance, exposure, contrast S-curve (or flatten), matte black lift, soft highlight shoulder (per-channel point tables, flat cost); luminance-preserving split toning, saturation and vibrance (numpy in ≤ 4 MP strips); out-of-gamut pixels are pulled back along their own luma so highlights don't clip or shift hue; neutral params are an exact no-op | `on`, `temperature` (−1 cool…1 warm), `tint` (−1 green…1 magenta), `exposure` (stops), `contrast` (−1…1), `pivot`, `black_lift` (0–0.3), `white_rolloff` (0–1), `shadows` / `highlights` ([r,g,b]), `split` (0–1), `balance` (−1…1 crossover), `saturation`, `vibrance` (0–1) |
+| `color_grade` | Photographic grade in one pass: white balance, exposure, contrast S-curve (or flatten), matte black lift, soft highlight shoulder (per-channel point tables, flat cost); luminance-preserving split toning, saturation and vibrance (numpy in ≤ 1 MP strips); out-of-gamut pixels are pulled back along their own luma so highlights don't clip or shift hue; neutral params are an exact no-op | `on`, `temperature` (−1 cool…1 warm), `tint` (−1 green…1 magenta), `exposure` (stops), `contrast` (−1…1), `pivot`, `black_lift` (0–0.3), `white_rolloff` (0–1), `shadows` / `highlights` ([r,g,b]), `split` (0–1), `balance` (−1…1 crossover), `saturation`, `vibrance` (0–1) |
+| `tone_curve` | Photoshop / Lightroom point curves: `[[in, out], …]` on 0–255 joined by a monotone cubic spline (no overshoot); `master` on all channels first, then `red` / `green` / `blue`; folded into one point table, flat cost; omitted curves are identity | `on`, `master`, `red`, `green`, `blue` |
+| `shadows_highlights` | Local Shadows / Highlights: a gamma bend weighted by a tone mask (pixel luma mixed with an edge-aware fast guided filter of it, fitted at ≤ 1024 px and applied at full resolution, so hard edges get no halo), so dark regions open up and bright ones recover as areas; black and white stay fixed, colour scales with brightness (hue kept, gamut-fitted); numpy in ≤ 1 MP strips | `on`, `shadows` (−1 deepen…1 open), `highlights` (−1 recover…1 brighten), `radius_ratio` (mask blur, fraction of short side; 0.02), `local` (0–1 share of the blurred mask; 0.6) |
+| `motion_blur` | Directional shutter blur: averaged shifted copies along `angle` with edge-extended borders; RGBA uses premultiplied alpha so a cut-out streaks into transparency; worked at ≤ 1600 px long edge (≤ 1024 with `LIGHTWEIGHT=1`) and scaled back (flat cost). `exclude` names a layer (e.g. `subject`, RGB layers only) whose alpha, grown by `exclude_grow`, gets zero weight, so the subject-coloured hole fill isn't smeared past the outline | `on`, `length_ratio` (streak, fraction of short side, ≤ 0.5), `angle` (motion direction, 0 → right, 90 → up), `trail` (0 both ways / pan … 1 behind only), `fade` (0–1 thinner tail), `freeze` (0–1 sharp copy on top, rear-curtain flash), `exclude`, `exclude_grow` (fraction of short side; 0.004) |
 | `vignette` | Edge falloff toward black (or `color`); mask built at ≤ 256 px and scaled up, so it is resolution-independent | `on`, `amount` (0–1), `midpoint` (0–1), `feather`, `roundness` (0 frame-shaped…1 circle), `color`/`rgb` |
 | `bloom` | Diffusion glow: highlights above `threshold` are blurred and screened back (Pro-Mist / dreamy); worked at ≤ 1024 px, so cost is flat | `on`, `threshold` (0–1), `radius_ratio` (fraction of short side), `amount` (0–1), `color`/`rgb` (glow tint) |
 | `halation` | Film halation: a red-orange halo around (not on) bright highlights; worked at ≤ 1024 px | `on`, `threshold`, `radius_ratio`, `amount`, `color`/`rgb` (default [255, 70, 30]) |
@@ -411,7 +478,7 @@ Ten looks that keep the photo intact: an optional colour treatment, then a few s
 | `film_dust` | Seeded scanned-film dust: white (and some dark) specks, curly hairs, faint vertical scratches; sizes are fractions of the short side | `on`, `amount` (0–1 speck count), `hairs`, `scratches`, `opacity`, `seed` |
 | `chromatic_aberration` | Radial lens fringing: red scaled out, green half, blue fixed, so colour edges split more toward the corners (no border) | `on`, `amount` (fraction of size, ≤ 0.05) |
 | `blur` | Gaussian blur by `radius_ratio` × short side; large radii run on a shrunken copy (flat cost). RGBA blurs with premultiplied alpha (no dark edges toward transparency). `exclude` names a layer (e.g. `subject`) whose alpha, grown by `exclude_grow`, gets zero weight, so the blurred background fills the cut-out hole from its surroundings | `on`, `radius_ratio`, `exclude` (layer name), `exclude_grow` (fraction of short side; default 0.004) |
-| `selective_color` | Push one colour family (HSV hue band) and optionally mute the rest; near-greys get little weight; numpy in ≤ 4 MP strips | `on`, `hue` (degrees, name `red`/`orange`/`yellow`/`green`/`cyan`/`teal`/`blue`/`purple`/`magenta`/`pink`, or [r,g,b]), `width` (band half-width, degrees), `saturation` (in-band ×), `lightness` (in-band lift 0–1), `others` (out-of-band saturation ×; 0 = grey), `pull` (0–1, rotate in-band hues toward the target) |
+| `selective_color` | Push one colour family (HSV hue band) and optionally mute the rest; near-greys get little weight; numpy in ≤ 1 MP strips | `on`, `hue` (degrees, name `red`/`orange`/`yellow`/`green`/`cyan`/`teal`/`blue`/`purple`/`magenta`/`pink`, or [r,g,b]), `width` (band half-width, degrees), `saturation` (in-band ×), `lightness` (in-band lift 0–1), `others` (out-of-band saturation ×; 0 = grey), `pull` (0–1, rotate in-band hues toward the target) |
 | `draw_text` | Paint a string onto a layer | `on`, `text` (`$text` / `$datetime` / `$date` / `$time` — stamps use the photo's EXIF capture time, else now), `font_size`, `color`/`rgb`, `align` (`center`/`top`/`bottom`/`top_left`/`top_right`/`bottom_left`/`bottom_right`), `font_style` (`sans`/`flow`/`stamp` — bold mono date imprint; poster styles `poster` (Impact → bundled Anton), `brush` (Brush Script → bundled Yellowtail), `slab`, `signature`, `bold_display`, `stencil`, caps-only `neon_lines` / `marquee`), `font_path` (optional TTF/OTF/TTC; overrides `font_style`), `margin`, `x`, `y`, `stroke_width` (px), or `font_size_ratio` / `margin_ratio` / `stroke_ratio` (fractions of the short side — prefer these); too-wide text shrinks to fit. Poster extras: `scale_y` (vertical stretch), `angle` (tilt, degrees), `glow_ratio` (≤ 0.05) / `glow_color` (neon halo, fixed brightness), `box` (`frame`/`double`/`corners`/`label`) with `box_color`, `box_fill` ([r,g,b(,a)]), `box_ratio`, `box_pad_ratio`, `box_radius_ratio` — the box stretches, tilts and glows with the text |
 
 Layers are named images in memory. Typical keys: `image`, `subject`, `background`.

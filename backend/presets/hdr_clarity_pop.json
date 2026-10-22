@@ -1,0 +1,63 @@
+{
+  "name": "hdr_clarity_pop",
+  "label": "HDR clarity pop",
+  "description": "HD pass, then strong local shadow lift + highlight recovery, then an S-curve to restore punch \u2014 detailed, high dynamic range look.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "shadows_highlights",
+      "on": "image",
+      "shadows": 0.7,
+      "highlights": -0.7,
+      "radius_ratio": 0.03,
+      "local": 0.7
+    },
+    {
+      "filter": "tone_curve",
+      "on": "image",
+      "master": [
+        [
+          0,
+          0
+        ],
+        [
+          40,
+          30
+        ],
+        [
+          128,
+          132
+        ],
+        [
+          215,
+          230
+        ],
+        [
+          255,
+          255
+        ]
+      ]
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "vibrance": 0.35
+    },
+    {
+      "filter": "sharpen",
+      "on": "image",
+      "radius": 4.0,
+      "percent": 50,
+      "threshold": 2
+    }
+  ]
+}

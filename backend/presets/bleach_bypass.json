@@ -1,0 +1,70 @@
+{
+  "name": "bleach_bypass",
+  "label": "Bleach bypass",
+  "description": "HD pass, then silver-retention look: half saturation, steep contrast curve, recovered highlights, cool-neutral cast.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "shadows_highlights",
+      "on": "image",
+      "shadows": -0.1,
+      "highlights": -0.35
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "saturation": 0.45,
+      "contrast": 0.2
+    },
+    {
+      "filter": "tone_curve",
+      "on": "image",
+      "master": [
+        [
+          0,
+          0
+        ],
+        [
+          50,
+          30
+        ],
+        [
+          128,
+          128
+        ],
+        [
+          200,
+          222
+        ],
+        [
+          255,
+          252
+        ]
+      ],
+      "blue": [
+        [
+          0,
+          6
+        ],
+        [
+          255,
+          245
+        ]
+      ]
+    },
+    {
+      "filter": "vignette",
+      "on": "image",
+      "amount": 0.25
+    }
+  ]
+}
