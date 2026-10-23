@@ -431,3 +431,10 @@ is required where the license says so; CC0 and public-domain sources need none.
 - **Photographer:** [Abigail Keenan](https://unsplash.com/@akeenster) (via Wikimedia Commons Unsplash CC0 archive)
 - **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
 - **Files:** `pre-edit/speed_pan.jpg` → `post-edit/speed_pan.png` (preset `speed_pan`)
+
+## `red_halo_spotlight`
+
+- **Photograph:** [Manny Santiago portrait black hat](https://commons.wikimedia.org/wiki/File:Manny_Santiago_portrait_black_hat.jpg)
+- **Photographer:** [JOHNNYMARTINEZ99](https://commons.wikimedia.org/wiki/User:JOHNNYMARTINEZ99)
+- **License:** [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+- **Files:** `pre-edit/red_halo_spotlight.jpg` → `post-edit/red_halo_spotlight.png` (preset `red_halo_spotlight`)

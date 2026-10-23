@@ -1101,6 +1101,87 @@ def doodle(
     return out
 
 
+
+def circle_backdrop(
+    image: Image.Image,
+    color: Sequence[int] | None = None,
+    rgb: Sequence[int] | None = None,
+    opacity: float = 0.5,
+    size: float = 0.8,
+    anchor: str = "subject",
+    x: float | None = None,
+    y: float | None = None,
+    offset_y: float = 0.0,
+    softness: float = 0.0,
+    subject_fit: float | None = None,
+    around: Image.Image | None = None,
+) -> Image.Image:
+    """
+    Paint one filled, semi-transparent disc onto `image` (e.g. behind a cut-out).
+
+    `size` is the diameter and `offset_y` / `softness` (edge feather) are
+    fractions of the short side, so the look scales with resolution. Placement
+    follows `doodle`: `anchor` (`subject` = centre of the `around` layer's alpha
+    bbox, or a corner/edge name / `center`) or explicit `x` / `y` (0–1);
+    `offset_y` then nudges the centre (negative = up). `subject_fit` caps the
+    diameter at that multiple of the subject bbox's long side, so a small or
+    distant subject isn't dwarfed. With `anchor: subject` and an `around` layer
+    that has no visible pixels (no subject found), the image is returned as-is.
+    Only the disc's region is drawn (2× supersampled up to 4 MP), so cost
+    follows the disc, not the frame.
+    """
+    params = {"size": size, "opacity": opacity, "offset_y": offset_y, "softness": softness}
+    if subject_fit is not None:
+        params["subject_fit"] = subject_fit
+    for name, value in params.items():
+        if not math.isfinite(float(value)):
+            raise ValueError(f"{name} must be a finite number")
+    if float(size) <= 0:
+        raise ValueError("size must be > 0")
+    if subject_fit is not None and float(subject_fit) <= 0:
+        raise ValueError("subject_fit must be > 0")
+
+    base = _as_rgba(image)
+    w, h = base.size
+    short = min(w, h)
+    bbox = around.getchannel("A").getbbox() if around is not None and around.mode == "RGBA" else None
+    if (anchor or "").strip().lower() == "subject" and around is not None and bbox is None:
+        return image.copy()
+    diameter = float(size) * short
+    if subject_fit is not None and bbox is not None:
+        subject_long = max(bbox[2] - bbox[0], bbox[3] - bbox[1])
+        diameter = min(diameter, float(subject_fit) * subject_long)
+    feather = max(0.0, float(softness)) * short
+    center_x, center_y = _doodle_center(base.size, anchor, x, y, around)
+    center_y += float(offset_y) * short
+
+    radius = diameter / 2
+    half = radius + feather * 3 + 2
+    rx0, ry0 = max(0, int(center_x - half)), max(0, int(center_y - half))
+    rx1, ry1 = min(w, int(math.ceil(center_x + half))), min(h, int(math.ceil(center_y + half)))
+    if rx1 <= rx0 or ry1 <= ry0:
+        return image.copy()
+    rw, rh = rx1 - rx0, ry1 - ry0
+    ss = _DOODLE_SUPERSAMPLE if rw * rh <= _DOODLE_SUPERSAMPLE_MAX_PIXELS else 1
+
+    alpha = int(round(255 * max(0.0, min(1.0, float(opacity)))))
+    mask = Image.new("L", (rw * ss, rh * ss), 0)
+    cx, cy = (center_x - rx0) * ss, (center_y - ry0) * ss
+    r = radius * ss
+    ImageDraw.Draw(mask).ellipse((cx - r, cy - r, cx + r, cy + r), fill=alpha)
+    if ss > 1:
+        mask = mask.resize((rw, rh), Image.Resampling.LANCZOS)
+    if feather > 0:
+        mask = mask.filter(ImageFilter.GaussianBlur(radius=feather))
+
+    layer = Image.new("RGBA", (rw, rh), (*_rgb_tint(color, rgb, (220, 30, 30)), 0))
+    layer.putalpha(mask)
+    out = base.copy()
+    out.alpha_composite(layer, (rx0, ry0))
+    if image.mode != "RGBA":
+        out = out.convert(image.mode if image.mode in {"RGB", "L"} else "RGB")
+    return out
+
 def _keep_alpha(out: Image.Image, image: Image.Image) -> Image.Image:
     """Return `out` as RGB, or RGBA carrying `image`'s alpha when it had one."""
     if image.mode == "RGBA":

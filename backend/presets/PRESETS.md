@@ -442,6 +442,14 @@ Ten looks built on point curves (`tone_curve`) and local shadow / highlight reco
 - **Steps:** `extract_subject` (`single_subject: true`) → `motion_blur` on background (length_ratio 0.09, angle 0, trail 0) → `composite` → `shadows_highlights` (+0.35 / -0.5) → `tone_curve` (master 0→0 50→36 128→132 205→224 255→252; red 0→0 128→136 255→255; blue 0→10 128→122 255→240) → `color_grade` (saturation 1.05, vibrance 0.25) → `vignette` 0.3
 - **File:** `backend/presets/speed_pan.json`
 
+### Subject spotlights
+
+#### `red_halo_spotlight` — Red halo spotlight
+
+- **Idea:** Subject pops off a muted, lightly white-washed background with a yellow sticker outline and a large translucent red disc behind it. `ar: non-square`, `text_input: no`, no HD.
+- **Steps:** `extract_subject` (`single_subject: true`) → `color` 0.35 on background → `overlay` white α 0.15 on background → `circle_backdrop` on background (`anchor: subject`, `around: subject`, color [220, 30, 30], opacity 0.55, size 0.85, subject_fit 1.15) → `sticker_outline` on subject ([255, 214, 0], width_ratio 0.012) → `composite`
+- **File:** `backend/presets/red_halo_spotlight.json`
+
 ## Built-in filters
 
 | Filter | What it does | Common params |
@@ -455,6 +463,7 @@ Ten looks built on point curves (`tone_curve`) and local shadow / highlight reco
 | `glow_border` | Soft halo under subject (fills expanded mask) | `on`, `rgb`/`color`, `width`, `blur` (px), or `width_ratio` / `blur_ratio` (fractions of the short side — prefer these) |
 | `glow_line_border` | Outline **ring** only (subject body unchanged) | `on`, `color`/`rgb`, `width`, `blur` (px), or `width_ratio` / `blur_ratio` (fractions of the short side — prefer these) |
 | `sticker_outline` | Solid round-cornered outline whose width scales with the image (blur + threshold dilation, flat cost at any width) | `on`, `color`/`rgb`, `width_ratio` (fraction of short side; default 0.008), `softness` (edge AA px) |
+| `circle_backdrop` | One filled, semi-transparent disc (e.g. behind a cut-out); placement like `doodle` (`anchor: subject` + `around` centres on the subject's alpha bbox); only the disc's region is drawn (2× supersampled up to 4 MP) | `on`, `around`, `color`/`rgb`, `opacity` (0–1), `size` (diameter, fraction of short side), `anchor`, `x`/`y` (0–1), `offset_y` (fraction of short side, negative = up), `softness` (edge feather, fraction of short side), `subject_fit` (cap the diameter at this × the subject bbox's long side so small subjects aren't dwarfed). With `anchor: subject` and an empty `around` layer (no subject found) the step is a no-op; non-finite numbers raise `ValueError` |
 | `composite` | Paste overlay on base | `base`, `overlay`, `as` |
 | `place_on_canvas` | Put layer on a larger solid canvas | `on`, `scale` (e.g. `1.4`), `fill`/`color`, `layout` (`polaroid` or `center`), `as` |
 | `upscale` | Pillow resize so the long side reaches `long_edge` (keeps aspect; never shrinks) | `on`, `long_edge`, `max_scale` (default 4), `resample` (`lanczos`/`bicubic`/`bilinear`) |

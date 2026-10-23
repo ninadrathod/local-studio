@@ -1,0 +1,63 @@
+{
+  "name": "red_halo_spotlight",
+  "label": "Red halo spotlight",
+  "description": "Subject cut out with a yellow sticker outline; background muted and lightly washed with white; a large translucent red circle sits behind the subject.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "color",
+      "on": "background",
+      "amount": 0.35
+    },
+    {
+      "filter": "overlay",
+      "on": "background",
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "alpha": 0.15
+    },
+    {
+      "filter": "circle_backdrop",
+      "on": "background",
+      "around": "subject",
+      "anchor": "subject",
+      "color": [
+        220,
+        30,
+        30
+      ],
+      "opacity": 0.55,
+      "size": 0.85,
+      "subject_fit": 1.15
+    },
+    {
+      "filter": "sticker_outline",
+      "on": "subject",
+      "color": [
+        255,
+        214,
+        0
+      ],
+      "width_ratio": 0.012
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    }
+  ]
+}

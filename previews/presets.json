@@ -1,5 +1,14 @@
 [
   {
+    "preset_name": "red_halo_spotlight",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/red_halo_spotlight.jpg",
+    "post_edit_image": "previews/post-edit/red_halo_spotlight.png"
+  },
+  {
     "preset_name": "print_film_2383",
     "ar": "non-square",
     "text_input": "no",
