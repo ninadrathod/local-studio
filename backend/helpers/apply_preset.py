@@ -245,23 +245,23 @@ def _run_composite(
     layers[step.get("as", "image")] = result
 
 
-def _run_doodle(
-    layers: dict[str, Image.Image],
-    *,
-    index: int = 0,
-    **step: Any,
-) -> None:
-    on_key = step.get("on", "image")
-    if on_key not in layers:
-        raise KeyError(f"Step {index}: unknown layer '{on_key}'")
-    around_key = step.get("around")
-    if around_key is not None and around_key not in layers:
-        raise KeyError(f"Step {index}: unknown around layer '{around_key}'")
-    call_params = {
-        key: value for key, value in step.items() if key not in _LAYER_KEYS and key != "around"
-    }
-    around = layers[around_key] if around_key is not None else None
-    layers[step.get("as", on_key)] = F.doodle(layers[on_key], around=around, **call_params)
+def _run_around(fn: Callable[..., Image.Image]) -> FilterHandler:
+    """Like `_run_simple`, but resolves an optional `around` layer name to its image."""
+
+    def run(layers: dict[str, Image.Image], *, index: int = 0, **step: Any) -> None:
+        on_key = step.get("on", "image")
+        if on_key not in layers:
+            raise KeyError(f"Step {index}: unknown layer '{on_key}'")
+        around_key = step.get("around")
+        if around_key is not None and around_key not in layers:
+            raise KeyError(f"Step {index}: unknown around layer '{around_key}'")
+        call_params = {
+            key: value for key, value in step.items() if key not in _LAYER_KEYS and key != "around"
+        }
+        around = layers[around_key] if around_key is not None else None
+        layers[step.get("as", on_key)] = fn(layers[on_key], around=around, **call_params)
+
+    return run
 
 
 def _run_excluding(fn: Callable[..., Image.Image]) -> FilterHandler:
@@ -317,7 +317,8 @@ FILTERS: dict[str, FilterHandler] = {
     "sharpen": _run_simple(F.sharpen),
     "denoise": _run_simple(F.denoise),
     "ai_upscale": _run_simple(F.ai_upscale),
-    "doodle": _run_doodle,
+    "doodle": _run_around(F.doodle),
+    "circle_backdrop": _run_around(F.circle_backdrop),
     "doodle_frame": _run_simple(F.doodle_frame),
 }
 

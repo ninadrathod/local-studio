@@ -1791,3 +1791,71 @@ def test_motion_blur_lightweight_uses_smaller_work_copy(monkeypatch: pytest.Monk
     monkeypatch.setenv("LIGHTWEIGHT", "1")
     light = F.motion_blur(img, length_ratio=0.2)
     assert light.size == full.size and light.tobytes() != full.tobytes()
+
+
+def test_circle_backdrop_centres_on_subject_with_opacity() -> None:
+    base = Image.new("RGB", (200, 200), (0, 0, 0))
+    subject = Image.new("RGBA", (200, 200), (0, 0, 0, 0))
+    subject.paste((255, 255, 255, 255), (120, 120, 180, 180))
+    out = F.circle_backdrop(base, color=[200, 0, 0], opacity=0.5, size=0.3, around=subject)
+    assert out.mode == "RGB" and out.size == (200, 200)
+    bbox = out.getchannel("R").point(lambda v: 255 if v > 50 else 0).getbbox()
+    assert bbox is not None
+    assert abs((bbox[0] + bbox[2]) / 2 - 150) < 3
+    assert abs((bbox[2] - bbox[0]) - 60) < 4
+    assert abs(out.getpixel((150, 150))[0] - 100) <= 2
+    assert out.getpixel((10, 10)) == (0, 0, 0)
+
+
+def test_circle_backdrop_offset_softness_and_bad_size() -> None:
+    base = Image.new("RGB", (100, 100), (0, 0, 0))
+    out = F.circle_backdrop(base, anchor="center", size=0.4, offset_y=-0.2, softness=0.02)
+    bbox = out.getchannel("R").point(lambda v: 255 if v > 20 else 0).getbbox()
+    assert bbox is not None and abs((bbox[1] + bbox[3]) / 2 - 30) < 3
+    assert F.circle_backdrop(base, x=5.0, y=5.0, size=0.1).getbbox() is None
+    with pytest.raises(ValueError):
+        F.circle_backdrop(base, size=0)
+
+
+def test_red_halo_spotlight_preset_shape() -> None:
+    preset = load_preset(PRESETS / "red_halo_spotlight.json")
+    assert preset["ar"] == "non-square" and preset["text_input"] == "no"
+    filters = [step["filter"] for step in preset["steps"]]
+    assert filters == ["extract_subject", "color", "overlay", "circle_backdrop", "sticker_outline", "composite"]
+    circle = preset["steps"][3]
+    assert circle["on"] == "background" and circle["around"] == "subject"
+
+
+def test_circle_backdrop_subject_fit_caps_diameter_for_small_subjects() -> None:
+    base = Image.new("RGB", (400, 400), (0, 0, 0))
+    subject = Image.new("RGBA", (400, 400), (0, 0, 0, 0))
+    subject.paste((255, 255, 255, 255), (180, 180, 220, 220))
+    out = F.circle_backdrop(base, color=[200, 0, 0], size=0.8, subject_fit=1.5, around=subject)
+    bbox = out.getchannel("R").point(lambda v: 255 if v > 50 else 0).getbbox()
+    assert bbox is not None and abs((bbox[2] - bbox[0]) - 60) < 4
+    big = F.circle_backdrop(base, color=[200, 0, 0], size=0.1, subject_fit=1.5, around=subject)
+    bbox = big.getchannel("R").point(lambda v: 255 if v > 50 else 0).getbbox()
+    assert bbox is not None and abs((bbox[2] - bbox[0]) - 40) < 4
+
+
+def test_circle_backdrop_skips_when_subject_is_empty() -> None:
+    base = Image.new("RGB", (100, 100), (10, 20, 30))
+    empty = Image.new("RGBA", (100, 100), (0, 0, 0, 0))
+    out = F.circle_backdrop(base, anchor="subject", around=empty)
+    assert out.tobytes() == base.tobytes()
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"size": float("nan")},
+        {"opacity": float("inf")},
+        {"offset_y": float("nan")},
+        {"softness": float("nan")},
+        {"subject_fit": float("nan")},
+        {"subject_fit": 0},
+    ],
+)
+def test_circle_backdrop_rejects_non_finite_params(params: dict) -> None:
+    with pytest.raises(ValueError):
+        F.circle_backdrop(Image.new("RGB", (50, 50)), anchor="center", **params)
