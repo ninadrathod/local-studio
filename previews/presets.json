@@ -1,5 +1,50 @@
 [
   {
+    "preset_name": "graffiti_outline_tower",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "HUSTLE",
+    "text_character_limit": 16,
+    "pre_edit_image": "previews/pre-edit/graffiti_outline_tower.jpg",
+    "post_edit_image": "previews/post-edit/graffiti_outline_tower.png"
+  },
+  {
+    "preset_name": "graffiti_outline_mural",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "DREAM BIG",
+    "text_character_limit": 16,
+    "pre_edit_image": "previews/pre-edit/graffiti_outline_mural.jpg",
+    "post_edit_image": "previews/post-edit/graffiti_outline_mural.png"
+  },
+  {
+    "preset_name": "graffiti_sticker_slap",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "KEEP IT REAL",
+    "text_character_limit": 16,
+    "pre_edit_image": "previews/pre-edit/graffiti_sticker_slap.jpg",
+    "post_edit_image": "previews/post-edit/graffiti_sticker_slap.png"
+  },
+  {
+    "preset_name": "graffiti_throwup_masthead",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "OUR BLOCK",
+    "text_character_limit": 16,
+    "pre_edit_image": "previews/pre-edit/graffiti_throwup_masthead.jpg",
+    "post_edit_image": "previews/post-edit/graffiti_throwup_masthead.png"
+  },
+  {
+    "preset_name": "graffiti_drip_column",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "STAY REAL",
+    "text_character_limit": 16,
+    "pre_edit_image": "previews/pre-edit/graffiti_drip_column.jpg",
+    "post_edit_image": "previews/post-edit/graffiti_drip_column.png"
+  },
+  {
     "preset_name": "pop_art_panel",
     "ar": "non-square",
     "text_input": "yes",

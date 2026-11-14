@@ -87,6 +87,11 @@ _DISPLAY_FONT_CANDIDATES: dict[str, tuple[str, ...]] = {
     ),
     "slab": (_bundled("AlfaSlabOne-Regular.ttf"),),
     "signature": (_bundled("MrDafoe-Regular.ttf"),),
+    # Street graffiti (all OFL, licences next to the files): wildstyle-ish
+    # piece lettering, dripping wet paint, and grainy spray-can type.
+    "graffiti": (_bundled("SedgwickAveDisplay-Regular.ttf"),),
+    "wet_paint": (_bundled("RubikWetPaint-Regular.ttf"),),
+    "spray": (_bundled("RubikSprayPaint-Regular.ttf"),),
     # Loose felt-pen handwriting (Nanum Pen Script, OFL) for scribbled notes.
     "scribble": (_bundled("NanumPenScript-Regular.ttf"),),
     "bold_display": (_bundled("PassionOne-Bold.ttf"),),
@@ -579,7 +584,7 @@ _DOODLE_SUPERSAMPLE_MAX_PIXELS = 4_000_000
 DOODLE_MAX_COUNT = 12
 DOODLE_STYLES = (
     "xo", "rings", "wiggles", "stars", "hearts", "arrow", "sun",
-    "cloud", "zigzag", "dots", "flower", "spiral", "bolt",
+    "cloud", "zigzag", "dots", "flower", "spiral", "bolt", "crown",
 )
 # `color: "auto"` inks dark on light backgrounds (mean luma above the threshold),
 # white otherwise, so a white marker never vanishes on a pale wall.
@@ -828,6 +833,15 @@ def _draw_extra_doodle(draw, mode, rng, cx, cy, span, line_w, fill, n, angle, wo
         u = span / 2
         shape = [(0.15, -1.0), (-0.45, 0.1), (-0.02, 0.1), (-0.25, 1.0), (0.5, -0.2), (0.05, -0.2), (0.15, -1.0)]
         _stroke(draw, [rot(x * u * 0.95, y * u) for x, y in shape], line_w, fill)
+    elif mode == "crown":
+        # Street-art crown: three spiked points with a ball on each tip.
+        u = span / 2
+        shape = [(-1.0, 0.55), (-1.0, -0.45), (-0.5, 0.05), (0.0, -0.8), (0.5, 0.05), (1.0, -0.45), (1.0, 0.55), (-1.0, 0.55)]
+        _stroke(draw, [rot(x * u, y * u * 0.85) for x, y in shape], line_w, fill)
+        for tip_x, tip_y in ((-1.0, -0.45), (0.0, -0.8), (1.0, -0.45)):
+            px, py = rot(tip_x * u, (tip_y - 0.18) * u * 0.85)
+            r = line_w * 1.3
+            draw.ellipse((px - r, py - r, px + r, py + r), fill=fill)
 
 
 DOODLE_FRAME_STYLES = ("line", "double", "dashes", "dots", "zigzag", "waves", "corners")
@@ -2570,9 +2584,12 @@ def draw_text(
     center_x: float | None = None,
     center_y: float | None = None,
     max_width_ratio: float | None = None,
+    uppercase: bool = False,
 ) -> Image.Image:
     """
     Draw `text` onto an image.
+
+    `uppercase: true` renders the text in capitals whatever the user typed.
 
     `center_x` / `center_y` (fractions of the width / height, both required)
     centre the finished text block on that point — e.g. inside a speech bubble
@@ -2605,6 +2622,8 @@ def draw_text(
     instead of `font_style`.
     """
     value = "" if text is None else str(text)
+    if uppercase:
+        value = value.upper()
     if not value:
         return image
 

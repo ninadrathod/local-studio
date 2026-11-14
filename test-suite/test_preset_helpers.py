@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 import pytest
-from PIL import Image
+from PIL import Image, ImageChops
 
 ROOT = Path(__file__).resolve().parents[1]
 HELPERS = ROOT / "backend" / "helpers"
@@ -2187,3 +2187,71 @@ def test_text_shape_overlay_preset_files(name: str, default: str, limit: int, ne
         assert "font_path" not in step
         if step["filter"] in {"draw_text", "text_pattern"}:
             assert step["font_style"] in F._DISPLAY_FONT_CANDIDATES
+
+
+# --- graffiti presets: fonts, crown doodle, uppercase, hollow outline -----------
+
+
+@pytest.mark.parametrize("style, file", [("graffiti", "SedgwickAveDisplay"), ("wet_paint", "RubikWetPaint"), ("spray", "RubikSprayPaint")])
+def test_graffiti_font_styles_are_bundled(style: str, file: str) -> None:
+    assert F._load_font(40, style).path.endswith(f"{file}-Regular.ttf")
+    assert (F._FONTS_DIR / f"{file}-OFL.txt").is_file()
+
+
+def test_crown_doodle_draws_in_its_region() -> None:
+    out = F.doodle(Image.new("RGB", (200, 200), (0, 0, 0)), style="crown", x=0.5, y=0.5, size=0.4, color=[255, 214, 0], stroke=0.02)
+    x0, y0, x1, y1 = out.convert("L").getbbox()
+    assert 40 <= x0 and x1 <= 160 and 40 <= y0 and y1 <= 160
+    assert "crown" in F.DOODLE_STYLES
+
+
+def test_draw_text_uppercase_option() -> None:
+    canvas = Image.new("RGB", (300, 100), (255, 255, 255))
+    lower = F.draw_text(canvas, text="hustle", color=[0, 0, 0], font_size_ratio=0.4, font_style="poster", uppercase=True)
+    upper = F.draw_text(canvas, text="HUSTLE", color=[0, 0, 0], font_size_ratio=0.4, font_style="poster")
+    assert ImageChops.difference(lower.convert("RGB"), upper.convert("RGB")).getbbox() is None
+
+
+def test_graffiti_outline_presets_leave_letters_hollow() -> None:
+    wall = Image.new("RGB", (400, 400), (90, 160, 90))
+    for name in ("graffiti_outline_mural", "graffiti_outline_tower"):
+        preset = load_preset(PRESETS / f"{name}.json")
+        steps = [s for s in preset["steps"] if s["filter"] not in {"extract_subject", "composite", "doodle"}]
+        layers = {"image": wall.convert("RGBA"), "background": wall.convert("RGBA")}
+        for step in steps:
+            from apply_preset import FILTERS as RUN
+
+            params = {k: ("HH" if v == "$text" else v) for k, v in step.items() if k != "filter"}
+            RUN[step["filter"]](layers, **params)
+        ring_name = next(s["on"] for s in steps if s["filter"] == "clip_to")
+        ring = layers[ring_name]
+        alpha = ring.getchannel("A")
+        small = alpha.resize((100, 100))
+        inked = sum(1 for y in range(100) for x in range(100) if small.getpixel((x, y)) > 128)
+        bbox = small.getbbox()
+        area = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])
+        assert 0 < inked < 0.6 * area, name  # an outline, not solid letters
+
+
+@pytest.mark.parametrize(
+    "name, default",
+    [
+        ("graffiti_drip_column", "STAY REAL"),
+        ("graffiti_throwup_masthead", "OUR BLOCK"),
+        ("graffiti_sticker_slap", "KEEP IT REAL"),
+        ("graffiti_outline_mural", "DREAM BIG"),
+        ("graffiti_outline_tower", "HUSTLE"),
+    ],
+)
+def test_graffiti_preset_files(name: str, default: str) -> None:
+    preset = load_preset(PRESETS / f"{name}.json")
+    assert preset["ar"] == "non-square" and preset["text_input"] == "yes"
+    assert preset["default_text"] == default and preset["text_character_limit"] == 16
+    steps = preset["steps"]
+    assert steps[0]["filter"] == "extract_subject" and steps[-1]["filter"] == "composite"
+    assert not any(s["filter"] == "spray_paint" for s in steps)  # no paint splats in this set
+    assert any(s.get("text") == "$text" for s in steps)
+    for step in steps:
+        assert "font_path" not in step
+        if step["filter"] == "draw_text":
+            assert step.get("font_style") in F._DISPLAY_FONT_CANDIDATES

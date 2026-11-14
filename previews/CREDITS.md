@@ -536,3 +536,38 @@ is required where the license says so; CC0 and public-domain sources need none.
 - **Photographer:** [Ben White](https://unsplash.com/@benwhitephotography) (via Wikimedia Commons Unsplash CC0 archive)
 - **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
 - **Files:** `pre-edit/pop_art_panel.jpg` → `post-edit/pop_art_panel.png` (preset `pop_art_panel`, default text `POW! WHAT NOW?`)
+
+## `graffiti_drip_column`
+
+- **Photograph:** [Ev (Unsplash)](https://commons.wikimedia.org/wiki/File:Ev_(Unsplash).jpg)
+- **Photographer:** [Kelly Searle](https://unsplash.com/@kellysearle) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/graffiti_drip_column.jpg` → `post-edit/graffiti_drip_column.png` (preset `graffiti_drip_column`, default text `STAY REAL`)
+
+## `graffiti_throwup_masthead`
+
+- **Photograph:** [Bearded man by the road (Unsplash)](https://commons.wikimedia.org/wiki/File:Bearded_man_by_the_road_(Unsplash).jpg)
+- **Photographer:** [Mika Matin](https://unsplash.com/@mikamatin) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/graffiti_throwup_masthead.jpg` → `post-edit/graffiti_throwup_masthead.png` (preset `graffiti_throwup_masthead`, default text `OUR BLOCK`)
+
+## `graffiti_sticker_slap`
+
+- **Photograph:** [Woman posing by drainpipe (Unsplash)](https://commons.wikimedia.org/wiki/File:Woman_posing_by_drainpipe_(Unsplash).jpg)
+- **Photographer:** [Didi Medina](https://unsplash.com/@eyeunopened) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/graffiti_sticker_slap.jpg` → `post-edit/graffiti_sticker_slap.png` (preset `graffiti_sticker_slap`, default text `KEEP IT REAL`)
+
+## `graffiti_outline_mural`
+
+- **Photograph:** [Woman sitting on curb (Unsplash)](https://commons.wikimedia.org/wiki/File:Woman_sitting_on_curb_(Unsplash).jpg)
+- **Photographer:** [Aricka Lewis](https://unsplash.com/@arickacl) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/graffiti_outline_mural.jpg` → `post-edit/graffiti_outline_mural.png` (preset `graffiti_outline_mural`, default text `DREAM BIG`)
+
+## `graffiti_outline_tower`
+
+- **Photograph:** [Bearded man in hoodie (Unsplash)](https://commons.wikimedia.org/wiki/File:Bearded_man_in_hoodie_(Unsplash).jpg)
+- **Photographer:** [Ryan Holloway](https://unsplash.com/@hollowaykryan) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/graffiti_outline_tower.jpg` → `post-edit/graffiti_outline_tower.png` (preset `graffiti_outline_tower`, default text `HUSTLE`)
