@@ -1,0 +1,122 @@
+{
+  "name": "graffiti_outline_mural",
+  "label": "Graffiti outline mural",
+  "description": "Street graffiti: the user's text painted huge across the upper wall as hollow pink outline letters (outline only, no fill) on a dimmed wall, with a cyan crown and sparkles; the cut-out subject stands in front.",
+  "ar": "non-square",
+  "text_input": "yes",
+  "default_text": "DREAM BIG",
+  "text_character_limit": 16,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "color_grade",
+      "on": "background",
+      "exposure": -0.5,
+      "saturation": 0.7,
+      "contrast": 0.15
+    },
+    {
+      "filter": "draw_shape",
+      "on": "background",
+      "as": "outer",
+      "shape": "circle",
+      "x": 5,
+      "y": 5,
+      "size": 0.1,
+      "clear": true
+    },
+    {
+      "filter": "draw_text",
+      "on": "outer",
+      "color": [255, 60, 150],
+      "stroke_ratio": 0.014,
+      "stroke_color": [255, 60, 150],
+      "text": "$text",
+      "font_style": "graffiti",
+      "font_size_ratio": 0.3,
+      "center_x": 0.5,
+      "center_y": 0.38,
+      "angle": -6,
+      "max_width_ratio": 1.0
+    },
+    {
+      "filter": "draw_shape",
+      "on": "background",
+      "as": "inner",
+      "shape": "circle",
+      "x": 5,
+      "y": 5,
+      "size": 0.1,
+      "clear": true
+    },
+    {
+      "filter": "draw_text",
+      "on": "inner",
+      "color": [255, 255, 255],
+      "text": "$text",
+      "font_style": "graffiti",
+      "font_size_ratio": 0.3,
+      "center_x": 0.5,
+      "center_y": 0.38,
+      "angle": -6,
+      "max_width_ratio": 1.0
+    },
+    {
+      "filter": "clip_to",
+      "on": "outer",
+      "around": "inner",
+      "invert": true
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "outer",
+      "as": "background"
+    },
+    {
+      "filter": "doodle",
+      "on": "background",
+      "style": "crown",
+      "x": 0.5,
+      "y": 0.08,
+      "size": 0.13,
+      "color": [0, 220, 255],
+      "stroke": 0.009,
+      "seed": 2
+    },
+    {
+      "filter": "doodle",
+      "on": "background",
+      "style": "stars",
+      "x": 0.1,
+      "y": 0.75,
+      "size": 0.12,
+      "color": [0, 220, 255],
+      "stroke": 0.009,
+      "seed": 5
+    },
+    {
+      "filter": "doodle",
+      "on": "background",
+      "style": "stars",
+      "x": 0.9,
+      "y": 0.75,
+      "size": 0.12,
+      "color": [0, 220, 255],
+      "stroke": 0.009,
+      "seed": 8
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    }
+  ]
+}

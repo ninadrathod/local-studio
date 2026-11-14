@@ -1,0 +1,110 @@
+{
+  "name": "graffiti_throwup_masthead",
+  "label": "Graffiti throw-up masthead",
+  "description": "Street graffiti: a huge full-width white throw-up of the user's text with a thick black outline and red shadow across the top, small tags of it in the lower corners, a crown and dots, on a bright posterised wall behind the cut-out subject.",
+  "ar": "non-square",
+  "text_input": "yes",
+  "default_text": "OUR BLOCK",
+  "text_character_limit": 16,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "color_grade",
+      "on": "background",
+      "saturation": 1.3,
+      "contrast": 0.1
+    },
+    {
+      "filter": "posterize",
+      "on": "background",
+      "levels": 5,
+      "smooth": 3
+    },
+    {
+      "filter": "draw_text",
+      "on": "background",
+      "text": "$text",
+      "font_style": "spray",
+      "color": [255, 60, 40],
+      "font_size_ratio": 0.3,
+      "center_x": 0.515,
+      "center_y": 0.14500000000000002,
+      "angle": 0,
+      "max_width_ratio": 1.0,
+      "stroke_ratio": 0.016,
+      "stroke_color": [255, 60, 40]
+    },
+    {
+      "filter": "draw_text",
+      "on": "background",
+      "text": "$text",
+      "font_style": "spray",
+      "color": [255, 255, 255],
+      "font_size_ratio": 0.3,
+      "center_x": 0.5,
+      "center_y": 0.13,
+      "angle": 0,
+      "max_width_ratio": 1.0,
+      "stroke_ratio": 0.016,
+      "stroke_color": [15, 15, 15]
+    },
+    {
+      "filter": "draw_text",
+      "on": "background",
+      "text": "$text",
+      "font_style": "graffiti",
+      "color": [15, 15, 15],
+      "font_size_ratio": 0.05,
+      "center_x": 0.15,
+      "center_y": 0.88,
+      "angle": 10,
+      "max_width_ratio": 0.4
+    },
+    {
+      "filter": "draw_text",
+      "on": "background",
+      "text": "$text",
+      "font_style": "graffiti",
+      "color": [255, 255, 255],
+      "font_size_ratio": 0.05,
+      "center_x": 0.85,
+      "center_y": 0.88,
+      "angle": -10,
+      "max_width_ratio": 0.4
+    },
+    {
+      "filter": "doodle",
+      "on": "background",
+      "style": "crown",
+      "x": 0.12,
+      "y": 0.45,
+      "size": 0.13,
+      "color": [255, 214, 0],
+      "stroke": 0.009,
+      "seed": 9
+    },
+    {
+      "filter": "doodle",
+      "on": "background",
+      "style": "dots",
+      "x": 0.9,
+      "y": 0.45,
+      "size": 0.12,
+      "color": [255, 214, 0],
+      "stroke": 0.009,
+      "seed": 3
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    }
+  ]
+}

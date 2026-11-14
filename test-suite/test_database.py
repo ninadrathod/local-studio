@@ -77,7 +77,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     init_db(db)
     first = seed_default_presets(db_path=db)
     second = seed_default_presets(db_path=db)
-    assert len(first) == 75
+    assert len(first) == 80
     names = {row["preset_name"] for row in first}
     assert names == {
         "bw_bg_glowing_subject",
@@ -155,6 +155,11 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "word_wall_poster",
         "neon_frame_sign",
         "pop_art_panel",
+        "graffiti_drip_column",
+        "graffiti_throwup_masthead",
+        "graffiti_sticker_slap",
+        "graffiti_outline_mural",
+        "graffiti_outline_tower",
     }
     by_name = {row["preset_name"]: row for row in first}
     assert by_name["bw_bg_glowing_subject"]["ar"] == "non-square"
@@ -184,6 +189,11 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         ("word_wall_poster", "GOOD VIBES", 16),
         ("neon_frame_sign", "after dark", 16),
         ("pop_art_panel", "POW! WHAT NOW?", 20),
+        ("graffiti_drip_column", "STAY REAL", 16),
+        ("graffiti_throwup_masthead", "OUR BLOCK", 16),
+        ("graffiti_sticker_slap", "KEEP IT REAL", 16),
+        ("graffiti_outline_mural", "DREAM BIG", 16),
+        ("graffiti_outline_tower", "HUSTLE", 16),
     ):
         assert by_name[name]["text_input"] == "yes"
         assert by_name[name]["default_text"] == default
@@ -237,6 +247,11 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     assert second == []
     names_in_order = [row["preset_name"] for row in list_presets(db_path=db)]
     assert names_in_order == [
+        "graffiti_outline_tower",
+        "graffiti_outline_mural",
+        "graffiti_sticker_slap",
+        "graffiti_throwup_masthead",
+        "graffiti_drip_column",
         "pop_art_panel",
         "neon_frame_sign",
         "word_wall_poster",
@@ -314,7 +329,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "bw_bg_glowing_subject",
     ]
     popular = list_popular(db_path=db)
-    assert len(popular) == 75
+    assert len(popular) == 80
     assert all(row["used_count"] == 0 for row in popular)
 
 
@@ -409,6 +424,11 @@ def test_seed_default_presets_syncs_text_fields(tmp_path: Path) -> None:
         "word_wall_poster",
         "neon_frame_sign",
         "pop_art_panel",
+        "graffiti_drip_column",
+        "graffiti_throwup_masthead",
+        "graffiti_sticker_slap",
+        "graffiti_outline_mural",
+        "graffiti_outline_tower",
     ]
     synced =get_preset_by_name("bw_bg_glowing_subject", db_path=db)
     assert synced is not None
