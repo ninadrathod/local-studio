@@ -23,8 +23,12 @@ from pathlib import Path
 from typing import Any, Callable
 
 from PIL import Image
+from pillow_heif import register_heif_opener
 
 import filters as F
+
+# Lets `Image.open` read HEIC / HEIF inputs (iPhone photos).
+register_heif_opener()
 
 HELPERS_DIR = Path(__file__).resolve().parent
 BACKEND_DIR = HELPERS_DIR.parent
@@ -33,6 +37,8 @@ DEFAULT_PRESETS_DIR = BACKEND_DIR / "presets"
 AR_SQUARE = "square"
 AR_NON_SQUARE = "non-square"
 VALID_AR = frozenset({AR_SQUARE, AR_NON_SQUARE})
+# `apply_preset_file` outputs with these suffixes are written as JPEG (if opaque).
+JPEG_SUFFIXES = frozenset({".jpg", ".jpeg"})
 
 TEXT_INPUT_YES = "yes"
 TEXT_INPUT_NO = "no"
@@ -440,8 +446,14 @@ def apply_preset_file(
         result = apply_preset(image, preset, presets_dir=presets_dir, text=text)
 
     dst.parent.mkdir(parents=True, exist_ok=True)
-    # Preserve alpha if present
-    if result.mode == "RGBA" and result.getchannel("A").getextrema() != (255, 255):
+    has_alpha = result.mode == "RGBA" and result.getchannel("A").getextrema() != (255, 255)
+    if dst.suffix.lower() in JPEG_SUFFIXES:
+        if not has_alpha:
+            result.convert("RGB").save(dst, format="JPEG", quality=95, subsampling=0)
+            return dst
+        # JPEG can't hold the cut-out's transparency; write a PNG beside it instead.
+        dst = dst.with_suffix(".png")
+    if has_alpha:
         result.save(dst, format="PNG")
     else:
         result.convert("RGB").save(dst, format="PNG")
@@ -462,7 +474,7 @@ def main(argv: list[str] | None = None) -> int:
         "--output",
         type=Path,
         default=None,
-        help="Output PNG path (default: <input>_<preset>.png)",
+        help="Output path; .jpg/.jpeg writes JPEG (PNG if transparent), else PNG (default: <input>_<preset>.png)",
     )
     parser.add_argument(
         "--presets-dir",

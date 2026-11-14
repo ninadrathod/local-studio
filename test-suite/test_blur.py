@@ -21,6 +21,13 @@ def test_is_allowed_image_accepts_known_extension() -> None:
     assert is_allowed_image("application/octet-stream", "shot.webp") is True
 
 
+def test_is_allowed_image_accepts_heic() -> None:
+    assert is_allowed_image("image/heic", None) is True
+    assert is_allowed_image("image/HEIF", None) is True
+    assert is_allowed_image("application/octet-stream", "IMG_0001.HEIC") is True
+    assert is_allowed_image("", "burst.heif") is True
+
+
 def test_is_allowed_image_rejects_non_image() -> None:
     assert is_allowed_image(None, None) is False
     assert is_allowed_image("text/plain", "readme.txt") is False

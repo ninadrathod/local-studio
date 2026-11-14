@@ -48,7 +48,7 @@ Detailed architecture for the preset-based local image editor.
   - **Right (~35%):** file upload / original preview (enabled after a preset is selected), optional preset text field, then **Generate edit** / **Download**, then edited result.
 - `script.js` — wires gallery load (newest first), debounced search (filters gallery), selection, upload unlock, optional text constraints, file pick/drag-drop, generate button, download use-count ping, popular-sort mode (unclick restores newest-first), search-row gallery refresh.
 - `js/image.js` — `isImageFile`, object URL create/revoke.
-- `js/api.js` — `searchPresets(baseUrl, query)` → match list; `listPopularPresets(baseUrl)` → popular rows; `applyPreset(baseUrl, presetName, file, text?)` → `Blob`; `recordPresetUse(baseUrl, presetName)` → `{ preset_id, used_count }` (also retains `blurImage` for `/api/blur`).
+- `js/api.js` — `searchPresets(baseUrl, query)` → match list; `listPopularPresets(baseUrl)` → popular rows; `applyPreset(baseUrl, presetName, file, text?)` → `Blob`; `previewImage(baseUrl, file)` → preview `Blob` (used when the `<img>` fails to decode the upload, e.g. HEIC in Chrome); `recordPresetUse(baseUrl, presetName)` → `{ preset_id, used_count }` (also retains `blurImage` for `/api/blur`).
 
 ### UX flow
 
@@ -84,7 +84,7 @@ Detailed architecture for the preset-based local image editor.
 
 - **Python 3.12**
 - **FastAPI** — HTTP API
-- **Pillow** — image decode (EXIF orientation, ICC → sRGB via `ImageCms`) / Gaussian blur / JPEG·PNG encode
+- **Pillow** (+ **pillow-heif** for HEIC/HEIF) — image decode (EXIF orientation, ICC → sRGB via `ImageCms`) / Gaussian blur / JPEG·PNG encode
 - **NumPy** — array maths in the preset filters (`color_grade`, `light_leak`, `blur`, `halftone`, …); the API runs presets in-process, so it is a core dependency
 - **uvicorn** — ASGI server
 - **python-multipart** — file uploads
@@ -119,6 +119,7 @@ backend/
     routes/
       blur.py            # POST /api/blur
       preset.py          # POST /api/apply-preset
+      preview.py         # POST /api/preview
       search.py          # GET /api/presets/search
       popular.py         # POST /api/presets/use, GET /api/presets/popular
     services/
@@ -146,17 +147,18 @@ test-suite/              # pytest unit tests for services only (not routes/HTTP)
 | GET | `/api/presets/search` | query `q` (name/keyword substring, max 64) | JSON `[{ "preset_name", "keywords", "ar", "text_input", "default_text", "text_character_limit" }, …]` newest `preset_id` first |
 | GET | `/api/presets/popular` | — | JSON `[{ "preset_id", "preset_name", "used_count" }, …]` sorted by `used_count` descending |
 | POST | `/api/presets/use` | `application/x-www-form-urlencoded` field `preset_name` (max 64) | JSON `{ "preset_id", "used_count" }` |
-| POST | `/api/blur` | `multipart/form-data` field `file` | `image/jpeg` for a JPEG upload, else `image/png` |
-| POST | `/api/apply-preset` | `multipart/form-data` fields `preset_name`, `file`, optional `text` (max 200) | `image/jpeg` for a JPEG upload with an opaque result, else `image/png` |
+| POST | `/api/blur` | `multipart/form-data` field `file` | `image/jpeg` for a JPEG / HEIC upload, else `image/png` |
+| POST | `/api/apply-preset` | `multipart/form-data` fields `preset_name`, `file`, optional `text` (max 200) | `image/jpeg` for a JPEG / HEIC upload with an opaque result, else `image/png` |
+| POST | `/api/preview` | `multipart/form-data` field `file` | ≤ 2048 px `image/jpeg` (or `image/png` with transparency) for browsers that can't render the upload |
 
 Error responses use FastAPI `HTTPException` with JSON `detail` (e.g. non-image, empty file, unknown preset, decode failure, square-only preset on a non-square image). Oversized uploads/images return **413**. Apply-preset returns **503** when the concurrency gate is full. `POST /api/presets/use` returns **404** for an unknown `preset_name`.
 
-Upload guards (`services/image_io.py`): max **100 MiB** body (`MAX_UPLOAD_BYTES`, full-quality DSLR JPEG/TIFF); images over the working size (max side **12000** px / **64M** pixels — full-frame DSLR files up to 61 MP stay native) are **downscaled to fit**; with `LIGHTWEIGHT=1` (env, set in the gitignored `.env` that `run.sh` exports; read once at import) the working cap drops to **2M pixels**, so every input is downscaled to ≤ 2 MP before any filter runs (low-RAM hosts); the same flag makes `filters.ai_upscale` skip Real-ESRGAN and do a plain Lanczos `upscale` to the same target (so Full HD / 4K Crisp still deliver their resolution) and `extract_subject.py` use `u2netp` (~5 MB; ~0.9 GB peak vs ~2.1 GB for `u2net` at 2 MP, slightly rougher edges; downloaded by rembg on first use) (LANCZOS, aspect kept; JPEGs decode at reduced scale via `draft` first), not rejected; images over **120M** pixels (`MAX_DECODE_PIXELS`) are rejected from the header before decoding. At 61 MP the heaviest (cut-out) presets take ~5–10 s and peak at ~3.8 GiB, of which ~1.75 GiB is the fixed rembg/ONNX model. Decode and encode run via `asyncio.to_thread` so a large file doesn't stall the event loop. Preset JSON paths from the DB must resolve under `backend/presets/` (`PresetPathUnsafeError` otherwise). Apply-preset runs off the event loop via `asyncio.to_thread` and allows only **1** concurrent job (`MAX_CONCURRENT_PRESET_JOBS`) so rembg cannot pile up. Both `/api/apply-preset` and `/api/blur` take that slot (`preset_job_slot`) **before** reading the upload into memory and hold it through decode → filters → encode, so extra requests get **503** immediately without buffering or decoding (the multipart body is already spooled to a temp file).
+Upload guards (`services/image_io.py`): max **100 MiB** body (`MAX_UPLOAD_BYTES`, full-quality DSLR JPEG/TIFF); images over the working size (max side **12000** px / **64M** pixels — full-frame DSLR files up to 61 MP stay native) are **downscaled to fit**; with `LIGHTWEIGHT=1` (env, set in the gitignored `.env` that `run.sh` exports; read once at import) the working cap drops to **2M pixels**, so every input is downscaled to ≤ 2 MP before any filter runs (low-RAM hosts); the same flag makes `filters.ai_upscale` skip Real-ESRGAN and do a plain Lanczos `upscale` to the same target (so Full HD / 4K Crisp still deliver their resolution) and `extract_subject.py` use `u2netp` (~5 MB; ~0.9 GB peak vs ~2.1 GB for `u2net` at 2 MP, slightly rougher edges; downloaded by rembg on first use) (LANCZOS, aspect kept; JPEGs decode at reduced scale via `draft` first), not rejected; images over **120M** pixels (`MAX_DECODE_PIXELS`) are rejected from the header before decoding. At 61 MP the heaviest (cut-out) presets take ~5–10 s and peak at ~3.8 GiB, of which ~1.75 GiB is the fixed rembg/ONNX model. Decode and encode run via `asyncio.to_thread` so a large file doesn't stall the event loop. Preset JSON paths from the DB must resolve under `backend/presets/` (`PresetPathUnsafeError` otherwise). Apply-preset runs off the event loop via `asyncio.to_thread` and allows only **1** concurrent job (`MAX_CONCURRENT_PRESET_JOBS`) so rembg cannot pile up. `/api/apply-preset`, `/api/blur` and `/api/preview` all take that slot (`preset_job_slot`) **before** reading the upload into memory and hold it through decode → filters → encode, so extra requests get **503** immediately without buffering or decoding (the multipart body is already spooled to a temp file).
 
 ### Blur algorithm
 
 - Pillow `ImageFilter.GaussianBlur` with default radius **12** (`DEFAULT_BLUR_RADIUS` in `services/blur.py`).
-- `load_image_with_format` applies EXIF orientation (camera portrait shots), converts an embedded ICC profile (Adobe RGB, ProPhoto, CMYK) to sRGB, and normalises 16-bit / float / grey / CMYK / palette input to 8-bit `RGB`/`RGBA` (`to_working_mode`; 16-bit is scaled, not clipped). `encode_result` returns JPEG (quality 95, 4:4:4, sRGB-tagged) for a JPEG upload with an opaque result, else PNG (sRGB-tagged); camera EXIF (GPS, serials) is not carried over: the loader keeps the upload's EXIF on the in-memory image (re-attached after ICC conversion) only so presets can read the capture date, and every encoder writes `exif=b""`.
+- `load_image_with_format` applies EXIF orientation (camera portrait shots), converts an embedded ICC profile (Adobe RGB, ProPhoto, CMYK) to sRGB, and normalises 16-bit / float / grey / CMYK / palette input to 8-bit `RGB`/`RGBA` (`to_working_mode`; 16-bit is scaled, not clipped). HEIC/HEIF decodes through the `pillow-heif` opener registered in `image_io.py`. `encode_result` returns JPEG (quality 95, 4:4:4, sRGB-tagged) for a JPEG or HEIC upload with an opaque result, else PNG (sRGB-tagged); camera EXIF (GPS, serials) is not carried over: the loader keeps the upload's EXIF on the in-memory image (re-attached after ICC conversion) only so presets can read the capture date, and every encoder writes `exif=b""`.
 
 ### Subject extraction helper (CLI only)
 

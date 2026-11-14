@@ -1859,3 +1859,31 @@ def test_circle_backdrop_skips_when_subject_is_empty() -> None:
 def test_circle_backdrop_rejects_non_finite_params(params: dict) -> None:
     with pytest.raises(ValueError):
         F.circle_backdrop(Image.new("RGB", (50, 50)), anchor="center", **params)
+
+
+def test_apply_preset_file_writes_format_matching_suffix(tmp_path) -> None:
+    from apply_preset import apply_preset_file
+
+    source = tmp_path / "in.png"
+    Image.new("RGB", (40, 30), color=(120, 80, 40)).save(source)
+    preset = tmp_path / "noop.json"
+    preset.write_text('{"name": "noop", "steps": [{"filter": "denoise", "on": "image", "size": 3}]}', encoding="utf-8")
+
+    jpg = apply_preset_file(source, preset, tmp_path / "out.JPG")
+    png = apply_preset_file(source, preset, tmp_path / "out.png")
+
+    assert jpg.suffix == ".JPG" and Image.open(jpg).format == "JPEG"
+    assert Image.open(png).format == "PNG"
+
+
+def test_apply_preset_file_keeps_transparency_as_png_for_jpg_name(tmp_path) -> None:
+    from apply_preset import apply_preset_file
+
+    source = tmp_path / "cutout.png"
+    Image.new("RGBA", (40, 30), color=(120, 80, 40, 0)).save(source)
+    preset = tmp_path / "noop.json"
+    preset.write_text('{"name": "noop", "steps": [{"filter": "denoise", "on": "image", "size": 3}]}', encoding="utf-8")
+
+    out = apply_preset_file(source, preset, tmp_path / "out.jpg")
+
+    assert out == tmp_path / "out.png" and Image.open(out).format == "PNG"

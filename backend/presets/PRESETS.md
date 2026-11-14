@@ -23,7 +23,7 @@ and `filters.draw_text`).
 | `previews/pre-edit/` + `previews/post-edit/` + `previews/presets.json` | Before/after gallery assets per DB preset + name→path map (sources in `previews/CREDITS.md`) |
 | `previews/_candidates/` | Gitignored create-preset comparison HTML (POC / fonts / gallery); not shipped |
 | `.cursor/skills/create-preset/scripts/render_candidates.py` | Writes those HTML pages using `apply_preset_file` + `draw_text` |
-| `POST /api/apply-preset` | HTTP: DB `preset_name` + image upload + optional `text` → JPEG (JPEG upload) or PNG |
+| `POST /api/apply-preset` | HTTP: DB `preset_name` + image upload + optional `text` → JPEG (JPEG / HEIC upload) or PNG |
 
 ## Run a preset
 
@@ -32,7 +32,7 @@ source backend/.venv/bin/activate
 python backend/helpers/apply_preset.py path/to/photo.jpg -p PRESET_NAME -o out.png
 ```
 
-`PRESET_NAME` is a file under `backend/presets/` (with or without `.json`), or a full path to a JSON file.
+`PRESET_NAME` is a file under `backend/presets/` (with or without `.json`), or a full path to a JSON file. Input may be any Pillow-readable image, including HEIC/HEIF. An `-o` ending in `.jpg`/`.jpeg` writes JPEG (a transparent result is written as `.png` beside it instead); anything else writes PNG.
 
 Via API (name must exist in the preset DB):
 

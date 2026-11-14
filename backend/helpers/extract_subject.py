@@ -19,6 +19,10 @@ import sys
 from pathlib import Path
 
 from PIL import Image
+from pillow_heif import register_heif_opener
+
+# Lets `Image.open` read HEIC / HEIF inputs (iPhone photos).
+register_heif_opener()
 
 # u2net (~176MB) — much smaller than rembg's default bria-rmbg (~1GB).
 # LIGHTWEIGHT=1 (low-RAM hosts): u2netp (~5MB) — about half the peak memory, rougher edges.

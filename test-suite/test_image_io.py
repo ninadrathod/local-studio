@@ -13,10 +13,13 @@ from app.services.image_io import (
     MAX_IMAGE_SIDE,
     MAX_UPLOAD_BYTES,
     ImageTooLargeError,
+    encode_preview,
+    encode_result,
     ensure_image_limits,
     fit_image_limits,
     fit_size,
     load_image,
+    load_image_with_format,
     read_upload_capped,
     save_png_bytes,
 )
@@ -256,3 +259,33 @@ def test_lightweight_env_caps_inputs_at_2mp(monkeypatch) -> None:
     finally:
         monkeypatch.delenv("LIGHTWEIGHT", raising=False)
         importlib.reload(image_io)
+
+
+def _heic_bytes(size: tuple[int, int] = (64, 48), color=(200, 30, 30)) -> bytes:
+    buffer = BytesIO()
+    Image.new("RGB", size, color=color).save(buffer, format="HEIF", quality=95)
+    return buffer.getvalue()
+
+
+def test_load_image_decodes_heic_and_encodes_jpeg() -> None:
+    image, source_format = load_image_with_format(_heic_bytes((64, 48)))
+    assert source_format == "HEIF"
+    assert image.size == (64, 48) and image.mode == "RGB"
+    red, green, blue = image.getpixel((32, 24))
+    assert red > 150 and green < 80 and blue < 80
+    body, media_type = encode_result(image, source_format)
+    assert media_type == "image/jpeg" and body[:2] == b"\xff\xd8"
+
+
+def test_encode_preview_downscales_opaque_to_jpeg() -> None:
+    photo = Image.new("RGB", (400, 100), color=(10, 20, 30))
+    body, media_type = encode_preview(photo, max_side=100)
+    assert media_type == "image/jpeg"
+    assert Image.open(BytesIO(body)).size == (100, 25)
+
+
+def test_encode_preview_keeps_transparency_as_png() -> None:
+    cutout = Image.new("RGBA", (20, 20), color=(10, 20, 30, 0))
+    body, media_type = encode_preview(cutout)
+    assert media_type == "image/png"
+    assert Image.open(BytesIO(body)).size == (20, 20)

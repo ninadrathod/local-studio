@@ -2,7 +2,13 @@
  * Frontend entry — preset gallery, keyword search, upload, and apply-preset generate flow.
  * All session state is in-memory; a page refresh clears upload + result.
  */
-import { applyPreset, listPopularPresets, recordPresetUse, searchPresets } from "./js/api.js";
+import {
+  applyPreset,
+  listPopularPresets,
+  previewImage,
+  recordPresetUse,
+  searchPresets,
+} from "./js/api.js";
 import { isImageFile, createObjectUrl, revokeObjectUrl } from "./js/image.js";
 
 /**
@@ -68,6 +74,8 @@ let selectedFile = null;
 let originalUrl = null;
 /** @type {string|null} */
 let editedUrl = null;
+/** In-flight apply-preset request, so a busy preview can wait for it. @type {Promise<unknown>|null} */
+let activeGenerate = null;
 /** Bumped when inputs change or a new generate starts — ignores stale responses. */
 let generateGeneration = 0;
 /** Nested dragenter counter so child nodes don't flicker the drop highlight. */
@@ -367,7 +375,7 @@ function setSelectedFile(file) {
     els.uploadPrompt.classList.remove("hidden");
     els.dropZone.classList.remove("drop-zone--filled");
     clearFileMeta();
-    showError(els.fileError, "Please choose an image file (PNG, JPG, WEBP, or GIF).");
+    showError(els.fileError, "Please choose an image file (PNG, JPG, HEIC, WEBP, or GIF).");
     updateGenerateEnabled();
     return;
   }
@@ -376,12 +384,51 @@ function setSelectedFile(file) {
   originalUrl = createObjectUrl(file);
   selectedFile = file;
 
+  // Browsers that can't decode the file (HEIC outside Safari, TIFF) get a
+  // server-rendered preview instead; the original file is still what's edited.
+  els.previewOriginal.onerror = () => {
+    els.previewOriginal.onerror = null;
+    loadServerPreview(file);
+  };
   els.previewOriginal.src = originalUrl;
   els.previewOriginal.classList.remove("hidden");
   els.uploadPrompt.classList.add("hidden");
   els.dropZone.classList.add("drop-zone--filled");
   setFileMeta(file);
   updateGenerateEnabled();
+}
+
+/**
+ * While an edit holds the server's job slot (503), wait for our own edit to
+ * finish, or back off (1 s doubling to 8 s) — each retry re-uploads the file.
+ */
+const PREVIEW_BUSY_RETRIES = 10;
+const PREVIEW_BUSY_MAX_DELAY_MS = 8000;
+
+async function loadServerPreview(file) {
+  for (let attempt = 0; selectedFile === file; attempt++) {
+    try {
+      const blob = await previewImage(API_BASE, file);
+      if (selectedFile !== file) return;
+      if (originalUrl) revokeObjectUrl(originalUrl);
+      originalUrl = createObjectUrl(blob);
+      els.previewOriginal.src = originalUrl;
+      return;
+    } catch (err) {
+      if (selectedFile !== file) return;
+      if (err.status === 503 && attempt < PREVIEW_BUSY_RETRIES) {
+        if (activeGenerate) {
+          await activeGenerate.catch(() => {});
+        } else {
+          const delay = Math.min(1000 * 2 ** attempt, PREVIEW_BUSY_MAX_DELAY_MS);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+        continue;
+      }
+      showError(els.fileError, `Preview unavailable: ${err.message || "could not decode image."}`);
+      return;
+    }
+  }
 }
 
 function setLoading(loading) {
@@ -414,7 +461,11 @@ async function handleGenerate() {
   setLoading(true);
 
   try {
-    const blob = await applyPreset(API_BASE, presetName, file, text);
+    const request = applyPreset(API_BASE, presetName, file, text);
+    activeGenerate = request;
+    const blob = await request.finally(() => {
+      if (activeGenerate === request) activeGenerate = null;
+    });
     if (token !== generateGeneration) return;
 
     if (editedUrl) revokeObjectUrl(editedUrl);
