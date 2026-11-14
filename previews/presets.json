@@ -1,5 +1,14 @@
 [
   {
+    "preset_name": "red_gel_portrait",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/red_gel_portrait.jpg",
+    "post_edit_image": "previews/post-edit/red_gel_portrait.png"
+  },
+  {
     "preset_name": "digicam_flash",
     "ar": "non-square",
     "text_input": "no",

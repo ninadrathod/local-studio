@@ -461,6 +461,17 @@ Ten looks built on point curves (`tone_curve`) and local shadow / highlight reco
 - **Text input:** `no`
 - **DB:** seeded via `seed_default_presets()` / setup
 
+### Light gels
+
+#### `red_gel_portrait` — Red gel portrait
+
+- **Idea:** A soft red gel light cast over the subject, which keeps the colour fairly subtle: whites and highlights take a rose-red tint and skin warms slightly, while darks stay put. The background is muted and pushed toward a cool blue, slightly darker. `single_subject: false`, so everyone in front gets the red light. Subjects in dark or strongly coloured clothes show less red (the cast follows brightness); the background still goes blue. `ar: non-square`, `text_input: no`, no HD.
+- **Steps:** `extract_subject` (`single_subject: false`) → `color` 0.55 on background → `tone_curve` on background (red 0→0 128→110 255→225; green 0→0 128→120 255→236; blue 0→24 128→146 255→255) → `color_grade` on background (exposure -0.15, contrast 0.05) → `tone_curve` on subject (red 0→6 128→140 255→255; green and blue 0→0 128→118 255→205) → `composite`
+- **File:** `backend/presets/red_gel_portrait.json`
+- **AR:** `non-square` (any aspect ratio)
+- **Text input:** `no`
+- **DB:** seeded via `seed_default_presets()` / setup
+
 ## Built-in filters
 
 | Filter | What it does | Common params |
