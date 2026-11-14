@@ -8,7 +8,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
 from PIL import Image
 
-from app.services.blur import is_allowed_image
+from app.services.blur import UNSUPPORTED_IMAGE_DETAIL, is_allowed_image
 from app.services.image_io import (
     ImageTooLargeError,
     encode_result,
@@ -47,7 +47,7 @@ async def apply_preset_endpoint(
     if not file.content_type or not is_allowed_image(file.content_type, file.filename):
         raise HTTPException(
             status_code=400,
-            detail="File must be an image (JPEG, PNG, WEBP, GIF, BMP, or TIFF).",
+            detail=UNSUPPORTED_IMAGE_DETAIL,
         )
 
     # Take the job slot before reading the upload into memory, and hold it

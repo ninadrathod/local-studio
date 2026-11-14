@@ -8,7 +8,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import Response
 from PIL import Image
 
-from app.services.blur import apply_blur, is_allowed_image
+from app.services.blur import UNSUPPORTED_IMAGE_DETAIL, apply_blur, is_allowed_image
 from app.services.preset import PresetBusyError, preset_job_slot
 from app.services.image_io import (
     ImageTooLargeError,
@@ -28,7 +28,7 @@ async def blur_endpoint(file: UploadFile = File(...)):
     if not file.content_type or not is_allowed_image(file.content_type, file.filename):
         raise HTTPException(
             status_code=400,
-            detail="File must be an image (JPEG, PNG, WEBP, GIF, BMP, or TIFF).",
+            detail=UNSUPPORTED_IMAGE_DETAIL,
         )
 
     # Shares the preset job slot: a DSLR-size decode costs the same memory here.

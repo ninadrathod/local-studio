@@ -39,6 +39,46 @@ export async function blurImage(baseUrl, file) {
 }
 
 /**
+ * POST an image to /api/preview and return a small JPEG/PNG preview Blob —
+ * for uploads the browser can't render itself (HEIC outside Safari, TIFF).
+ * @param {string} baseUrl - API origin, e.g. http://localhost:8000
+ * @param {File} file - Image file selected by the user
+ * @returns {Promise<Blob>}
+ */
+export async function previewImage(baseUrl, file) {
+  const form = new FormData();
+  form.append("file", file);
+
+  let response;
+  try {
+    response = await fetch(`${baseUrl}/api/preview`, {
+      method: "POST",
+      body: form,
+    });
+  } catch {
+    throw new Error(
+      `Could not reach the API at ${baseUrl}. Is the backend running (./scripts/run.sh)?`,
+    );
+  }
+
+  if (!response.ok) {
+    let detail = "Preview request failed.";
+    try {
+      const data = await response.json();
+      if (data.detail) detail = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail);
+    } catch {
+      /* ignore non-JSON error bodies */
+    }
+    const error = new Error(detail);
+    // 503 = an edit holds the server's single job slot; callers may retry.
+    error.status = response.status;
+    throw error;
+  }
+
+  return response.blob();
+}
+
+/**
  * GET presets whose name or keywords match `query` (case-insensitive substring).
  * Results are newest `preset_id` first.
  * @param {string} baseUrl - API origin, e.g. http://localhost:8000

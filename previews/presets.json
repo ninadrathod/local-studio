@@ -1,5 +1,14 @@
 [
   {
+    "preset_name": "digicam_flash",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/digicam_flash.jpg",
+    "post_edit_image": "previews/post-edit/digicam_flash.png"
+  },
+  {
     "preset_name": "red_halo_spotlight",
     "ar": "non-square",
     "text_input": "no",

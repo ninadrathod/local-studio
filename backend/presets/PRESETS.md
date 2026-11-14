@@ -23,7 +23,7 @@ and `filters.draw_text`).
 | `previews/pre-edit/` + `previews/post-edit/` + `previews/presets.json` | Before/after gallery assets per DB preset + name→path map (sources in `previews/CREDITS.md`) |
 | `previews/_candidates/` | Gitignored create-preset comparison HTML (POC / fonts / gallery); not shipped |
 | `.cursor/skills/create-preset/scripts/render_candidates.py` | Writes those HTML pages using `apply_preset_file` + `draw_text` |
-| `POST /api/apply-preset` | HTTP: DB `preset_name` + image upload + optional `text` → JPEG (JPEG upload) or PNG |
+| `POST /api/apply-preset` | HTTP: DB `preset_name` + image upload + optional `text` → JPEG (JPEG / HEIC upload) or PNG |
 
 ## Run a preset
 
@@ -32,7 +32,7 @@ source backend/.venv/bin/activate
 python backend/helpers/apply_preset.py path/to/photo.jpg -p PRESET_NAME -o out.png
 ```
 
-`PRESET_NAME` is a file under `backend/presets/` (with or without `.json`), or a full path to a JSON file.
+`PRESET_NAME` is a file under `backend/presets/` (with or without `.json`), or a full path to a JSON file. Input may be any Pillow-readable image, including HEIC/HEIF. An `-o` ending in `.jpg`/`.jpeg` writes JPEG (a transparent result is written as `.png` beside it instead); anything else writes PNG.
 
 Via API (name must exist in the preset DB):
 
@@ -450,6 +450,17 @@ Ten looks built on point curves (`tone_curve`) and local shadow / highlight reco
 - **Steps:** `extract_subject` (`single_subject: true`) → `color` 0.35 on background → `overlay` white α 0.15 on background → `circle_backdrop` on background (`anchor: subject`, `around: subject`, color [220, 30, 30], opacity 0.55, size 0.85, subject_fit 1.15) → `sticker_outline` on subject ([255, 214, 0], width_ratio 0.012) → `composite`
 - **File:** `backend/presets/red_halo_spotlight.json`
 
+### Flash looks
+
+#### `digicam_flash` — Digicam flash
+
+- **Idea:** Y2K point-and-shoot night flash (Prequel "Digital Flash" style). Everyone in front is cut out and lit with a cool, glossy on-camera flash, and the background falls off to blue-black like an unlit room behind the flash. `single_subject: false` so every person in a group is lit. Slight lens fringing and fine digital noise. `ar: non-square`, `text_input: no`, no HD (noise and fringing are part of the look). The background is only darkened when the cutout covers at least 4% of the frame (`requires_layer: subject`, `min_coverage: 0.04`), so a photo with no clear subject (a landscape where rembg only finds a bench or a flag) stays near the original instead of going black. Large objects (a tram, a building) still get the flash look.
+- **Steps:** `extract_subject` (`single_subject: false`, `require_clear_subject: true`) → `color_grade` on background (temperature -0.35, exposure -1.7, contrast 0.35, saturation 0.6) → `vignette` on background (0.8, midpoint 0.2, feather 0.8, roundness 0.6) — both gated by `requires_layer: subject`, `min_coverage: 0.04` → `color_grade` on subject (temperature -0.12, exposure 0.25, contrast 0.3, white_rolloff 0.45, saturation 0.95, vibrance 0.15) → `tone_curve` on subject (master 0→0 45→30 128→140 255→255; blue 0→8 128→132 255→255) → `bloom` on subject (threshold 0.7, radius_ratio 0.006, amount 0.35, color [240, 245, 255]) → `composite` → `chromatic_aberration` 0.002 → grain 0.04
+- **File:** `backend/presets/digicam_flash.json`
+- **AR:** `non-square` (any aspect ratio)
+- **Text input:** `no`
+- **DB:** seeded via `seed_default_presets()` / setup
+
 ## Built-in filters
 
 | Filter | What it does | Common params |
@@ -553,7 +564,8 @@ Rules of thumb:
 4. Set `"ar": "square"` when the recipe only works on square images; `"ar": "non-square"` (default) works on any aspect ratio. A square-only preset applied to a non-square image raises `PresetAspectRatioError`.
 5. Set `"text_input": "yes"` only when a step uses `$text`. Then `text_character_limit` must be 1–200. `"no"` (default) ignores submitted text.
 6. Doodles: apply `doodle` steps `"on": "background"` before the final `composite` so the subject covers them; use `"anchor": "subject", "around": "subject"` to centre rings behind the cutout. Prefer `"color": "auto"` over fixed white, add `"around": "subject", "avoid_subject": true` to corner doodles so they aren't hidden (plus `"avoid_busy": true` on dense ones like `xo`), and set `"single_subject": true` on `extract_subject` for one-subject looks.
-7. HD pre-pass: put `{ "filter": "ai_upscale", "on": "image", "long_edge": 1920 }` as step 0 so later steps work at HD size — ratio params (rule 3) need no change; only remaining px params (`font_size`, `margin`, `stroke_width`, glow `width`/`blur`) need scaling by about the upscale factor.
+7. Conditional steps: any step may add `"requires_layer": "subject"` (plus optional `"min_coverage": 0.04`, the layer's mean alpha as a 0–1 share of the frame). The runner skips that step when the layer is missing, empty, or smaller than that, so a background-darkening step does not black out a photo where `extract_subject` found nothing meaningful. This is generic (the runner never branches on filter type).
+8. HD pre-pass: put `{ "filter": "ai_upscale", "on": "image", "long_edge": 1920 }` as step 0 so later steps work at HD size — ratio params (rule 3) need no change; only remaining px params (`font_size`, `margin`, `stroke_width`, glow `width`/`blur`) need scaling by about the upscale factor.
 
 ## Database metadata
 

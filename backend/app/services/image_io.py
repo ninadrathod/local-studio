@@ -10,6 +10,10 @@ from io import BytesIO
 from typing import Any
 
 from PIL import Image, ImageCms, ImageOps
+from pillow_heif import register_heif_opener
+
+# Lets `Image.open` decode HEIC / HEIF (iPhone photos).
+register_heif_opener()
 
 # Caps for untrusted HTTP uploads (apply-preset / blur).
 MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # 100 MiB — full-quality DSLR JPEGs / TIFFs
@@ -24,9 +28,14 @@ MAX_IMAGE_PIXELS = 2_000_000 if LIGHTWEIGHT else 64_000_000  # 64 MP e.g. 9504×
 # Hard ceiling, checked from the header before decoding; above this the upload
 # is rejected outright (decompression-bomb guard).
 MAX_DECODE_PIXELS = 120_000_000  # e.g. a 102 MP medium-format file
-# JPEG uploads come back as JPEG at this quality with full-resolution chroma
-# (4:4:4); everything else (or a result with transparency) comes back as PNG.
+# JPEG / HEIC uploads come back as JPEG at this quality with full-resolution
+# chroma (4:4:4); everything else (or a result with transparency) comes back as PNG.
 JPEG_OUTPUT_QUALITY = 95
+# Lossy photo formats whose results are encoded as JPEG rather than PNG.
+_JPEG_OUTPUT_FORMATS = {"JPEG", "HEIF"}
+# Browser preview of uploads the browser can't render itself (HEIC in Chrome, TIFF).
+PREVIEW_MAX_SIDE = 2048
+PREVIEW_JPEG_QUALITY = 85
 
 _SRGB = ImageCms.ImageCmsProfile(ImageCms.createProfile("sRGB"))
 _SRGB_BYTES = _SRGB.tobytes()
@@ -224,13 +233,13 @@ def _is_opaque(image: Image.Image) -> bool:
 
 def encode_result(image: Image.Image, source_format: str | None) -> tuple[bytes, str]:
     """
-    Encode a result to match its upload: JPEG in → high-quality sRGB JPEG out
-    (a fraction of a PNG's size and encode time at DSLR resolution); any other
-    input, or a result with transparency, → PNG. Returns (bytes, media type).
-    Camera EXIF (GPS, serial numbers) is not carried over.
+    Encode a result to match its upload: JPEG / HEIC in → high-quality sRGB
+    JPEG out (a fraction of a PNG's size and encode time at DSLR resolution);
+    any other input, or a result with transparency, → PNG. Returns (bytes,
+    media type). Camera EXIF (GPS, serial numbers) is not carried over.
     """
     buffer = BytesIO()
-    if source_format == "JPEG" and _is_opaque(image):
+    if source_format in _JPEG_OUTPUT_FORMATS and _is_opaque(image):
         image.convert("RGB").save(
             buffer,
             format="JPEG",
@@ -238,6 +247,23 @@ def encode_result(image: Image.Image, source_format: str | None) -> tuple[bytes,
             subsampling=0,
             icc_profile=_SRGB_BYTES,
             exif=b"",
+        )
+        return buffer.getvalue(), "image/jpeg"
+    image.save(buffer, format="PNG", icc_profile=_SRGB_BYTES, exif=b"")
+    return buffer.getvalue(), "image/png"
+
+
+def encode_preview(image: Image.Image, *, max_side: int = PREVIEW_MAX_SIDE) -> tuple[bytes, str]:
+    """
+    Downscale a decoded upload to fit `max_side` and encode it for an `<img>`
+    preview: JPEG when opaque, PNG when it has transparency. Returns (bytes,
+    media type); EXIF is not carried over.
+    """
+    image = fit_image_limits(image, max_side=max_side, max_pixels=max_side * max_side)
+    buffer = BytesIO()
+    if _is_opaque(image):
+        image.convert("RGB").save(
+            buffer, format="JPEG", quality=PREVIEW_JPEG_QUALITY, icc_profile=_SRGB_BYTES, exif=b""
         )
         return buffer.getvalue(), "image/jpeg"
     image.save(buffer, format="PNG", icc_profile=_SRGB_BYTES, exif=b"")
