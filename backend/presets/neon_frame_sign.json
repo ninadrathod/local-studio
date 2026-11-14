@@ -1,0 +1,64 @@
+{
+  "name": "neon_frame_sign",
+  "label": "Neon frame sign",
+  "description": "Neon night: the background is darkened and cooled, a glowing hot-pink square neon frame passes behind the cut-out subject, and the user's text glows as a pink neon script sign at the top.",
+  "ar": "non-square",
+  "text_input": "yes",
+  "default_text": "after dark",
+  "text_character_limit": 16,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "color_grade",
+      "on": "background",
+      "exposure": -1.3,
+      "temperature": -0.3,
+      "saturation": 0.6,
+      "contrast": 0.1
+    },
+    {
+      "filter": "draw_shape",
+      "on": "background",
+      "shape": "square",
+      "x": 0.5,
+      "y": 0.52,
+      "size": 0.72,
+      "fill": false,
+      "stroke_ratio": 0.012,
+      "stroke_color": [255, 70, 180]
+    },
+    {
+      "filter": "bloom",
+      "on": "background",
+      "threshold": 0.35,
+      "radius_ratio": 0.025,
+      "amount": 0.9,
+      "color": [255, 90, 200]
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    },
+    {
+      "filter": "draw_text",
+      "on": "image",
+      "text": "$text",
+      "color": [255, 235, 250],
+      "align": "top",
+      "font_style": "signature",
+      "font_size_ratio": 0.12,
+      "margin_ratio": 0.03,
+      "glow_ratio": 0.025,
+      "glow_color": [255, 60, 190],
+      "angle": -4
+    }
+  ]
+}

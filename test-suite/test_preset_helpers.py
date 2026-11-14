@@ -2134,3 +2134,56 @@ def test_instax_preset_files(name: str, ratio: list, frame: list) -> None:
     assert caption["font_style"] == "scribble" and caption["align"] == "bottom"
     out = apply_preset(Image.new("RGB", (300, 200), (120, 140, 160)), name, text="")
     assert out.size[0] > 0  # runs end to end with an empty caption
+
+
+# --- draw_text centre point / width cap (text + shape overlays) -----------------
+
+
+def _dark_bbox(image: Image.Image) -> tuple[int, int, int, int]:
+    return image.convert("L").point(lambda v: 255 if v < 128 else 0).getbbox()
+
+
+def test_draw_text_centres_on_point() -> None:
+    canvas = Image.new("RGB", (400, 300), (255, 255, 255))
+    out = F.draw_text(canvas, text="HELLO", color=[0, 0, 0], font_size_ratio=0.1, center_x=0.25, center_y=0.5)
+    x0, y0, x1, y1 = _dark_bbox(out)
+    assert abs((x0 + x1) / 2 - 100) <= 2 and abs((y0 + y1) / 2 - 150) <= 2
+    tilted = F.draw_text(canvas, text="HELLO", color=[0, 0, 0], font_size_ratio=0.1, center_x=0.75, center_y=0.5, angle=90)
+    x0, y0, x1, y1 = _dark_bbox(tilted)
+    assert abs((x0 + x1) / 2 - 300) <= 3 and (y1 - y0) > (x1 - x0)  # vertical title
+
+
+def test_draw_text_max_width_ratio_shrinks_text() -> None:
+    canvas = Image.new("RGB", (400, 300), (255, 255, 255))
+    out = F.draw_text(canvas, text="A FAIRLY LONG LINE", color=[0, 0, 0], font_size_ratio=0.2, align="center", max_width_ratio=0.25)
+    x0, _, x1, _ = _dark_bbox(out)
+    assert x1 - x0 <= 0.25 * 400 + 2
+    with pytest.raises(ValueError):
+        F.draw_text(canvas, text="x", center_x=0.5)
+    with pytest.raises(ValueError):
+        F.draw_text(canvas, text="x", max_width_ratio=2)
+
+
+@pytest.mark.parametrize(
+    "name, default, limit, needs",
+    [
+        ("synthwave_sun", "MIDNIGHT", 14, {"draw_shape", "bloom", "draw_text"}),
+        ("diamond_editorial", "EDITION", 14, {"draw_shape", "clip_to", "draw_text"}),
+        ("word_wall_poster", "GOOD VIBES", 16, {"text_pattern", "draw_shape", "sticker_outline"}),
+        ("neon_frame_sign", "after dark", 16, {"draw_shape", "bloom", "draw_text"}),
+        ("pop_art_panel", "POW! WHAT NOW?", 20, {"halftone", "posterize", "ink_edges", "draw_text"}),
+    ],
+)
+def test_text_shape_overlay_preset_files(name: str, default: str, limit: int, needs: set) -> None:
+    preset = load_preset(PRESETS / f"{name}.json")
+    assert preset["ar"] == "non-square" and preset["text_input"] == "yes"
+    assert preset["default_text"] == default and preset["text_character_limit"] == limit
+    assert len(default) <= limit
+    steps = preset["steps"]
+    assert steps[0]["filter"] == "extract_subject"
+    assert needs <= {s["filter"] for s in steps}
+    assert any(s.get("text") == "$text" for s in steps)
+    for step in steps:
+        assert "font_path" not in step
+        if step["filter"] in {"draw_text", "text_pattern"}:
+            assert step["font_style"] in F._DISPLAY_FONT_CANDIDATES

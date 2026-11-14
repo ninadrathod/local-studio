@@ -501,3 +501,38 @@ is required where the license says so; CC0 and public-domain sources need none.
 - **Photographer:** [Alan Chen](https://unsplash.com/@chzenan) (via Wikimedia Commons Unsplash CC0 archive)
 - **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
 - **Files:** `pre-edit/instax_sky_flash.jpg` → `post-edit/instax_sky_flash.png` (preset `instax_sky_flash`, sample caption `party night`; the card is centred on a light-grey square for the gallery tile)
+
+## `synthwave_sun`
+
+- **Photograph:** [80s Chic (Unsplash)](https://commons.wikimedia.org/wiki/File:80s_Chic_(Unsplash).jpg)
+- **Photographer:** [giano currie](https://unsplash.com/@giano) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/synthwave_sun.jpg` → `post-edit/synthwave_sun.png` (preset `synthwave_sun`, default text `MIDNIGHT`)
+
+## `diamond_editorial`
+
+- **Photograph:** [Dark Makeup Look (Unsplash)](https://commons.wikimedia.org/wiki/File:Dark_Makeup_Look_(Unsplash).jpg)
+- **Photographer:** [Allef Vinicius](https://unsplash.com/@seteales) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/diamond_editorial.jpg` → `post-edit/diamond_editorial.png` (preset `diamond_editorial`, default text `EDITION`)
+
+## `word_wall_poster`
+
+- **Photograph:** [Laughing girl in front of graffiti (Unsplash)](https://commons.wikimedia.org/wiki/File:Laughing_girl_in_front_of_graffiti_(Unsplash).jpg)
+- **Photographer:** [Allef Vinicius](https://unsplash.com/@seteales) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/word_wall_poster.jpg` → `post-edit/word_wall_poster.png` (preset `word_wall_poster`, default text `GOOD VIBES`)
+
+## `neon_frame_sign`
+
+- **Photograph:** [Band member under red floodlights (Unsplash)](https://commons.wikimedia.org/wiki/File:Band_member_under_red_floodlights_(Unsplash).jpg)
+- **Photographer:** [Melanie van Leeuwen](https://unsplash.com/@strompictures) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/neon_frame_sign.jpg` → `post-edit/neon_frame_sign.png` (preset `neon_frame_sign`, default text `after dark`)
+
+## `pop_art_panel`
+
+- **Photograph:** [The Wonder of a Book (Unsplash)](https://commons.wikimedia.org/wiki/File:The_Wonder_of_a_Book_(Unsplash).jpg)
+- **Photographer:** [Ben White](https://unsplash.com/@benwhitephotography) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/pop_art_panel.jpg` → `post-edit/pop_art_panel.png` (preset `pop_art_panel`, default text `POW! WHAT NOW?`)

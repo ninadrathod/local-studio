@@ -523,6 +523,41 @@ Five instant-print looks. Each crops the photo to its real Instax film shape wit
 - **Steps:** `crop_aspect` [46, 62] → punchy flash `color_grade` (temperature 0.05, exposure 0.2, contrast 0.25, white_rolloff 0.35, saturation 1.1, vibrance 0.15) → flash-falloff `vignette` (0.3, midpoint 0.4) → grain 0.04 → sky-blue [176, 212, 238] Mini card → caption (0.13 / 0.095)
 - **File:** `backend/presets/instax_sky_flash.json`
 
+### Text + shape overlays
+
+Five poster-style overlays that pair a shape with the user's text. All extract the subject (`single_subject: true`) so the shape sits behind it, are `ar: non-square`, `text_input: yes`, no HD, and are seeded via `seed_default_presets()` / setup.
+
+#### `synthwave_sun` — Synthwave sun
+
+- **Idea:** Night-purple grade on the background, a big coral sun disc behind the subject with a pink bloom, and the text in glowing neon tube capitals at the bottom. Default `MIDNIGHT`, limit **14**.
+- **Steps:** `extract_subject` → `color_grade` on background (temperature -0.3, tint 0.45, exposure -1.3, contrast 0.25, split 0.75, shadows [40, 10, 90] / highlights [255, 80, 200], saturation 1.15) → `draw_shape` circle on background (0.5, 0.42, size 0.62, [255, 96, 128]) → pink `bloom` → `composite` → `draw_text` `$text` (`neon_lines`, bottom, font_size_ratio 0.11, glow_ratio 0.03 pink)
+- **File:** `backend/presets/synthwave_sun.json`
+
+#### `diamond_editorial` — Diamond editorial
+
+- **Idea:** Sand canvas [214, 196, 176] with a large diamond window onto the photo and an offset outline diamond, subject on top, text as a tall vertical title up the left edge. Default `EDITION`, limit **14**.
+- **Steps:** `extract_subject` → `overlay` canvas → `draw_shape` diamond mask (0.56, 0.5, size 0.95, `clear`) → `clip_to` → `composite` → outline `draw_shape` diamond (0.6, 0.54, stroke 0.004) → `composite` subject → `draw_text` `$text` (`poster`, angle 90, `center_x` 0.085 / `center_y` 0.5, font_size_ratio 0.13)
+- **File:** `backend/presets/diamond_editorial.json`
+
+#### `word_wall_poster` — Word wall poster
+
+- **Idea:** The background becomes a wall of the text (`text_pattern`, separator ` • `, uppercase, sizes [0.09, 0.05, 0.07, 0.04], gap_ratio 0.01, black / coral / black / grey rows on cream), a yellow circle behind the head, and a white sticker outline on the subject. Default `GOOD VIBES`, limit **16**.
+- **Steps:** `extract_subject` → `text_pattern` as `background` → `draw_shape` circle (0.5, 0.36, size 0.6, [255, 200, 40]) → `sticker_outline` → `composite`
+- **File:** `backend/presets/word_wall_poster.json`
+
+#### `neon_frame_sign` — Neon frame sign
+
+- **Idea:** Dark, cool background, a hot-pink square neon outline behind the subject (bloomed so it glows), and the text as a pink neon script sign at the top. Default `after dark`, limit **16**.
+- **Steps:** `extract_subject` → `color_grade` on background (exposure -1.3, temperature -0.3, saturation 0.6) → outline `draw_shape` square (0.5, 0.52, size 0.72, stroke 0.012, [255, 70, 180]) → pink `bloom` → `composite` → `draw_text` `$text` (`signature`, top, font_size_ratio 0.12, glow_ratio 0.025, angle -4)
+- **File:** `backend/presets/neon_frame_sign.json`
+
+#### `pop_art_panel` — Pop art panel
+
+- **Idea:** Lichtenstein-style comic panel: background as red halftone dots on yellow (on dark backgrounds the dots merge into near-solid red), subject posterised with ink outlines and a thin dark sticker outline, text in a framed white comic caption box top-left. Default `POW! WHAT NOW?`, limit **20**.
+- **Steps:** `extract_subject` → `halftone` mono on background (cell 0.02, paper [255, 215, 0], ink [225, 30, 60]) → `posterize` 6 + `ink_edges` on subject → `sticker_outline` [20, 20, 20] → `composite` → `draw_text` `$text` (`marquee`, top_left, `box: frame` with white fill, max_width_ratio 0.6)
+- **File:** `backend/presets/pop_art_panel.json`
+
+
 ## Built-in filters
 
 | Filter | What it does | Common params |
@@ -567,7 +602,7 @@ Five instant-print looks. Each crops the photo to its real Instax film shape wit
 | `chromatic_aberration` | Radial lens fringing: red scaled out, green half, blue fixed, so colour edges split more toward the corners (no border) | `on`, `amount` (fraction of size, ≤ 0.05) |
 | `blur` | Gaussian blur by `radius_ratio` × short side; large radii run on a shrunken copy (flat cost). RGBA blurs with premultiplied alpha (no dark edges toward transparency). `exclude` names a layer (e.g. `subject`) whose alpha, grown by `exclude_grow`, gets zero weight, so the blurred background fills the cut-out hole from its surroundings | `on`, `radius_ratio`, `exclude` (layer name), `exclude_grow` (fraction of short side; default 0.004) |
 | `selective_color` | Push one colour family (HSV hue band) and optionally mute the rest; near-greys get little weight; numpy in ≤ 1 MP strips | `on`, `hue` (degrees, name `red`/`orange`/`yellow`/`green`/`cyan`/`teal`/`blue`/`purple`/`magenta`/`pink`, or [r,g,b]), `width` (band half-width, degrees), `saturation` (in-band ×), `lightness` (in-band lift 0–1), `others` (out-of-band saturation ×; 0 = grey), `pull` (0–1, rotate in-band hues toward the target) |
-| `draw_text` | Paint a string onto a layer | `on`, `text` (`$text` / `$datetime` / `$date` / `$time` — stamps use the photo's EXIF capture time, else now), `font_size`, `color`/`rgb`, `align` (`center`/`top`/`bottom`/`top_left`/`top_right`/`bottom_left`/`bottom_right`), `font_style` (`sans`/`flow`/`stamp` — bold mono date imprint; poster styles `poster` (Impact → bundled Anton), `brush` (Brush Script → bundled Yellowtail), `slab`, `signature`, `scribble` (bundled Nanum Pen Script, loose felt-pen handwriting), `bold_display`, `stencil`, caps-only `neon_lines` / `marquee`), `font_path` (optional TTF/OTF/TTC; overrides `font_style`), `margin`, `x`, `y`, `stroke_width` (px), or `font_size_ratio` / `margin_ratio` / `stroke_ratio` (fractions of the short side — prefer these); too-wide text shrinks to fit. Poster extras: `scale_y` (vertical stretch), `angle` (tilt, degrees), `glow_ratio` (≤ 0.05) / `glow_color` (neon halo, fixed brightness), `box` (`frame`/`double`/`corners`/`label`) with `box_color`, `box_fill` ([r,g,b(,a)]), `box_ratio`, `box_pad_ratio`, `box_radius_ratio` — the box stretches, tilts and glows with the text |
+| `draw_text` | Paint a string onto a layer | `on`, `text` (`$text` / `$datetime` / `$date` / `$time` — stamps use the photo's EXIF capture time, else now), `font_size`, `color`/`rgb`, `align` (`center`/`top`/`bottom`/`top_left`/`top_right`/`bottom_left`/`bottom_right`), `font_style` (`sans`/`flow`/`stamp` — bold mono date imprint; poster styles `poster` (Impact → bundled Anton), `brush` (Brush Script → bundled Yellowtail), `slab`, `signature`, `scribble` (bundled Nanum Pen Script, loose felt-pen handwriting), `bold_display`, `stencil`, caps-only `neon_lines` / `marquee`), `font_path` (optional TTF/OTF/TTC; overrides `font_style`), `margin`, `x`, `y`, `stroke_width` (px), or `font_size_ratio` / `margin_ratio` / `stroke_ratio` (fractions of the short side — prefer these); too-wide text shrinks to fit. Poster extras: `scale_y` (vertical stretch), `angle` (tilt, degrees), `glow_ratio` (≤ 0.05) / `glow_color` (neon halo, fixed brightness), `box` (`frame`/`double`/`corners`/`label`) with `box_color`, `box_fill` ([r,g,b(,a)]), `box_ratio`, `box_pad_ratio`, `box_radius_ratio` — the box stretches, tilts and glows with the text. Placement extras: `center_x` / `center_y` (fractions of width / height, together) centre the finished block on a point — e.g. inside a `draw_shape` badge or along an edge with `angle: 90`; `max_width_ratio` (0.05–1, default 0.9 of the width) caps the text width before it shrinks |
 
 Layers are named images in memory. Typical keys: `image`, `subject`, `background`.
 

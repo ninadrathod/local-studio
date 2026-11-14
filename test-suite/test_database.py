@@ -77,7 +77,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     init_db(db)
     first = seed_default_presets(db_path=db)
     second = seed_default_presets(db_path=db)
-    assert len(first) == 70
+    assert len(first) == 75
     names = {row["preset_name"] for row in first}
     assert names == {
         "bw_bg_glowing_subject",
@@ -150,6 +150,11 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "instax_wide_cool",
         "instax_monochrome",
         "instax_sky_flash",
+        "synthwave_sun",
+        "diamond_editorial",
+        "word_wall_poster",
+        "neon_frame_sign",
+        "pop_art_panel",
     }
     by_name = {row["preset_name"]: row for row in first}
     assert by_name["bw_bg_glowing_subject"]["ar"] == "non-square"
@@ -173,6 +178,16 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         assert by_name[name]["text_input"] == "yes"
         assert by_name[name]["default_text"] == ""
         assert by_name[name]["text_character_limit"] == 24
+    for name, default, limit in (
+        ("synthwave_sun", "MIDNIGHT", 14),
+        ("diamond_editorial", "EDITION", 14),
+        ("word_wall_poster", "GOOD VIBES", 16),
+        ("neon_frame_sign", "after dark", 16),
+        ("pop_art_panel", "POW! WHAT NOW?", 20),
+    ):
+        assert by_name[name]["text_input"] == "yes"
+        assert by_name[name]["default_text"] == default
+        assert by_name[name]["text_character_limit"] == limit
     for name in (
         "full_hd",
         "4k_crisp",
@@ -222,6 +237,11 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     assert second == []
     names_in_order = [row["preset_name"] for row in list_presets(db_path=db)]
     assert names_in_order == [
+        "pop_art_panel",
+        "neon_frame_sign",
+        "word_wall_poster",
+        "diamond_editorial",
+        "synthwave_sun",
         "instax_sky_flash",
         "instax_monochrome",
         "instax_wide_cool",
@@ -294,7 +314,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "bw_bg_glowing_subject",
     ]
     popular = list_popular(db_path=db)
-    assert len(popular) == 70
+    assert len(popular) == 75
     assert all(row["used_count"] == 0 for row in popular)
 
 
@@ -384,6 +404,11 @@ def test_seed_default_presets_syncs_text_fields(tmp_path: Path) -> None:
         "instax_wide_cool",
         "instax_monochrome",
         "instax_sky_flash",
+        "synthwave_sun",
+        "diamond_editorial",
+        "word_wall_poster",
+        "neon_frame_sign",
+        "pop_art_panel",
     ]
     synced =get_preset_by_name("bw_bg_glowing_subject", db_path=db)
     assert synced is not None

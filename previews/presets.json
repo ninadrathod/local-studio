@@ -1,5 +1,50 @@
 [
   {
+    "preset_name": "pop_art_panel",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "POW! WHAT NOW?",
+    "text_character_limit": 20,
+    "pre_edit_image": "previews/pre-edit/pop_art_panel.jpg",
+    "post_edit_image": "previews/post-edit/pop_art_panel.png"
+  },
+  {
+    "preset_name": "neon_frame_sign",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "after dark",
+    "text_character_limit": 16,
+    "pre_edit_image": "previews/pre-edit/neon_frame_sign.jpg",
+    "post_edit_image": "previews/post-edit/neon_frame_sign.png"
+  },
+  {
+    "preset_name": "word_wall_poster",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "GOOD VIBES",
+    "text_character_limit": 16,
+    "pre_edit_image": "previews/pre-edit/word_wall_poster.jpg",
+    "post_edit_image": "previews/post-edit/word_wall_poster.png"
+  },
+  {
+    "preset_name": "diamond_editorial",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "EDITION",
+    "text_character_limit": 14,
+    "pre_edit_image": "previews/pre-edit/diamond_editorial.jpg",
+    "post_edit_image": "previews/post-edit/diamond_editorial.png"
+  },
+  {
+    "preset_name": "synthwave_sun",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "MIDNIGHT",
+    "text_character_limit": 14,
+    "pre_edit_image": "previews/pre-edit/synthwave_sun.jpg",
+    "post_edit_image": "previews/post-edit/synthwave_sun.png"
+  },
+  {
     "preset_name": "instax_sky_flash",
     "ar": "non-square",
     "text_input": "yes",
