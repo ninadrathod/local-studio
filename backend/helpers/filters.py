@@ -2473,10 +2473,12 @@ def _paste_text_block(
     pad: int,
     box: dict | None = None,
     xy: tuple[int, int] | None = None,
+    center: tuple[float, float] | None = None,
 ) -> Image.Image:
     """Render text on its own layer, stretch it, frame it, tilt it, add a neon glow, and paste it.
 
-    Placement follows `align`, or `xy` (top-left of the text / box) when given.
+    Placement follows `align`, `xy` (top-left of the text / box), or `center`
+    (pixel point the finished block is centred on) when given.
     """
     cw, ch = canvas.size
     text_w, text_h = max(1, bbox[2] - bbox[0]), max(1, bbox[3] - bbox[1])
@@ -2503,7 +2505,9 @@ def _paste_text_block(
         layer = padded
     lw, lh = layer.size
 
-    if xy is not None:
+    if center is not None:
+        left, top = center[0] - lw / 2, center[1] - lh / 2
+    elif xy is not None:
         left, top = xy[0] - spread, xy[1] - spread
     else:
         if mode in {"top_left", "left_top", "bottom_left", "left_bottom"}:
@@ -2563,9 +2567,17 @@ def draw_text(
     box_ratio: float = 0.003,
     box_pad_ratio: float = 0.025,
     box_radius_ratio: float = 0.0,
+    center_x: float | None = None,
+    center_y: float | None = None,
+    max_width_ratio: float | None = None,
 ) -> Image.Image:
     """
     Draw `text` onto an image.
+
+    `center_x` / `center_y` (fractions of the width / height, both required)
+    centre the finished text block on that point — e.g. inside a speech bubble
+    or badge drawn with `draw_shape`. `max_width_ratio` (fraction of the width,
+    default 0.9) caps the text width; longer text shrinks to fit.
 
     `font_size` / `stroke_width` / `margin` are px; the matching `*_ratio`
     params (fractions of the short side) override them so text keeps its
@@ -2610,7 +2622,18 @@ def draw_text(
     path = str(font_path).strip() if font_path else None
     font = _load_font(size, style, path or None)
     draw = ImageDraw.Draw(canvas)
-    max_width = int(canvas.size[0] * 0.9)
+    width_cap = 0.9 if max_width_ratio is None else float(max_width_ratio)
+    if not math.isfinite(width_cap) or not 0.05 <= width_cap <= 1.0:
+        raise ValueError("max_width_ratio must be between 0.05 and 1")
+    max_width = int(canvas.size[0] * width_cap)
+    centre = None
+    if center_x is not None or center_y is not None:
+        if center_x is None or center_y is None:
+            raise ValueError("center_x and center_y must be given together")
+        cxf, cyf = float(center_x), float(center_y)
+        if not (math.isfinite(cxf) and math.isfinite(cyf)):
+            raise ValueError("center_x / center_y must be finite")
+        centre = (cxf * canvas.size[0], cyf * canvas.size[1])
     frame = None
     box_style = (box or "none").strip().lower()
     if box_style not in _BOX_STYLES:
@@ -2648,7 +2671,7 @@ def draw_text(
 
     stretch = max(0.1, float(scale_y))
     glow = _ratio_px(min(float(glow_ratio), _MAX_TEXT_GLOW_RATIO), canvas.size, 0.0) if glow_ratio else 0.0
-    layered = stretch != 1.0 or bool(angle) or glow > 0 or frame is not None
+    layered = stretch != 1.0 or bool(angle) or glow > 0 or frame is not None or centre is not None
     xy = (int(x), int(y)) if x is not None and y is not None else None
 
     if xy is not None and not layered:
@@ -2665,7 +2688,7 @@ def draw_text(
         glow_rgb = _rgb_tint(glow_color, None, stroke_fill[:3] if stroke_fill else tint)
         return _paste_text_block(
             canvas, value, draw_kwargs, bbox, stretch, float(angle or 0), glow, glow_rgb,
-            mode, pad, frame, xy,
+            mode, pad, frame, xy, centre,
         )
 
     def _draw_at(px: float, py: float, anchor: str) -> None:

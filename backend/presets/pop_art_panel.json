@@ -1,0 +1,66 @@
+{
+  "name": "pop_art_panel",
+  "label": "Pop art panel",
+  "description": "Pop-art comic panel: the background becomes red halftone dots on yellow, the subject is posterised with comic ink outlines, and the user's text sits in a framed comic caption box at the top left.",
+  "ar": "non-square",
+  "text_input": "yes",
+  "default_text": "POW! WHAT NOW?",
+  "text_character_limit": 20,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "halftone",
+      "on": "background",
+      "mode": "mono",
+      "cell": 0.02,
+      "paper": [255, 215, 0],
+      "ink": [225, 30, 60],
+      "mix": 1.0
+    },
+    {
+      "filter": "posterize",
+      "on": "subject",
+      "levels": 6,
+      "smooth": 3
+    },
+    {
+      "filter": "ink_edges",
+      "on": "subject",
+      "opacity": 0.8
+    },
+    {
+      "filter": "sticker_outline",
+      "on": "subject",
+      "color": [20, 20, 20],
+      "width_ratio": 0.006
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    },
+    {
+      "filter": "draw_text",
+      "on": "image",
+      "text": "$text",
+      "color": [20, 20, 20],
+      "align": "top_left",
+      "font_style": "marquee",
+      "font_size_ratio": 0.055,
+      "margin_ratio": 0.04,
+      "box": "frame",
+      "box_fill": [255, 255, 255],
+      "box_color": [20, 20, 20],
+      "box_ratio": 0.005,
+      "box_pad_ratio": 0.02,
+      "max_width_ratio": 0.6
+    }
+  ]
+}
