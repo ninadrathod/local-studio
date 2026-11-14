@@ -2074,3 +2074,63 @@ def test_shape_window_portrait_preset_file() -> None:
     )
     assert any(s["filter"] == "clip_to" and s["around"] == "shapes" for s in preset["steps"])
     assert preset["steps"][-1] == {"filter": "composite", "base": "image", "overlay": "subject", "as": "image"}
+
+
+# --- crop_aspect / place_on_canvas margins (instax_* presets) -------------------
+
+
+def test_crop_aspect_ratios_anchor_and_orientation() -> None:
+    land = Image.new("RGB", (1280, 853))
+    assert F.crop_aspect(land, [46, 62]).size == (633, 853)
+    assert F.crop_aspect(land, [1, 1]).size == (853, 853)
+    assert F.crop_aspect(land, [99, 62]).size == (1280, 802)
+    assert F.crop_aspect(land, [46, 62], auto_orient=True).size == (1150, 853)
+    square = Image.new("RGB", (600, 600))
+    assert F.crop_aspect(square, [46, 62], auto_orient=True).size == (445, 600)  # square keeps given ratio
+    marked = Image.new("RGB", (200, 100), (0, 0, 0))
+    marked.paste((255, 0, 0), (0, 0, 10, 100))
+    assert F.crop_aspect(marked, 1.0, anchor="left").getpixel((0, 50)) == (255, 0, 0)
+    assert F.crop_aspect(marked, 1.0, anchor="right").getpixel((0, 50)) == (0, 0, 0)
+    with pytest.raises(ValueError):
+        F.crop_aspect(marked, [1, 0])
+    with pytest.raises(ValueError):
+        F.crop_aspect(marked, 1.0, anchor="middle")
+
+
+def test_place_on_canvas_margins_build_instax_card() -> None:
+    photo = Image.new("RGB", (460, 620), (10, 20, 30))
+    card = F.place_on_canvas(photo, margins=[0.087, 0.141, 0.087, 0.38], fill=[250, 250, 247])
+    left, top, bottom = round(0.087 * 460), round(0.141 * 460), round(0.38 * 460)
+    assert card.size == (460 + 2 * left, 620 + top + bottom)
+    assert abs(card.size[0] / card.size[1] - 54 / 86) < 0.01  # real Instax Mini card proportions
+    assert card.getpixel((left + 5, top + 5))[:3] == (10, 20, 30)
+    assert card.getpixel((5, card.size[1] - 5))[:3] == (250, 250, 247)
+    with pytest.raises(ValueError):
+        F.place_on_canvas(photo, margins=[0.1, 0.1, 0.1])
+    # Without margins the old scale / layout behaviour is unchanged.
+    assert F.place_on_canvas(photo, scale=1.4).size == (644, 868)
+
+
+@pytest.mark.parametrize(
+    "name, ratio, frame",
+    [
+        ("instax_mini_classic", [46, 62], [250, 250, 247]),
+        ("instax_square_sunny", [1, 1], [250, 250, 247]),
+        ("instax_wide_cool", [99, 62], [250, 250, 247]),
+        ("instax_monochrome", [46, 62], [250, 250, 247]),
+        ("instax_sky_flash", [46, 62], [176, 212, 238]),
+    ],
+)
+def test_instax_preset_files(name: str, ratio: list, frame: list) -> None:
+    preset = load_preset(PRESETS / f"{name}.json")
+    assert preset["ar"] == "non-square" and preset["text_input"] == "yes"
+    assert preset["default_text"] == "" and preset["text_character_limit"] == 24
+    steps = preset["steps"]
+    assert steps[0] == {"filter": "crop_aspect", "on": "image", "ratio": ratio}
+    canvas = [s for s in steps if s["filter"] == "place_on_canvas"]
+    assert len(canvas) == 1 and canvas[0]["fill"] == frame and len(canvas[0]["margins"]) == 4
+    caption = steps[-1]
+    assert caption["filter"] == "draw_text" and caption["text"] == "$text"
+    assert caption["font_style"] == "scribble" and caption["align"] == "bottom"
+    out = apply_preset(Image.new("RGB", (300, 200), (120, 140, 160)), name, text="")
+    assert out.size[0] > 0  # runs end to end with an empty caption

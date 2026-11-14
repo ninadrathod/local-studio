@@ -466,3 +466,38 @@ is required where the license says so; CC0 and public-domain sources need none.
 - **Photographer:** [Clem Onojeghuo](https://unsplash.com/@clemono2) (via Wikimedia Commons Unsplash CC0 archive)
 - **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
 - **Files:** `pre-edit/shape_window_portrait.jpg` → `post-edit/shape_window_portrait.png` (preset `shape_window_portrait`)
+
+## `instax_mini_classic`
+
+- **Photograph:** [Woman smiling in front of graffiti (Unsplash)](https://commons.wikimedia.org/wiki/File:Woman_smiling_in_front_of_graffiti_(Unsplash).jpg)
+- **Photographer:** [Paulette Wooten](https://unsplash.com/@paullywooten) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/instax_mini_classic.jpg` → `post-edit/instax_mini_classic.png` (preset `instax_mini_classic`, sample caption `good times`; the card is centred on a light-grey square for the gallery tile)
+
+## `instax_square_sunny`
+
+- **Photograph:** [Friends on a quiet beach (Unsplash)](https://commons.wikimedia.org/wiki/File:Friends_on_a_quiet_beach_(Unsplash).jpg)
+- **Photographer:** [Richard Nolan](https://unsplash.com/@richienolan) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/instax_square_sunny.jpg` → `post-edit/instax_square_sunny.png` (preset `instax_square_sunny`, sample caption `golden hour`; the card is centred on a light-grey square for the gallery tile)
+
+## `instax_wide_cool`
+
+- **Photograph:** [Adventurers taking a break (Unsplash)](https://commons.wikimedia.org/wiki/File:Adventurers_taking_a_break_(Unsplash).jpg)
+- **Photographer:** [Koushik C](https://unsplash.com/@koushikc) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/instax_wide_cool.jpg` → `post-edit/instax_wide_cool.png` (preset `instax_wide_cool`, sample caption `road trip`; the card is centred on a light-grey square for the gallery tile)
+
+## `instax_monochrome`
+
+- **Photograph:** [Stockholm man with headphones (Unsplash)](https://commons.wikimedia.org/wiki/File:Stockholm_man_with_headphones_(Unsplash).jpg)
+- **Photographer:** [Yingchou Han](https://unsplash.com/@hyingchou) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/instax_monochrome.jpg` → `post-edit/instax_monochrome.png` (preset `instax_monochrome`, sample caption `classic`; the card is centred on a light-grey square for the gallery tile)
+
+## `instax_sky_flash`
+
+- **Photograph:** [Yellow (Unsplash wdTEHCq1mRo)](https://commons.wikimedia.org/wiki/File:Yellow_(Unsplash_wdTEHCq1mRo).jpg)
+- **Photographer:** [Alan Chen](https://unsplash.com/@chzenan) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/instax_sky_flash.jpg` → `post-edit/instax_sky_flash.png` (preset `instax_sky_flash`, sample caption `party night`; the card is centred on a light-grey square for the gallery tile)
