@@ -438,3 +438,10 @@ is required where the license says so; CC0 and public-domain sources need none.
 - **Photographer:** [JOHNNYMARTINEZ99](https://commons.wikimedia.org/wiki/User:JOHNNYMARTINEZ99)
 - **License:** [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
 - **Files:** `pre-edit/red_halo_spotlight.jpg` → `post-edit/red_halo_spotlight.png` (preset `red_halo_spotlight`)
+
+## `digicam_flash`
+
+- **Photograph:** [John B at EVE Nightclub, Miami Florida. 25 March 2011.](https://commons.wikimedia.org/wiki/File:John_B_at_EVE_Nightclub,_Miami_Florida._25_March_2011..JPG)
+- **Photographer:** [Bizzurp](https://commons.wikimedia.org/wiki/User:Bizzurp)
+- **License:** [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)
+- **Files:** `pre-edit/digicam_flash.jpg` → `post-edit/digicam_flash.png` (preset `digicam_flash`)

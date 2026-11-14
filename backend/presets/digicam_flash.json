@@ -1,0 +1,83 @@
+{
+  "name": "digicam_flash",
+  "label": "Digicam flash",
+  "description": "Y2K point-and-shoot night flash (Prequel 'Digital Flash' style): people cut out and lit with a cool, glossy on-camera flash while the background falls off to blue-black, with a strong vignette, slight lens fringing and fine digital noise.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": false,
+      "require_clear_subject": true
+    },
+    {
+      "filter": "color_grade",
+      "on": "background",
+      "temperature": -0.35,
+      "exposure": -1.7,
+      "contrast": 0.35,
+      "saturation": 0.6,
+      "requires_layer": "subject",
+      "min_coverage": 0.04
+    },
+    {
+      "filter": "vignette",
+      "on": "background",
+      "amount": 0.8,
+      "midpoint": 0.2,
+      "feather": 0.8,
+      "roundness": 0.6,
+      "requires_layer": "subject",
+      "min_coverage": 0.04
+    },
+    {
+      "filter": "color_grade",
+      "on": "subject",
+      "temperature": -0.12,
+      "exposure": 0.25,
+      "contrast": 0.3,
+      "white_rolloff": 0.45,
+      "saturation": 0.95,
+      "vibrance": 0.15
+    },
+    {
+      "filter": "tone_curve",
+      "on": "subject",
+      "master": [[0, 0], [45, 30], [128, 140], [255, 255]],
+      "blue": [[0, 8], [128, 132], [255, 255]]
+    },
+    {
+      "filter": "bloom",
+      "on": "subject",
+      "threshold": 0.7,
+      "radius_ratio": 0.006,
+      "amount": 0.35,
+      "color": [240, 245, 255]
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    },
+    {
+      "filter": "chromatic_aberration",
+      "on": "image",
+      "amount": 0.002
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0,
+      "stains": 0,
+      "fade": 0,
+      "grain": 0.04,
+      "seed": 3
+    }
+  ]
+}

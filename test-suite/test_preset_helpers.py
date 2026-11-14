@@ -18,6 +18,7 @@ if str(HELPERS) not in sys.path:
 import filters as F  # noqa: E402
 from apply_preset import (  # noqa: E402
     FILTERS,
+    _layer_has_content,
     photo_datetime,
     PresetAspectRatioError,
     PresetTextError,
@@ -104,6 +105,48 @@ def test_apply_steps_without_extract() -> None:
     ]
     out = apply_steps(image, steps)
     assert out.size == (24, 24)
+
+
+def test_requires_layer_skips_step_when_layer_missing() -> None:
+    image = Image.new("RGB", (24, 24), (100, 120, 140))
+    darken = {"filter": "brightness", "on": "image", "amount": 0.2, "requires_layer": "subject"}
+    skipped = apply_steps(image, [darken])
+    assert skipped.convert("RGB").getpixel((5, 5)) == (100, 120, 140)
+    copy_to_subject = {"filter": "brightness", "on": "image", "as": "subject", "amount": 1.0}
+    ran = apply_steps(image, [copy_to_subject, darken])
+    assert ran.convert("RGB").getpixel((5, 5))[0] < 40
+
+
+def test_layer_has_content_checks_alpha_coverage() -> None:
+    size = (100, 100)
+    empty = Image.new("RGBA", size, (255, 255, 255, 0))
+    small = empty.copy()
+    small.paste((255, 255, 255, 255), (0, 0, 10, 10))  # 1% of the frame
+    large = empty.copy()
+    large.paste((255, 255, 255, 255), (0, 0, 50, 50))  # 25% of the frame
+    layers = {"empty": empty, "small": small, "large": large, "rgb": Image.new("RGB", size)}
+    assert not _layer_has_content(layers, "missing", 0)
+    assert not _layer_has_content(layers, "empty", 0)
+    assert _layer_has_content(layers, "small", 0)
+    assert not _layer_has_content(layers, "small", 0, 0.04)
+    assert _layer_has_content(layers, "large", 0, 0.04)
+    assert _layer_has_content(layers, "rgb", 0, 0.5)
+    with pytest.raises(ValueError):
+        _layer_has_content(layers, "large", 0, 1.5)
+    with pytest.raises(ValueError):
+        _layer_has_content(layers, "", 0)
+
+
+def test_digicam_flash_gates_background_darkening_on_subject() -> None:
+    preset = json.loads((PRESETS / "digicam_flash.json").read_text(encoding="utf-8"))
+    steps = preset["steps"]
+    assert steps[0]["filter"] == "extract_subject"
+    assert steps[0]["require_clear_subject"] is True
+    background_steps = [s for s in steps if s.get("on") == "background"]
+    assert background_steps
+    for step in background_steps:
+        assert step["requires_layer"] == "subject"
+        assert 0 < step["min_coverage"] < 0.1
 
 
 def test_apply_preset_square_ar_requires_square_image(tmp_path: Path) -> None:

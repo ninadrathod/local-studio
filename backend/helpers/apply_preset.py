@@ -22,7 +22,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
 
-from PIL import Image
+from PIL import Image, ImageStat
 from pillow_heif import register_heif_opener
 
 import filters as F
@@ -352,6 +352,40 @@ def load_preset(preset_path: Path) -> dict[str, Any]:
     return data
 
 
+def _layer_has_content(
+    layers: dict[str, Image.Image],
+    key: Any,
+    index: int,
+    min_coverage: Any = 0.0,
+) -> bool:
+    """True when layer `key` exists and enough of it is visible.
+
+    Backs the generic `requires_layer` / `min_coverage` step keys: a step that
+    names a layer (e.g. `subject`) is skipped when that layer is absent, fully
+    transparent, or its mean alpha covers less than `min_coverage` (0–1) of the
+    frame — e.g. when `extract_subject` only finds a small object like a bench.
+    """
+    if not isinstance(key, str) or not key:
+        raise ValueError(f"Step {index}: 'requires_layer' must be a layer name")
+    try:
+        need = float(min_coverage)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"Step {index}: 'min_coverage' must be a number") from exc
+    if not 0.0 <= need <= 1.0:
+        raise ValueError(f"Step {index}: 'min_coverage' must be between 0 and 1")
+    layer = layers.get(key)
+    if layer is None:
+        return False
+    if "A" not in layer.getbands():
+        return True
+    alpha = layer.getchannel("A")
+    if alpha.getbbox() is None:
+        return False
+    if need <= 0.0:
+        return True
+    return ImageStat.Stat(alpha).mean[0] / 255.0 >= need
+
+
 def apply_steps(
     image: Image.Image,
     steps: list[dict[str, Any]],
@@ -376,6 +410,12 @@ def apply_steps(
             )
 
         params = bind_step_params(step, text, now=stamp)
+        required = params.pop("requires_layer", None)
+        min_coverage = params.pop("min_coverage", 0.0)
+        if required is not None and not _layer_has_content(
+            layers, required, index, min_coverage
+        ):
+            continue
         try:
             handler(layers, index=index, **params)
         except TypeError as exc:
