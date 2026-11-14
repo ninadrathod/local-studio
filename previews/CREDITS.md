@@ -445,3 +445,10 @@ is required where the license says so; CC0 and public-domain sources need none.
 - **Photographer:** [Bizzurp](https://commons.wikimedia.org/wiki/User:Bizzurp)
 - **License:** [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)
 - **Files:** `pre-edit/digicam_flash.jpg` → `post-edit/digicam_flash.png` (preset `digicam_flash`)
+
+## `red_gel_portrait`
+
+- **Photograph:** [Curly hair and freckles man (Unsplash)](https://commons.wikimedia.org/wiki/File:Curly_hair_and_freckles_man_(Unsplash).jpg)
+- **Photographer:** [Jeremy Bishop](https://unsplash.com/@tidesinourveins) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/red_gel_portrait.jpg` → `post-edit/red_gel_portrait.png` (preset `red_gel_portrait`)

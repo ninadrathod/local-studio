@@ -1,0 +1,49 @@
+{
+  "name": "red_gel_portrait",
+  "label": "Red gel portrait",
+  "description": "Soft red gel light cast over the subject (whites and highlights take a rose-red tint, skin warms slightly) while the background is muted and pushed toward a cool blue. Gentle, not a full red wash.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": false
+    },
+    {
+      "filter": "color",
+      "on": "background",
+      "amount": 0.55
+    },
+    {
+      "filter": "tone_curve",
+      "on": "background",
+      "red": [[0, 0], [128, 110], [255, 225]],
+      "green": [[0, 0], [128, 120], [255, 236]],
+      "blue": [[0, 24], [128, 146], [255, 255]]
+    },
+    {
+      "filter": "color_grade",
+      "on": "background",
+      "exposure": -0.15,
+      "contrast": 0.05
+    },
+    {
+      "filter": "tone_curve",
+      "on": "subject",
+      "red": [[0, 6], [128, 140], [255, 255]],
+      "green": [[0, 0], [128, 118], [255, 205]],
+      "blue": [[0, 0], [128, 118], [255, 205]]
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    }
+  ]
+}
