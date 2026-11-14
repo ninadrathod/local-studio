@@ -77,7 +77,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     init_db(db)
     first = seed_default_presets(db_path=db)
     second = seed_default_presets(db_path=db)
-    assert len(first) == 64
+    assert len(first) == 65
     names = {row["preset_name"] for row in first}
     assert names == {
         "bw_bg_glowing_subject",
@@ -144,6 +144,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "digicam_flash",
         "red_gel_portrait",
         "split_word_portrait",
+        "shape_window_portrait",
     }
     by_name = {row["preset_name"]: row for row in first}
     assert by_name["bw_bg_glowing_subject"]["ar"] == "non-square"
@@ -203,6 +204,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "red_halo_spotlight",
         "digicam_flash",
         "red_gel_portrait",
+        "shape_window_portrait",
     ):
         assert by_name[name]["ar"] == "non-square"
         assert by_name[name]["text_input"] == "no"
@@ -210,6 +212,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     assert second == []
     names_in_order = [row["preset_name"] for row in list_presets(db_path=db)]
     assert names_in_order == [
+        "shape_window_portrait",
         "split_word_portrait",
         "red_gel_portrait",
         "digicam_flash",
@@ -276,7 +279,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "bw_bg_glowing_subject",
     ]
     popular = list_popular(db_path=db)
-    assert len(popular) == 64
+    assert len(popular) == 65
     assert all(row["used_count"] == 0 for row in popular)
 
 
@@ -360,6 +363,7 @@ def test_seed_default_presets_syncs_text_fields(tmp_path: Path) -> None:
         "digicam_flash",
         "red_gel_portrait",
         "split_word_portrait",
+        "shape_window_portrait",
     ]
     synced =get_preset_by_name("bw_bg_glowing_subject", db_path=db)
     assert synced is not None

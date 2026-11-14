@@ -2026,3 +2026,51 @@ def test_split_word_portrait_preset_file() -> None:
     assert {s["filter"] for s in preset["steps"]} >= {"half_mask", "clip_to", "composite"}
     for name in ("text_pattern", "half_mask", "clip_to", "blend"):
         assert name in FILTERS
+
+
+# --- draw_shape (shape_window_portrait) ----------------------------------------
+
+
+@pytest.mark.parametrize("shape", ["circle", "square", "triangle", "diamond", "star", "heart"])
+def test_draw_shape_clear_mask_is_centred_and_sized(shape: str) -> None:
+    out = F.draw_shape(Image.new("RGB", (400, 300)), shape=shape, x=0.5, y=0.5, size=0.5, clear=True)
+    assert out.mode == "RGBA"
+    x0, y0, x1, y1 = out.getchannel("A").getbbox()
+    assert abs((x0 + x1) / 2 - 200) <= 4 and abs((y0 + y1) / 2 - 150) <= 6
+    assert max(x1 - x0, y1 - y0) <= 0.5 * 300 + 4  # fits its bounding square (short side 300)
+    assert out.getpixel((5, 5))[3] == 0  # outside stays transparent
+
+
+def test_draw_shape_paints_on_layer_and_outline_only() -> None:
+    base = Image.new("RGB", (200, 200), (0, 0, 255))
+    filled = F.draw_shape(base, shape="square", size=0.5, color=[255, 0, 0])
+    assert filled.getpixel((100, 100))[:3] == (255, 0, 0) and filled.getpixel((5, 5))[:3] == (0, 0, 255)
+    ring = F.draw_shape(base, shape="circle", size=0.5, fill=False, stroke_ratio=0.03, stroke_color=[255, 255, 255])
+    assert ring.getpixel((100, 100))[:3] == (0, 0, 255)  # centre untouched
+    assert max(ring.getpixel((px, 100))[0] for px in range(146, 155)) > 240  # outline at the radius
+
+
+def test_draw_shape_off_frame_and_validation() -> None:
+    base = Image.new("RGB", (100, 100))
+    off = F.draw_shape(base, shape="circle", x=5, y=5, size=0.3, clear=True)
+    assert off.getchannel("A").getbbox() is None
+    with pytest.raises(ValueError):
+        F.draw_shape(base, shape="hexagon")
+    with pytest.raises(ValueError):
+        F.draw_shape(base, size=0)
+    with pytest.raises(ValueError):
+        F.draw_shape(base, opacity=1.5)
+
+
+def test_shape_window_portrait_preset_file() -> None:
+    preset = load_preset(PRESETS / "shape_window_portrait.json")
+    assert preset["text_input"] == "no" and preset["ar"] == "non-square"
+    shapes = [s for s in preset["steps"] if s["filter"] == "draw_shape"]
+    assert [s["shape"] for s in shapes] == ["circle", "square", "square", "circle"]
+    assert shapes[0]["clear"] is True and all(s["as"] == "shapes" for s in shapes)
+    # One shape per quadrant (centres on each side of the middle), nudged up-right.
+    assert sorted((s["x"] > 0.5, s["y"] > 0.5) for s in shapes) == sorted(
+        [(False, False), (True, False), (False, True), (True, True)]
+    )
+    assert any(s["filter"] == "clip_to" and s["around"] == "shapes" for s in preset["steps"])
+    assert preset["steps"][-1] == {"filter": "composite", "base": "image", "overlay": "subject", "as": "image"}

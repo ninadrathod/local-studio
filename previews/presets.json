@@ -1,5 +1,14 @@
 [
   {
+    "preset_name": "shape_window_portrait",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/shape_window_portrait.jpg",
+    "post_edit_image": "previews/post-edit/shape_window_portrait.png"
+  },
+  {
     "preset_name": "split_word_portrait",
     "ar": "non-square",
     "text_input": "yes",

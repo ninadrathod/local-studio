@@ -459,3 +459,10 @@ is required where the license says so; CC0 and public-domain sources need none.
 - **Photographer:** [Christopher Campbell](https://unsplash.com/@chrisjoelcampbell) (via Wikimedia Commons Unsplash CC0 archive)
 - **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
 - **Files:** `pre-edit/split_word_portrait.jpg` → `post-edit/split_word_portrait.png` (preset `split_word_portrait`, text `DREAM`)
+
+## `shape_window_portrait`
+
+- **Photograph:** [Flav (Unsplash)](https://commons.wikimedia.org/wiki/File:Flav_(Unsplash).jpg)
+- **Photographer:** [Clem Onojeghuo](https://unsplash.com/@clemono2) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/shape_window_portrait.jpg` → `post-edit/shape_window_portrait.png` (preset `shape_window_portrait`)

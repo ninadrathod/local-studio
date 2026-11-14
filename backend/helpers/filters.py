@@ -2908,3 +2908,118 @@ def blend(
     if amount < 1.0:
         top.putalpha(top.getchannel("A").point(lambda v: round(v * amount)))
     return Image.alpha_composite(bottom, top)
+
+
+# --- Basic shapes ---------------------------------------------------------------
+
+_SHAPES = {"circle", "square", "triangle", "diamond", "star", "heart"}
+
+
+def _shape_points(shape: str, radius: float, angle: float) -> list[tuple[float, float]]:
+    """Polygon for `shape` centred on (0, 0), fitting a square of side 2·radius."""
+    if shape == "square":
+        pts = [(-1, -1), (1, -1), (1, 1), (-1, 1)]
+    elif shape == "diamond":
+        pts = [(0, -1), (1, 0), (0, 1), (-1, 0)]
+    elif shape == "triangle":
+        # Equilateral, as large as fits: base on y = 1, apex at y = -1.
+        half = 2 / math.sqrt(3)
+        pts = [(0, -1), (half, 1), (-half, 1)]
+        pts = [(px / max(1.0, half), py) for px, py in pts]
+    elif shape == "star":
+        pts = []
+        for i in range(10):
+            r = 1.0 if i % 2 == 0 else 0.45
+            a = math.radians(-90 + i * 36)
+            pts.append((r * math.cos(a), r * math.sin(a) + 0.1))
+    elif shape == "heart":
+        pts = []
+        for i in range(72):
+            t = 2 * math.pi * i / 72
+            hx = 16 * math.sin(t) ** 3
+            hy = -(13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t))
+            pts.append((hx / 17, (hy - 2.1) / 15))
+    else:  # circle as a smooth polygon so rotation / outline share one path
+        pts = [(math.cos(2 * math.pi * i / 128), math.sin(2 * math.pi * i / 128)) for i in range(128)]
+    turn = math.radians(float(angle or 0.0))
+    cos_t, sin_t = math.cos(turn), math.sin(turn)
+    return [(radius * (px * cos_t - py * sin_t), radius * (px * sin_t + py * cos_t)) for px, py in pts]
+
+
+def draw_shape(
+    image: Image.Image,
+    shape: str = "circle",
+    x: float = 0.5,
+    y: float = 0.5,
+    size: float = 0.4,
+    angle: float = 0.0,
+    color: Sequence[int] | None = None,
+    rgb: Sequence[int] | None = None,
+    opacity: float = 1.0,
+    fill: bool = True,
+    stroke_ratio: float = 0.0,
+    stroke_color: Sequence[int] | None = None,
+    clear: bool = False,
+) -> Image.Image:
+    """
+    Draw one basic `shape` (`circle`, `square`, `triangle`, `diamond`, `star`,
+    `heart`) centred at (`x`, `y`) — fractions of the width / height — with
+    `size` (its bounding square, a fraction of the short side) and `angle`
+    (degrees, clockwise). `fill` paints it in `color`; `stroke_ratio` (fraction
+    of the short side) adds an outline in `stroke_color`. `clear: true` starts
+    from a transparent layer of the same size (a mask for `clip_to`). Only the
+    shape's own region is drawn, 2× supersampled, so cost doesn't grow with
+    the photo. Returns RGBA.
+    """
+    kind = (shape or "circle").strip().lower()
+    if kind not in _SHAPES:
+        raise ValueError(f"shape must be one of {', '.join(sorted(_SHAPES))}")
+    values = {"x": x, "y": y, "size": size, "angle": angle, "opacity": opacity, "stroke_ratio": stroke_ratio}
+    if any(not math.isfinite(float(v)) for v in values.values()):
+        raise ValueError("draw_shape numbers must be finite")
+    if float(size) <= 0 or float(size) > 3:
+        raise ValueError("size must be in (0, 3]")
+    if not 0.0 <= float(opacity) <= 1.0:
+        raise ValueError("opacity must be between 0 and 1")
+    if not 0.0 <= float(stroke_ratio) <= 0.1:
+        raise ValueError("stroke_ratio must be between 0 and 0.1")
+
+    base = Image.new("RGBA", image.size, (0, 0, 0, 0)) if clear else _as_rgba(image)
+    w, h = base.size
+    short = min(w, h)
+    radius = float(size) * short / 2
+    stroke = float(stroke_ratio) * short
+    cx, cy = float(x) * w, float(y) * h
+    half = radius * 1.5 + stroke + 2  # rotated corners reach √2·radius
+    rx0, ry0 = max(0, int(cx - half)), max(0, int(cy - half))
+    rx1, ry1 = min(w, int(math.ceil(cx + half))), min(h, int(math.ceil(cy + half)))
+    if rx1 <= rx0 or ry1 <= ry0:
+        return base
+
+    ss = 2 if (rx1 - rx0) * (ry1 - ry0) <= 4_000_000 else 1
+    region = ((rx1 - rx0) * ss, (ry1 - ry0) * ss)
+    pts = [((px + cx - rx0) * ss, (py + cy - ry0) * ss) for px, py in _shape_points(kind, radius, angle)]
+    fill_mask = Image.new("L", region, 0)
+    line_mask = Image.new("L", region, 0)
+    if fill:
+        ImageDraw.Draw(fill_mask).polygon(pts, fill=255)
+    if stroke > 0:
+        ImageDraw.Draw(line_mask).line(pts + [pts[0]], fill=255, width=max(1, round(stroke * ss)), joint="curve")
+    size_px = (rx1 - rx0, ry1 - ry0)
+    if ss > 1:
+        # Box (area) average: clean anti-aliasing without Lanczos ringing halos.
+        fill_mask = fill_mask.resize(size_px, Image.Resampling.BOX)
+        line_mask = line_mask.resize(size_px, Image.Resampling.BOX)
+
+    patch = base.crop((rx0, ry0, rx1, ry1))
+    scale = float(opacity)
+    for mask, tint in ((fill_mask, _rgb_tint(color, rgb, (255, 255, 255))), (line_mask, _rgb_tint(stroke_color, None, (20, 20, 20)))):
+        if mask.getbbox() is None:
+            continue
+        if scale < 1.0:
+            mask = mask.point(lambda v: round(v * scale))
+        layer = Image.new("RGBA", size_px, tint + (0,))
+        layer.putalpha(mask)
+        patch = Image.alpha_composite(patch, layer)
+    base.paste(patch, (rx0, ry0))
+    return base

@@ -483,6 +483,17 @@ Ten looks built on point curves (`tone_curve`) and local shadow / highlight reco
 - **Text input:** `yes` — default `DREAM`, limit **20**
 - **DB:** seeded via `seed_default_presets()` / setup
 
+### Shape windows
+
+#### `shape_window_portrait` — Shape window portrait
+
+- **Idea:** Graphic collage: the frame becomes plain white and four large shapes — circle (top-left), square (top-right), square (bottom-left), circle (bottom-right), each 0.44 of the short side and nudged up-right so the top pair is cropped by the frame edge — act as windows onto the original photo. The full cut-out subject sits on top. `ar: non-square` (positions are fractions of width / height, sizes of the short side, so shapes stay round / square), `text_input: no`, no HD. Works best when the photo's background has colour or texture (on a plain white wall the windows disappear into the canvas).
+- **Steps:** `extract_subject` (`single_subject: true`) → white `overlay` (α 1) as `canvas` → four `draw_shape` into `shapes` (first with `clear: true`) at (0.32, 0.18), (0.82, 0.18), (0.32, 0.68), (0.82, 0.68), size 0.44 → `clip_to` on `image` around `shapes` as `windows` → `composite` canvas + windows → `composite` subject on top
+- **File:** `backend/presets/shape_window_portrait.json`
+- **AR:** `non-square` (any aspect ratio)
+- **Text input:** `no`
+- **DB:** seeded via `seed_default_presets()` / setup
+
 ## Built-in filters
 
 | Filter | What it does | Common params |
@@ -501,6 +512,7 @@ Ten looks built on point curves (`tone_curve`) and local shadow / highlight reco
 | `blend` | Like `composite` with a blend mode: layer `overlay` on `base` in `normal` / `multiply` / `screen` / `darken` / `lighten`, times `opacity` | `base`, `overlay`, `as`, `mode`, `opacity` (0–1) |
 | `text_pattern` | Fill a layer with the text repeated as `TEXT.TEXT.TEXT.` rows (a word wall); only the input's size is used. Rows cycle through `sizes` / `colors`, each row offset by `stagger`; `gap_ratio` packs rows by their ink height with an exact even gap (else `line_spacing` × size); `transparent: true` leaves only the letters (use with `clip_to`); `angle` tilts the wall | `on`, `as`, `text` (`$text`), `separator` (`.`), `color`/`rgb` or `colors`, `background`, `transparent`, `font_style` / `font_path`, `font_size_ratio` or `sizes` (fractions of the short side, ≤ 0.5), `line_spacing`, `gap_ratio` (≤ 0.2), `stagger`, `uppercase`, `angle` |
 | `half_mask` | Keep only the `left` / `right` side of a layer (the rest goes transparent); the vertical split runs through the `around` layer's alpha — bounding-box middle (`split_at: center`) or alpha centroid (`mass`) — or the frame centre when `around` is missing/empty | `on`, `as`, `side`, `around`, `split_at`, `feather_ratio` (soft edge, fraction of the short side) |
+| `draw_shape` | One basic shape (`circle` / `square` / `triangle` / `diamond` / `star` / `heart`) centred at `x`, `y` (fractions of width / height), `size` = bounding square as a fraction of the short side, `angle` (degrees); filled in `color` and/or outlined (`stroke_ratio`, `stroke_color`). `clear: true` starts from a transparent layer (a mask for `clip_to`). Only the shape's region is drawn (2× supersampled, box-filtered) | `on`, `as`, `shape`, `x`, `y`, `size` (≤ 3), `angle`, `color`/`rgb`, `opacity`, `fill`, `stroke_ratio` (≤ 0.1), `stroke_color`, `clear` |
 | `clip_to` | Keep a layer only where the `around` layer is visible (alpha × `around` alpha, or its inverse with `invert`) — e.g. a photo through the letters of a transparent `text_pattern`, or a text wall inside a silhouette | `on`, `as`, `around`, `invert` |
 | `place_on_canvas` | Put layer on a larger solid canvas | `on`, `scale` (e.g. `1.4`), `fill`/`color`, `layout` (`polaroid` or `center`), `as` |
 | `upscale` | Pillow resize so the long side reaches `long_edge` (keeps aspect; never shrinks) | `on`, `long_edge`, `max_scale` (default 4), `resample` (`lanczos`/`bicubic`/`bilinear`) |

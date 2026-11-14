@@ -1,0 +1,88 @@
+{
+  "name": "shape_window_portrait",
+  "label": "Shape window portrait",
+  "description": "Graphic collage: the frame turns plain white and four large shapes \u2014 circle, square, square, circle in a checkerboard, nudged toward the top-right \u2014 act as windows onto the original photo, with the full cut-out subject placed on top.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "overlay",
+      "on": "image",
+      "as": "canvas",
+      "color": [255, 255, 255],
+      "alpha": 1.0
+    },
+    {
+      "filter": "draw_shape",
+      "on": "image",
+      "as": "shapes",
+      "shape": "circle",
+      "x": 0.32,
+      "y": 0.18,
+      "size": 0.44,
+      "angle": 0,
+      "color": [0, 0, 0],
+      "clear": true
+    },
+    {
+      "filter": "draw_shape",
+      "on": "shapes",
+      "as": "shapes",
+      "shape": "square",
+      "x": 0.82,
+      "y": 0.18,
+      "size": 0.44,
+      "angle": 0,
+      "color": [0, 0, 0]
+    },
+    {
+      "filter": "draw_shape",
+      "on": "shapes",
+      "as": "shapes",
+      "shape": "square",
+      "x": 0.32,
+      "y": 0.68,
+      "size": 0.44,
+      "angle": 0,
+      "color": [0, 0, 0]
+    },
+    {
+      "filter": "draw_shape",
+      "on": "shapes",
+      "as": "shapes",
+      "shape": "circle",
+      "x": 0.82,
+      "y": 0.68,
+      "size": 0.44,
+      "angle": 0,
+      "color": [0, 0, 0]
+    },
+    {
+      "filter": "clip_to",
+      "on": "image",
+      "as": "windows",
+      "around": "shapes"
+    },
+    {
+      "filter": "composite",
+      "base": "canvas",
+      "overlay": "windows",
+      "as": "image"
+    },
+    {
+      "filter": "composite",
+      "base": "image",
+      "overlay": "subject",
+      "as": "image"
+    }
+  ]
+}
