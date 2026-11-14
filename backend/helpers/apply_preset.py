@@ -251,6 +251,23 @@ def _run_composite(
     layers[step.get("as", "image")] = result
 
 
+def _run_blend(
+    layers: dict[str, Image.Image],
+    *,
+    index: int = 0,
+    **step: Any,
+) -> None:
+    """`composite` with a blend mode / opacity: `base` + `overlay` → `as`."""
+    base_key = step.get("base", "background")
+    overlay_key = step.get("overlay", "subject")
+    if base_key not in layers:
+        raise KeyError(f"Step {index}: unknown base layer '{base_key}'")
+    if overlay_key not in layers:
+        raise KeyError(f"Step {index}: unknown overlay layer '{overlay_key}'")
+    call_params = {key: value for key, value in step.items() if key not in _LAYER_KEYS}
+    layers[step.get("as", "image")] = F.blend(layers[base_key], layers[overlay_key], **call_params)
+
+
 def _run_around(fn: Callable[..., Image.Image]) -> FilterHandler:
     """Like `_run_simple`, but resolves an optional `around` layer name to its image."""
 
@@ -325,6 +342,10 @@ FILTERS: dict[str, FilterHandler] = {
     "ai_upscale": _run_simple(F.ai_upscale),
     "doodle": _run_around(F.doodle),
     "circle_backdrop": _run_around(F.circle_backdrop),
+    "blend": _run_blend,
+    "clip_to": _run_around(F.clip_to),
+    "half_mask": _run_around(F.half_mask),
+    "text_pattern": _run_simple(F.text_pattern),
     "doodle_frame": _run_simple(F.doodle_frame),
 }
 

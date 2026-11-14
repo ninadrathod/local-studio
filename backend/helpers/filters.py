@@ -2677,3 +2677,234 @@ def draw_text(
     else:
         _draw_at(canvas.size[0] / 2, canvas.size[1] / 2, "mm")
     return canvas
+
+
+# --- Repeated-text wall + half split ------------------------------------------
+
+_TEXT_PATTERN_MAX_ROWS = 400
+
+
+def text_pattern(
+    image: Image.Image,
+    text: str = "",
+    separator: str = ".",
+    color: Sequence[int] | None = None,
+    rgb: Sequence[int] | None = None,
+    colors: Sequence[Sequence[int]] | None = None,
+    background: Sequence[int] | None = None,
+    font_style: str = "bold_display",
+    font_path: str | None = None,
+    font_size_ratio: float = 0.06,
+    sizes: Sequence[float] | None = None,
+    line_spacing: float = 1.0,
+    gap_ratio: float | None = None,
+    stagger: float = 0.37,
+    uppercase: bool = False,
+    angle: float = 0.0,
+    transparent: bool = False,
+) -> Image.Image:
+    """
+    Fill a layer the size of `image` with `text` repeated as rows of
+    ``TEXT.TEXT.TEXT.`` on a solid `background` (default off-white), or on a
+    transparent layer with `transparent: true` (letters only — use it as a
+    mask with `clip_to`).
+
+    Sizes are fractions of the short side (`font_size_ratio`, or `sizes` cycled
+    row by row for a mixed-size word wall), so the wall looks the same at any
+    resolution. `colors` (list of [r, g, b]) cycles per row, else `color`.
+    Rows advance by `line_spacing` × font size, or — with `gap_ratio` (fraction
+    of the short side) — are packed by their actual ink height with that exact
+    gap, so mixed sizes still get even spacing. Each row shifts by `stagger` of
+    one repeat so words don't line up in columns. `angle` tilts the whole wall (degrees, counter-clockwise). The
+    input pixels are not used — only its size. Returns RGB (RGBA if
+    `transparent`).
+    """
+    w, h = image.size
+    short = min(w, h)
+    word = str(text or "").strip()
+    if uppercase:
+        word = word.upper()
+    mode = "RGBA" if transparent else "RGB"
+    fill = (0, 0, 0, 0) if transparent else _rgb_tint(background, None, (245, 243, 236))
+    if not word:
+        return Image.new(mode, (w, h), fill)
+
+    ratios = [float(r) for r in (sizes or [font_size_ratio])]
+    if not ratios or any(not math.isfinite(r) or r <= 0 or r > 0.5 for r in ratios):
+        raise ValueError("text_pattern sizes must be in (0, 0.5]")
+    spacing = float(line_spacing)
+    if not math.isfinite(spacing) or spacing <= 0:
+        raise ValueError("line_spacing must be > 0")
+    gap_px: float | None = None
+    if gap_ratio is not None:
+        gap = float(gap_ratio)
+        if not math.isfinite(gap) or not 0 <= gap <= 0.2:
+            raise ValueError("gap_ratio must be between 0 and 0.2")
+        gap_px = gap * short
+    tilt = float(angle or 0.0)
+    if not math.isfinite(tilt):
+        raise ValueError("angle must be finite")
+    palette = [_rgb_tint(c, None) for c in colors] if colors else [_rgb_tint(color, rgb, (20, 20, 20))]
+
+    # Draw on a canvas big enough that rotating it still covers the frame.
+    side = int(math.ceil(math.hypot(w, h))) + 4 if tilt else max(w, h)
+    cw, ch = (side, side) if tilt else (w, h)
+    canvas = Image.new(mode, (cw, ch), fill)
+    draw = ImageDraw.Draw(canvas)
+    unit_text = word + (separator or "")
+
+    y = 0.0
+    row = 0
+    while y < ch and row < _TEXT_PATTERN_MAX_ROWS:
+        size_px = max(6, int(round(ratios[row % len(ratios)] * short)))
+        font = _load_font(size_px, font_style, font_path)
+        unit_w = max(1.0, draw.textlength(unit_text, font=font))
+        repeats = int(math.ceil(cw / unit_w)) + 2
+        shift = ((row * float(stagger)) % 1.0) * unit_w
+        line = unit_text * repeats
+        fill_rgb = palette[row % len(palette)]
+        if gap_px is None:
+            draw.text((-shift, y), line, font=font, fill=fill_rgb)
+            y += size_px * spacing
+        else:
+            # Pack by ink: put this row's glyph top at `y`, then advance by its ink height + gap.
+            ink_top, ink_bottom = draw.textbbox((0, 0), unit_text, font=font)[1::2]
+            draw.text((-shift, y - ink_top), line, font=font, fill=fill_rgb)
+            y += max(1, ink_bottom - ink_top) + gap_px
+        row += 1
+
+    if tilt:
+        canvas = canvas.rotate(tilt, resample=Image.Resampling.BICUBIC, fillcolor=fill)
+        left, top = (cw - w) // 2, (ch - h) // 2
+        canvas = canvas.crop((left, top, left + w, top + h))
+    return canvas
+
+
+def _split_x(width: int, around: Image.Image | None, split_at: str) -> float:
+    """x of the vertical split line: the `around` layer's alpha centre, else mid-frame."""
+    if around is None or around.mode != "RGBA":
+        return width / 2
+    alpha = around.getchannel("A")
+    bbox = alpha.getbbox()
+    if bbox is None:
+        return width / 2
+    if (split_at or "center").strip().lower() == "mass":
+        import numpy as np
+
+        scale = min(1.0, 512 / max(alpha.size))
+        small = alpha.resize(
+            (max(1, round(alpha.width * scale)), max(1, round(alpha.height * scale))),
+            Image.Resampling.BILINEAR,
+        )
+        cols = np.asarray(small, dtype=np.float64).sum(axis=0)
+        total = cols.sum()
+        if total > 0:
+            centre = float((cols * (np.arange(cols.size) + 0.5)).sum() / total)
+            return centre / scale
+    return (bbox[0] + bbox[2]) / 2
+
+
+def half_mask(
+    image: Image.Image,
+    side: str = "left",
+    around: Image.Image | None = None,
+    split_at: str = "center",
+    feather_ratio: float = 0.0,
+) -> Image.Image:
+    """
+    Keep only the `side` (`left` / `right`) of a layer; the other side becomes
+    transparent. The vertical split line runs through the middle of the
+    `around` layer's alpha (`split_at: center` = bounding-box middle, `mass` =
+    alpha centroid), or the frame's middle when `around` is missing or empty.
+    `feather_ratio` (fraction of the short side) softens the cut. Returns RGBA.
+    """
+    keep = (side or "left").strip().lower()
+    if keep not in {"left", "right"}:
+        raise ValueError("side must be 'left' or 'right'")
+    feather = float(feather_ratio)
+    if not math.isfinite(feather) or feather < 0:
+        raise ValueError("feather_ratio must be >= 0")
+    base = _as_rgba(image)
+    w, h = base.size
+    split = _split_x(w, around, split_at)
+    soft = feather * min(w, h)
+
+    ramp = []
+    for x in range(w):
+        cx = x + 0.5
+        if soft > 0:
+            t = min(1.0, max(0.0, (split - cx) / soft + 0.5))
+        else:
+            t = 1.0 if cx < split else 0.0
+        ramp.append(round(255 * (t if keep == "left" else 1.0 - t)))
+    row = Image.new("L", (w, 1))
+    row.putdata(ramp)
+    mask = row.resize((w, h), Image.Resampling.NEAREST)
+    base.putalpha(ImageChops.multiply(base.getchannel("A"), mask))
+    return base
+
+
+def clip_to(
+    image: Image.Image,
+    around: Image.Image | None = None,
+    invert: bool = False,
+) -> Image.Image:
+    """
+    Keep a layer only where the `around` layer is visible: the result's alpha
+    is this layer's alpha times `around`'s alpha (or its inverse with
+    `invert: true`). E.g. clip a photo to the letters of a transparent
+    `text_pattern`, or a text wall to a subject's silhouette. Returns RGBA;
+    without `around` the layer is returned unchanged.
+    """
+    base = _as_rgba(image)
+    if around is None:
+        return base
+    shape = _as_rgba(around)
+    if shape.size != base.size:
+        shape = shape.resize(base.size, Image.Resampling.LANCZOS)
+    alpha = shape.getchannel("A")
+    if invert:
+        alpha = ImageChops.invert(alpha)
+    base.putalpha(ImageChops.multiply(base.getchannel("A"), alpha))
+    return base
+
+
+_BLEND_MODES = {
+    "normal": None,
+    "multiply": ImageChops.multiply,
+    "screen": ImageChops.screen,
+    "darken": ImageChops.darker,
+    "lighten": ImageChops.lighter,
+}
+
+
+def blend(
+    base: Image.Image,
+    overlay: Image.Image,
+    mode: str = "normal",
+    opacity: float = 1.0,
+) -> Image.Image:
+    """
+    Layer `overlay` on `base` like `composite`, with a blend `mode` (`normal`,
+    `multiply`, `screen`, `darken`, `lighten`) and an `opacity` (0–1) on top of
+    the overlay's own alpha. `multiply` keeps dark marks in the base showing
+    through, as if the overlay were painted over print. Returns RGBA.
+    """
+    name = (mode or "normal").strip().lower()
+    if name not in _BLEND_MODES:
+        raise ValueError(f"mode must be one of {', '.join(sorted(_BLEND_MODES))}")
+    amount = float(opacity)
+    if not math.isfinite(amount) or not 0.0 <= amount <= 1.0:
+        raise ValueError("opacity must be between 0 and 1")
+    bottom = _as_rgba(base)
+    top = _as_rgba(overlay)
+    if top.size != bottom.size:
+        top = top.resize(bottom.size, Image.Resampling.LANCZOS)
+    op = _BLEND_MODES[name]
+    if op is not None:
+        mixed = op(bottom.convert("RGB"), top.convert("RGB")).convert("RGBA")
+        mixed.putalpha(top.getchannel("A"))
+        top = mixed
+    if amount < 1.0:
+        top.putalpha(top.getchannel("A").point(lambda v: round(v * amount)))
+    return Image.alpha_composite(bottom, top)

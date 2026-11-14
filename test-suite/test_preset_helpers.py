@@ -1930,3 +1930,99 @@ def test_apply_preset_file_keeps_transparency_as_png_for_jpg_name(tmp_path) -> N
     out = apply_preset_file(source, preset, tmp_path / "out.jpg")
 
     assert out == tmp_path / "out.png" and Image.open(out).format == "PNG"
+
+
+# --- text_pattern / half_mask / clip_to / blend (split_word_portrait) ----------
+
+
+def _ink_bands(alpha: Image.Image) -> list[tuple[int, int]]:
+    """(start, end) rows of horizontal bands that contain any ink."""
+    rows = [alpha.crop((0, y, alpha.width, y + 1)).getbbox() is not None for y in range(alpha.height)]
+    bands, start = [], None
+    for y, inked in enumerate(rows + [False]):
+        if inked and start is None:
+            start = y
+        elif not inked and start is not None:
+            bands.append((start, y))
+            start = None
+    return bands
+
+
+def test_text_pattern_fills_layer_with_repeated_text() -> None:
+    base = Image.new("RGB", (200, 120), (0, 0, 0))
+    out = F.text_pattern(base, text="hi", color=[10, 10, 10], background=[250, 250, 250], font_size_ratio=0.2)
+    assert out.size == (200, 120) and out.mode == "RGB"
+    assert out.getextrema()[0][0] < 50  # dark letters on the light wall
+    blank = F.text_pattern(base, text="   ", background=[1, 2, 3])
+    assert blank.getcolors() == [(200 * 120, (1, 2, 3))]
+
+
+def test_text_pattern_transparent_and_even_gaps() -> None:
+    base = Image.new("RGB", (400, 400))
+    out = F.text_pattern(
+        base, text="HH", separator=".", transparent=True, uppercase=True,
+        sizes=[0.12, 0.06], gap_ratio=0.03, stagger=0.0,
+    )
+    assert out.mode == "RGBA"
+    bands = _ink_bands(out.getchannel("A"))
+    assert len(bands) >= 4
+    gaps = [b[0] - a[1] for a, b in zip(bands, bands[1:])]
+    target = 0.03 * 400
+    assert all(abs(g - target) <= 2 for g in gaps), gaps
+
+
+def test_text_pattern_rejects_bad_sizes() -> None:
+    base = Image.new("RGB", (50, 50))
+    with pytest.raises(ValueError):
+        F.text_pattern(base, text="x", sizes=[0.0])
+    with pytest.raises(ValueError):
+        F.text_pattern(base, text="x", gap_ratio=-1)
+
+
+def test_half_mask_splits_at_subject_centre() -> None:
+    layer = Image.new("RGBA", (100, 40), (255, 0, 0, 255))
+    subject = Image.new("RGBA", (100, 40), (0, 0, 0, 0))
+    subject.paste((0, 0, 0, 255), (60, 0, 80, 40))  # bbox centre x = 70
+    left = F.half_mask(layer, side="left", around=subject)
+    assert left.getpixel((69, 20))[3] == 255 and left.getpixel((71, 20))[3] == 0
+    right = F.half_mask(layer, side="right", around=subject)
+    assert right.getpixel((69, 20))[3] == 0 and right.getpixel((71, 20))[3] == 255
+    middle = F.half_mask(layer, side="left")  # no subject → frame centre
+    assert middle.getpixel((49, 20))[3] == 255 and middle.getpixel((50, 20))[3] == 0
+    with pytest.raises(ValueError):
+        F.half_mask(layer, side="top")
+
+
+def test_clip_to_multiplies_alpha() -> None:
+    layer = Image.new("RGBA", (10, 10), (0, 255, 0, 255))
+    shape = Image.new("RGBA", (10, 10), (0, 0, 0, 0))
+    shape.paste((0, 0, 0, 255), (0, 0, 5, 10))
+    clipped = F.clip_to(layer, around=shape)
+    assert clipped.getpixel((2, 2))[3] == 255 and clipped.getpixel((7, 2))[3] == 0
+    inverted = F.clip_to(layer, around=shape, invert=True)
+    assert inverted.getpixel((2, 2))[3] == 0 and inverted.getpixel((7, 2))[3] == 255
+
+
+def test_blend_modes_and_opacity() -> None:
+    base = Image.new("RGBA", (4, 4), (200, 200, 200, 255))
+    top = Image.new("RGBA", (4, 4), (100, 100, 100, 255))
+    multiplied = F.blend(base, top, mode="multiply").getpixel((0, 0))
+    assert multiplied[0] == round(200 * 100 / 255)
+    half = F.blend(base, top, mode="normal", opacity=0.5).getpixel((0, 0))
+    assert 145 <= half[0] <= 155
+    with pytest.raises(ValueError):
+        F.blend(base, top, mode="overlay-ish")
+    with pytest.raises(ValueError):
+        F.blend(base, top, opacity=2)
+
+
+def test_split_word_portrait_preset_file() -> None:
+    preset = load_preset(PRESETS / "split_word_portrait.json")
+    assert preset["text_input"] == "yes"
+    assert preset["default_text"] == "DREAM"
+    assert preset["text_character_limit"] == 20
+    words = [s for s in preset["steps"] if s["filter"] == "text_pattern"]
+    assert len(words) == 1 and words[0]["text"] == "$text" and words[0]["transparent"] is True
+    assert {s["filter"] for s in preset["steps"]} >= {"half_mask", "clip_to", "composite"}
+    for name in ("text_pattern", "half_mask", "clip_to", "blend"):
+        assert name in FILTERS

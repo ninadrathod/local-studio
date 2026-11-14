@@ -452,3 +452,10 @@ is required where the license says so; CC0 and public-domain sources need none.
 - **Photographer:** [Jeremy Bishop](https://unsplash.com/@tidesinourveins) (via Wikimedia Commons Unsplash CC0 archive)
 - **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
 - **Files:** `pre-edit/red_gel_portrait.jpg` → `post-edit/red_gel_portrait.png` (preset `red_gel_portrait`)
+
+## `split_word_portrait`
+
+- **Photograph:** [Brunette woman portrait (Unsplash)](https://commons.wikimedia.org/wiki/File:Brunette_woman_portrait_(Unsplash).jpg)
+- **Photographer:** [Christopher Campbell](https://unsplash.com/@chrisjoelcampbell) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/split_word_portrait.jpg` → `post-edit/split_word_portrait.png` (preset `split_word_portrait`, text `DREAM`)

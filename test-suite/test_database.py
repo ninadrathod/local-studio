@@ -77,7 +77,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     init_db(db)
     first = seed_default_presets(db_path=db)
     second = seed_default_presets(db_path=db)
-    assert len(first) == 63
+    assert len(first) == 64
     names = {row["preset_name"] for row in first}
     assert names == {
         "bw_bg_glowing_subject",
@@ -143,6 +143,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "red_halo_spotlight",
         "digicam_flash",
         "red_gel_portrait",
+        "split_word_portrait",
     }
     by_name = {row["preset_name"]: row for row in first}
     assert by_name["bw_bg_glowing_subject"]["ar"] == "non-square"
@@ -158,6 +159,9 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     assert by_name["art_deco_marquee"]["text_input"] == "yes"
     assert by_name["art_deco_marquee"]["default_text"] == "TITLE"
     assert by_name["art_deco_marquee"]["text_character_limit"] == 16
+    assert by_name["split_word_portrait"]["text_input"] == "yes"
+    assert by_name["split_word_portrait"]["default_text"] == "DREAM"
+    assert by_name["split_word_portrait"]["text_character_limit"] == 20
     for name in (
         "full_hd",
         "4k_crisp",
@@ -206,6 +210,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     assert second == []
     names_in_order = [row["preset_name"] for row in list_presets(db_path=db)]
     assert names_in_order == [
+        "split_word_portrait",
         "red_gel_portrait",
         "digicam_flash",
         "red_halo_spotlight",
@@ -271,7 +276,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "bw_bg_glowing_subject",
     ]
     popular = list_popular(db_path=db)
-    assert len(popular) == 63
+    assert len(popular) == 64
     assert all(row["used_count"] == 0 for row in popular)
 
 
@@ -354,6 +359,7 @@ def test_seed_default_presets_syncs_text_fields(tmp_path: Path) -> None:
         "red_halo_spotlight",
         "digicam_flash",
         "red_gel_portrait",
+        "split_word_portrait",
     ]
     synced =get_preset_by_name("bw_bg_glowing_subject", db_path=db)
     assert synced is not None

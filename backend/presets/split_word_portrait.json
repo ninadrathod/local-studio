@@ -1,0 +1,67 @@
+{
+  "name": "split_word_portrait",
+  "label": "Split word portrait",
+  "description": "Typographic split: the photo is split down the middle of the subject. The left half becomes plain white with the subject's left half rendered only through a dense wall of the user's text repeated as TEXT.TEXT.TEXT. in mixed, mostly large bold capitals with even tight line gaps; the right half stays as the original photo.",
+  "ar": "non-square",
+  "text_input": "yes",
+  "default_text": "DREAM",
+  "text_character_limit": 20,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "half_mask",
+      "on": "subject",
+      "as": "subject_left",
+      "side": "left",
+      "around": "subject"
+    },
+    {
+      "filter": "overlay",
+      "on": "image",
+      "as": "white",
+      "color": [255, 255, 255],
+      "alpha": 1.0
+    },
+    {
+      "filter": "half_mask",
+      "on": "white",
+      "side": "left",
+      "around": "subject"
+    },
+    {
+      "filter": "composite",
+      "base": "image",
+      "overlay": "white",
+      "as": "image"
+    },
+    {
+      "filter": "text_pattern",
+      "on": "image",
+      "as": "letters",
+      "text": "$text",
+      "transparent": true,
+      "font_style": "bold_display",
+      "uppercase": true,
+      "sizes": [0.11, 0.05, 0.09, 0.035, 0.1, 0.06, 0.075],
+      "gap_ratio": 0.004
+    },
+    {
+      "filter": "clip_to",
+      "on": "subject_left",
+      "as": "painted",
+      "around": "letters"
+    },
+    {
+      "filter": "composite",
+      "base": "image",
+      "overlay": "painted",
+      "as": "image"
+    }
+  ]
+}
