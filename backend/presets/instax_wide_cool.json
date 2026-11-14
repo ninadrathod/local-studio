@@ -1,0 +1,60 @@
+{
+  "name": "instax_wide_cool",
+  "label": "Instax wide cool",
+  "description": "Instant-film Wide print: cropped to the wide landscape format, faded cool grade with teal shadows, low contrast and muted colour, on an off-white Instax Wide card with an optional handwritten caption.",
+  "ar": "non-square",
+  "text_input": "yes",
+  "default_text": "",
+  "text_character_limit": 24,
+  "steps": [
+    {
+      "filter": "crop_aspect",
+      "on": "image",
+      "ratio": [99, 62]
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "temperature": -0.25,
+      "tint": -0.05,
+      "exposure": 0.05,
+      "contrast": -0.1,
+      "black_lift": 0.08,
+      "white_rolloff": 0.5,
+      "split": 0.4,
+      "shadows": [30, 90, 100],
+      "highlights": [235, 245, 240],
+      "saturation": 0.85
+    },
+    {
+      "filter": "vignette",
+      "on": "image",
+      "amount": 0.12
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0,
+      "stains": 0,
+      "fade": 0,
+      "grain": 0.045,
+      "seed": 11
+    },
+    {
+      "filter": "place_on_canvas",
+      "on": "image",
+      "margins": [0.073, 0.089, 0.073, 0.3],
+      "fill": [250, 250, 247]
+    },
+    {
+      "filter": "draw_text",
+      "on": "image",
+      "text": "$text",
+      "color": [60, 60, 60],
+      "align": "bottom",
+      "font_style": "scribble",
+      "font_size_ratio": 0.095,
+      "margin_ratio": 0.06
+    }
+  ]
+}

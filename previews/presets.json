@@ -1,5 +1,50 @@
 [
   {
+    "preset_name": "instax_sky_flash",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "",
+    "text_character_limit": 24,
+    "pre_edit_image": "previews/pre-edit/instax_sky_flash.jpg",
+    "post_edit_image": "previews/post-edit/instax_sky_flash.png"
+  },
+  {
+    "preset_name": "instax_monochrome",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "",
+    "text_character_limit": 24,
+    "pre_edit_image": "previews/pre-edit/instax_monochrome.jpg",
+    "post_edit_image": "previews/post-edit/instax_monochrome.png"
+  },
+  {
+    "preset_name": "instax_wide_cool",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "",
+    "text_character_limit": 24,
+    "pre_edit_image": "previews/pre-edit/instax_wide_cool.jpg",
+    "post_edit_image": "previews/post-edit/instax_wide_cool.png"
+  },
+  {
+    "preset_name": "instax_square_sunny",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "",
+    "text_character_limit": 24,
+    "pre_edit_image": "previews/pre-edit/instax_square_sunny.jpg",
+    "post_edit_image": "previews/post-edit/instax_square_sunny.png"
+  },
+  {
+    "preset_name": "instax_mini_classic",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "",
+    "text_character_limit": 24,
+    "pre_edit_image": "previews/pre-edit/instax_mini_classic.jpg",
+    "post_edit_image": "previews/post-edit/instax_mini_classic.png"
+  },
+  {
     "preset_name": "shape_window_portrait",
     "ar": "non-square",
     "text_input": "no",

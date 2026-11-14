@@ -1,0 +1,57 @@
+{
+  "name": "instax_sky_flash",
+  "label": "Instax sky flash",
+  "description": "Instant-film Mini print with flash: cropped to 3:4 portrait, punchy bright colour with darker flash falloff at the edges, on a sky-blue Instax Mini card with an optional handwritten caption.",
+  "ar": "non-square",
+  "text_input": "yes",
+  "default_text": "",
+  "text_character_limit": 24,
+  "steps": [
+    {
+      "filter": "crop_aspect",
+      "on": "image",
+      "ratio": [46, 62]
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "exposure": 0.2,
+      "contrast": 0.25,
+      "white_rolloff": 0.35,
+      "saturation": 1.1,
+      "vibrance": 0.15,
+      "temperature": 0.05
+    },
+    {
+      "filter": "vignette",
+      "on": "image",
+      "amount": 0.3,
+      "midpoint": 0.4
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0,
+      "stains": 0,
+      "fade": 0,
+      "grain": 0.04,
+      "seed": 11
+    },
+    {
+      "filter": "place_on_canvas",
+      "on": "image",
+      "margins": [0.087, 0.141, 0.087, 0.38],
+      "fill": [176, 212, 238]
+    },
+    {
+      "filter": "draw_text",
+      "on": "image",
+      "text": "$text",
+      "color": [60, 60, 60],
+      "align": "bottom",
+      "font_style": "scribble",
+      "font_size_ratio": 0.13,
+      "margin_ratio": 0.095
+    }
+  ]
+}

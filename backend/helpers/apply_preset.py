@@ -346,6 +346,7 @@ FILTERS: dict[str, FilterHandler] = {
     "clip_to": _run_around(F.clip_to),
     "half_mask": _run_around(F.half_mask),
     "draw_shape": _run_simple(F.draw_shape),
+    "crop_aspect": _run_simple(F.crop_aspect),
     "text_pattern": _run_simple(F.text_pattern),
     "doodle_frame": _run_simple(F.doodle_frame),
 }

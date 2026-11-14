@@ -87,6 +87,8 @@ _DISPLAY_FONT_CANDIDATES: dict[str, tuple[str, ...]] = {
     ),
     "slab": (_bundled("AlfaSlabOne-Regular.ttf"),),
     "signature": (_bundled("MrDafoe-Regular.ttf"),),
+    # Loose felt-pen handwriting (Nanum Pen Script, OFL) for scribbled notes.
+    "scribble": (_bundled("NanumPenScript-Regular.ttf"),),
     "bold_display": (_bundled("PassionOne-Bold.ttf"),),
     "stencil": (_bundled("BlackOpsOne-Regular.ttf"),),
     # Monoton and Bungee only have capitals: lowercase input renders as caps.
@@ -2361,6 +2363,7 @@ def place_on_canvas(
     color: Sequence[int] | None = None,
     rgb: Sequence[int] | None = None,
     layout: str = "polaroid",
+    margins: Sequence[float] | None = None,
 ) -> Image.Image:
     """
     Place `image` on a larger solid canvas.
@@ -2369,15 +2372,28 @@ def place_on_canvas(
     `layout`:
       - `center` — equal margins all sides
       - `polaroid` — side margins equal; photo shifted up so the bottom band is larger
+
+    `margins` ([left, top, right, bottom], fractions of the photo's short side)
+    sets each border independently and overrides `scale` / `layout` — e.g. an
+    instant-film card with thin sides and a deep bottom band.
     """
     photo = _as_rgba(image)
+    tint = _rgb_tint(color if color is not None else fill, rgb, (255, 255, 255))
+    if margins is not None:
+        values = [float(m) for m in margins]
+        if len(values) != 4 or any(not math.isfinite(m) or m < 0 or m > 2 for m in values):
+            raise ValueError("margins must be four numbers in [0, 2] (left, top, right, bottom)")
+        short = min(photo.size)
+        left, top, right, bottom = (int(round(m * short)) for m in values)
+        canvas = Image.new("RGBA", (photo.size[0] + left + right, photo.size[1] + top + bottom), (*tint, 255))
+        canvas.paste(photo, (left, top), photo)
+        return canvas
     factor = float(scale)
     if factor < 1.0:
         raise ValueError("scale must be >= 1.0")
 
     canvas_w = max(1, int(round(photo.size[0] * factor)))
     canvas_h = max(1, int(round(photo.size[1] * factor)))
-    tint = _rgb_tint(color if color is not None else fill, rgb, (255, 255, 255))
     canvas = Image.new("RGBA", (canvas_w, canvas_h), (*tint, 255))
 
     side = max(0, (canvas_w - photo.size[0]) // 2)
@@ -3023,3 +3039,45 @@ def draw_shape(
         patch = Image.alpha_composite(patch, layer)
     base.paste(patch, (rx0, ry0))
     return base
+
+
+def crop_aspect(
+    image: Image.Image,
+    ratio: float | Sequence[float] = 1.0,
+    anchor: str = "center",
+    auto_orient: bool = False,
+) -> Image.Image:
+    """
+    Crop to an aspect `ratio` (width / height, or [width, height] such as
+    [46, 62] for Instax Mini, [1, 1] Square, [99, 62] Wide), keeping as much
+    of the photo as possible. `anchor` (`center` / `top` / `bottom` / `left` /
+    `right`) picks which part is kept. `auto_orient: true` flips the ratio to
+    match the photo's orientation (a landscape photo gets a landscape crop).
+    """
+    if isinstance(ratio, (int, float)):
+        target = float(ratio)
+    else:
+        parts = [float(v) for v in ratio]
+        if len(parts) != 2 or parts[1] == 0:
+            raise ValueError("ratio must be a number or [width, height]")
+        target = parts[0] / parts[1]
+    if not math.isfinite(target) or target <= 0 or target > 20 or target < 0.05:
+        raise ValueError("ratio must be between 0.05 and 20")
+    w, h = image.size
+    # Square photos keep the ratio as given; only clear landscape / portrait flips it.
+    if auto_orient and w != h and (w > h) != (target > 1.0):
+        target = 1.0 / target
+    where = (anchor or "center").strip().lower()
+    if where not in {"center", "top", "bottom", "left", "right"}:
+        raise ValueError("anchor must be center, top, bottom, left or right")
+    if w / h > target:  # too wide → trim the sides
+        new_w = max(1, round(h * target))
+        free = w - new_w
+        left = 0 if where == "left" else free if where == "right" else free // 2
+        box = (left, 0, left + new_w, h)
+    else:  # too tall → trim top / bottom
+        new_h = max(1, round(w / target))
+        free = h - new_h
+        top = 0 if where == "top" else free if where == "bottom" else free // 2
+        box = (0, top, w, top + new_h)
+    return image.crop(box)

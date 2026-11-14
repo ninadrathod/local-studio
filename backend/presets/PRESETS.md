@@ -494,6 +494,35 @@ Ten looks built on point curves (`tone_curve`) and local shadow / highlight reco
 - **Text input:** `no`
 - **DB:** seeded via `seed_default_presets()` / setup
 
+### Instant film (Instax)
+
+Five instant-print looks. Each crops the photo to its real Instax film shape with `crop_aspect` (Mini [46, 62] portrait, Square [1, 1], Wide [99, 62] landscape), grades it, then mounts it on a card with real Instax proportions via `place_on_canvas` `margins` (thin sides and top, deep bottom band) and writes the user's optional caption in the band (`$text`, `font_style: scribble`, dark grey [60, 60, 60]; caption size matched to the physical card so it looks the same on every format). All are `ar: non-square` (any upload; the crop sets the shape), `text_input: yes` with an empty `default_text` (no caption unless the user types one) and a 24-character limit, no HD, seeded via `seed_default_presets()` / setup. Mini / Square / Wide card margins: [0.087, 0.141, 0.087, 0.38] / [0.081, 0.097, 0.081, 0.29] / [0.073, 0.089, 0.073, 0.30].
+
+#### `instax_mini_classic` — Instax mini classic
+
+- **Steps:** `crop_aspect` [46, 62] → `color_grade` (temperature -0.05, exposure 0.15, contrast -0.1, black_lift 0.06, white_rolloff 0.5, split 0.3, shadows [60, 90, 120] / highlights [255, 245, 230], saturation 0.92) → `bloom` (threshold 0.75, radius_ratio 0.02, amount 0.2) → `vignette` 0.15 → grain 0.04 → off-white [250, 250, 247] Mini card → caption (font_size_ratio 0.13, margin_ratio 0.095)
+- **File:** `backend/presets/instax_mini_classic.json`
+
+#### `instax_square_sunny` — Instax square sunny
+
+- **Steps:** `crop_aspect` [1, 1] → warm overexposed `color_grade` (temperature 0.3, exposure 0.3, contrast -0.05, black_lift 0.05, white_rolloff 0.6, split 0.35, shadows [110, 80, 70] / highlights [255, 230, 190], saturation 1.05, vibrance 0.2) → warm `bloom` (threshold 0.6, radius_ratio 0.03, amount 0.35) → `vignette` 0.1 → grain 0.04 → off-white Square card → caption (0.097 / 0.071)
+- **File:** `backend/presets/instax_square_sunny.json`
+
+#### `instax_wide_cool` — Instax wide cool
+
+- **Steps:** `crop_aspect` [99, 62] → faded cool `color_grade` (temperature -0.25, tint -0.05, exposure 0.05, contrast -0.1, black_lift 0.08, white_rolloff 0.5, split 0.4, shadows [30, 90, 100] / highlights [235, 245, 240], saturation 0.85) → `vignette` 0.12 → grain 0.045 → off-white Wide card → caption (0.095 / 0.06)
+- **File:** `backend/presets/instax_wide_cool.json`
+
+#### `instax_monochrome` — Instax monochrome
+
+- **Steps:** `crop_aspect` [46, 62] → `grayscale` → `color_grade` (exposure 0.05, contrast 0.2, black_lift 0.04, white_rolloff 0.4, split 0.15, cool shadows [90, 95, 105] / warm-white highlights [250, 248, 242]) → `vignette` 0.2 → grain 0.06 → off-white Mini card → caption (0.13 / 0.095)
+- **File:** `backend/presets/instax_monochrome.json`
+
+#### `instax_sky_flash` — Instax sky flash
+
+- **Steps:** `crop_aspect` [46, 62] → punchy flash `color_grade` (temperature 0.05, exposure 0.2, contrast 0.25, white_rolloff 0.35, saturation 1.1, vibrance 0.15) → flash-falloff `vignette` (0.3, midpoint 0.4) → grain 0.04 → sky-blue [176, 212, 238] Mini card → caption (0.13 / 0.095)
+- **File:** `backend/presets/instax_sky_flash.json`
+
 ## Built-in filters
 
 | Filter | What it does | Common params |
@@ -514,7 +543,8 @@ Ten looks built on point curves (`tone_curve`) and local shadow / highlight reco
 | `half_mask` | Keep only the `left` / `right` side of a layer (the rest goes transparent); the vertical split runs through the `around` layer's alpha — bounding-box middle (`split_at: center`) or alpha centroid (`mass`) — or the frame centre when `around` is missing/empty | `on`, `as`, `side`, `around`, `split_at`, `feather_ratio` (soft edge, fraction of the short side) |
 | `draw_shape` | One basic shape (`circle` / `square` / `triangle` / `diamond` / `star` / `heart`) centred at `x`, `y` (fractions of width / height), `size` = bounding square as a fraction of the short side, `angle` (degrees); filled in `color` and/or outlined (`stroke_ratio`, `stroke_color`). `clear: true` starts from a transparent layer (a mask for `clip_to`). Only the shape's region is drawn (2× supersampled, box-filtered) | `on`, `as`, `shape`, `x`, `y`, `size` (≤ 3), `angle`, `color`/`rgb`, `opacity`, `fill`, `stroke_ratio` (≤ 0.1), `stroke_color`, `clear` |
 | `clip_to` | Keep a layer only where the `around` layer is visible (alpha × `around` alpha, or its inverse with `invert`) — e.g. a photo through the letters of a transparent `text_pattern`, or a text wall inside a silhouette | `on`, `as`, `around`, `invert` |
-| `place_on_canvas` | Put layer on a larger solid canvas | `on`, `scale` (e.g. `1.4`), `fill`/`color`, `layout` (`polaroid` or `center`), `as` |
+| `place_on_canvas` | Put layer on a larger solid canvas | `on`, `scale` (e.g. `1.4`), `fill`/`color`, `layout` (`polaroid` or `center`), `as`, or `margins` ([left, top, right, bottom], fractions of the photo's short side — independent borders, overrides `scale` / `layout`, e.g. an Instax card) |
+| `crop_aspect` | Centre-crop to an aspect `ratio` (width / height, or [w, h] such as [46, 62] Instax Mini, [1, 1], [99, 62] Wide), keeping as much as possible; `anchor` picks the kept part; `auto_orient` flips the ratio to match a clearly landscape / portrait photo (square photos keep it as given) | `on`, `ratio`, `anchor` (`center`/`top`/`bottom`/`left`/`right`), `auto_orient` |
 | `upscale` | Pillow resize so the long side reaches `long_edge` (keeps aspect; never shrinks) | `on`, `long_edge`, `max_scale` (default 4), `resample` (`lanczos`/`bicubic`/`bilinear`) |
 | `sharpen` | Unsharp mask | `on`, `radius`, `percent`, `threshold` |
 | `denoise` | Median filter (noise / JPEG blocking) | `on`, `size` (odd ≥ 3) |
@@ -537,7 +567,7 @@ Ten looks built on point curves (`tone_curve`) and local shadow / highlight reco
 | `chromatic_aberration` | Radial lens fringing: red scaled out, green half, blue fixed, so colour edges split more toward the corners (no border) | `on`, `amount` (fraction of size, ≤ 0.05) |
 | `blur` | Gaussian blur by `radius_ratio` × short side; large radii run on a shrunken copy (flat cost). RGBA blurs with premultiplied alpha (no dark edges toward transparency). `exclude` names a layer (e.g. `subject`) whose alpha, grown by `exclude_grow`, gets zero weight, so the blurred background fills the cut-out hole from its surroundings | `on`, `radius_ratio`, `exclude` (layer name), `exclude_grow` (fraction of short side; default 0.004) |
 | `selective_color` | Push one colour family (HSV hue band) and optionally mute the rest; near-greys get little weight; numpy in ≤ 1 MP strips | `on`, `hue` (degrees, name `red`/`orange`/`yellow`/`green`/`cyan`/`teal`/`blue`/`purple`/`magenta`/`pink`, or [r,g,b]), `width` (band half-width, degrees), `saturation` (in-band ×), `lightness` (in-band lift 0–1), `others` (out-of-band saturation ×; 0 = grey), `pull` (0–1, rotate in-band hues toward the target) |
-| `draw_text` | Paint a string onto a layer | `on`, `text` (`$text` / `$datetime` / `$date` / `$time` — stamps use the photo's EXIF capture time, else now), `font_size`, `color`/`rgb`, `align` (`center`/`top`/`bottom`/`top_left`/`top_right`/`bottom_left`/`bottom_right`), `font_style` (`sans`/`flow`/`stamp` — bold mono date imprint; poster styles `poster` (Impact → bundled Anton), `brush` (Brush Script → bundled Yellowtail), `slab`, `signature`, `bold_display`, `stencil`, caps-only `neon_lines` / `marquee`), `font_path` (optional TTF/OTF/TTC; overrides `font_style`), `margin`, `x`, `y`, `stroke_width` (px), or `font_size_ratio` / `margin_ratio` / `stroke_ratio` (fractions of the short side — prefer these); too-wide text shrinks to fit. Poster extras: `scale_y` (vertical stretch), `angle` (tilt, degrees), `glow_ratio` (≤ 0.05) / `glow_color` (neon halo, fixed brightness), `box` (`frame`/`double`/`corners`/`label`) with `box_color`, `box_fill` ([r,g,b(,a)]), `box_ratio`, `box_pad_ratio`, `box_radius_ratio` — the box stretches, tilts and glows with the text |
+| `draw_text` | Paint a string onto a layer | `on`, `text` (`$text` / `$datetime` / `$date` / `$time` — stamps use the photo's EXIF capture time, else now), `font_size`, `color`/`rgb`, `align` (`center`/`top`/`bottom`/`top_left`/`top_right`/`bottom_left`/`bottom_right`), `font_style` (`sans`/`flow`/`stamp` — bold mono date imprint; poster styles `poster` (Impact → bundled Anton), `brush` (Brush Script → bundled Yellowtail), `slab`, `signature`, `scribble` (bundled Nanum Pen Script, loose felt-pen handwriting), `bold_display`, `stencil`, caps-only `neon_lines` / `marquee`), `font_path` (optional TTF/OTF/TTC; overrides `font_style`), `margin`, `x`, `y`, `stroke_width` (px), or `font_size_ratio` / `margin_ratio` / `stroke_ratio` (fractions of the short side — prefer these); too-wide text shrinks to fit. Poster extras: `scale_y` (vertical stretch), `angle` (tilt, degrees), `glow_ratio` (≤ 0.05) / `glow_color` (neon halo, fixed brightness), `box` (`frame`/`double`/`corners`/`label`) with `box_color`, `box_fill` ([r,g,b(,a)]), `box_ratio`, `box_pad_ratio`, `box_radius_ratio` — the box stretches, tilts and glows with the text |
 
 Layers are named images in memory. Typical keys: `image`, `subject`, `background`.
 
