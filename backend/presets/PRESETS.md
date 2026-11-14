@@ -472,6 +472,17 @@ Ten looks built on point curves (`tone_curve`) and local shadow / highlight reco
 - **Text input:** `no`
 - **DB:** seeded via `seed_default_presets()` / setup
 
+### Typographic split
+
+#### `split_word_portrait` — Split word portrait
+
+- **Idea:** The photo is split by a vertical line through the middle of the subject. Left of the line the background becomes plain white and the subject's left half is shown only through a dense wall of the user's text (`$text`, repeated as `TEXT.TEXT.TEXT.` in bold capitals, mixed mostly-large sizes, even tight line gaps); the gaps between letters are white. Right of the line the original photo is untouched. `ar: non-square`, `text_input: yes` (default `DREAM`, max 20 characters), no HD.
+- **Steps:** `extract_subject` (`single_subject: true`) → `half_mask` on subject (`side: left`, `around: subject`) as `subject_left` → white `overlay` (α 1) as `white` → `half_mask` on `white` (left, around subject) → `composite` (left half white) → `text_pattern` as `letters` (`$text`, `transparent`, `bold_display`, uppercase, sizes [0.11, 0.05, 0.09, 0.035, 0.1, 0.06, 0.075], `gap_ratio` 0.004) → `clip_to` on `subject_left` around `letters` as `painted` → `composite`
+- **File:** `backend/presets/split_word_portrait.json`
+- **AR:** `non-square` (any aspect ratio)
+- **Text input:** `yes` — default `DREAM`, limit **20**
+- **DB:** seeded via `seed_default_presets()` / setup
+
 ## Built-in filters
 
 | Filter | What it does | Common params |
@@ -487,6 +498,10 @@ Ten looks built on point curves (`tone_curve`) and local shadow / highlight reco
 | `sticker_outline` | Solid round-cornered outline whose width scales with the image (blur + threshold dilation, flat cost at any width) | `on`, `color`/`rgb`, `width_ratio` (fraction of short side; default 0.008), `softness` (edge AA px) |
 | `circle_backdrop` | One filled, semi-transparent disc (e.g. behind a cut-out); placement like `doodle` (`anchor: subject` + `around` centres on the subject's alpha bbox); only the disc's region is drawn (2× supersampled up to 4 MP) | `on`, `around`, `color`/`rgb`, `opacity` (0–1), `size` (diameter, fraction of short side), `anchor`, `x`/`y` (0–1), `offset_y` (fraction of short side, negative = up), `softness` (edge feather, fraction of short side), `subject_fit` (cap the diameter at this × the subject bbox's long side so small subjects aren't dwarfed). With `anchor: subject` and an empty `around` layer (no subject found) the step is a no-op; non-finite numbers raise `ValueError` |
 | `composite` | Paste overlay on base | `base`, `overlay`, `as` |
+| `blend` | Like `composite` with a blend mode: layer `overlay` on `base` in `normal` / `multiply` / `screen` / `darken` / `lighten`, times `opacity` | `base`, `overlay`, `as`, `mode`, `opacity` (0–1) |
+| `text_pattern` | Fill a layer with the text repeated as `TEXT.TEXT.TEXT.` rows (a word wall); only the input's size is used. Rows cycle through `sizes` / `colors`, each row offset by `stagger`; `gap_ratio` packs rows by their ink height with an exact even gap (else `line_spacing` × size); `transparent: true` leaves only the letters (use with `clip_to`); `angle` tilts the wall | `on`, `as`, `text` (`$text`), `separator` (`.`), `color`/`rgb` or `colors`, `background`, `transparent`, `font_style` / `font_path`, `font_size_ratio` or `sizes` (fractions of the short side, ≤ 0.5), `line_spacing`, `gap_ratio` (≤ 0.2), `stagger`, `uppercase`, `angle` |
+| `half_mask` | Keep only the `left` / `right` side of a layer (the rest goes transparent); the vertical split runs through the `around` layer's alpha — bounding-box middle (`split_at: center`) or alpha centroid (`mass`) — or the frame centre when `around` is missing/empty | `on`, `as`, `side`, `around`, `split_at`, `feather_ratio` (soft edge, fraction of the short side) |
+| `clip_to` | Keep a layer only where the `around` layer is visible (alpha × `around` alpha, or its inverse with `invert`) — e.g. a photo through the letters of a transparent `text_pattern`, or a text wall inside a silhouette | `on`, `as`, `around`, `invert` |
 | `place_on_canvas` | Put layer on a larger solid canvas | `on`, `scale` (e.g. `1.4`), `fill`/`color`, `layout` (`polaroid` or `center`), `as` |
 | `upscale` | Pillow resize so the long side reaches `long_edge` (keeps aspect; never shrinks) | `on`, `long_edge`, `max_scale` (default 4), `resample` (`lanczos`/`bicubic`/`bilinear`) |
 | `sharpen` | Unsharp mask | `on`, `radius`, `percent`, `threshold` |
