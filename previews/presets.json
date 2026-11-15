@@ -1,5 +1,50 @@
 [
   {
+    "preset_name": "coral_gel_lagoon",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/coral_gel_lagoon.jpg",
+    "post_edit_image": "previews/post-edit/coral_gel_lagoon.png"
+  },
+  {
+    "preset_name": "sky_gel_amber",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/sky_gel_amber.jpg",
+    "post_edit_image": "previews/post-edit/sky_gel_amber.png"
+  },
+  {
+    "preset_name": "pistachio_gel_rose",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/pistachio_gel_rose.jpg",
+    "post_edit_image": "previews/post-edit/pistachio_gel_rose.png"
+  },
+  {
+    "preset_name": "ice_gel_orange",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/ice_gel_orange.jpg",
+    "post_edit_image": "previews/post-edit/ice_gel_orange.png"
+  },
+  {
+    "preset_name": "amber_teal_gel",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/amber_teal_gel.jpg",
+    "post_edit_image": "previews/post-edit/amber_teal_gel.png"
+  },
+  {
     "preset_name": "da_vinci_wings",
     "ar": "non-square",
     "text_input": "no",

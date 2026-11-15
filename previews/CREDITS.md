@@ -641,3 +641,38 @@ is required where the license says so; CC0 and public-domain sources need none.
 - **Photographer:** [Brooke Cagle](https://unsplash.com/@brookecagle) (via Wikimedia Commons Unsplash CC0 archive)
 - **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
 - **Files:** `pre-edit/da_vinci_wings.jpg` → `post-edit/da_vinci_wings.png` (preset `da_vinci_wings`)
+
+## `amber_teal_gel`
+
+- **Photograph:** [Always smile (Unsplash)](https://commons.wikimedia.org/wiki/File:Always_smile_(Unsplash).jpg)
+- **Photographer:** [michael](https://unsplash.com/@m_minimal) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/amber_teal_gel.jpg` → `post-edit/amber_teal_gel.png` (preset `amber_teal_gel`)
+
+## `ice_gel_orange`
+
+- **Photograph:** [Hooded woman in snow (Unsplash)](https://commons.wikimedia.org/wiki/File:Hooded_woman_in_snow_(Unsplash).jpg)
+- **Photographer:** [Pete Bellis](https://unsplash.com/@petebellis) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/ice_gel_orange.jpg` → `post-edit/ice_gel_orange.png` (preset `ice_gel_orange`)
+
+## `pistachio_gel_rose`
+
+- **Photograph:** [Model Features (Unsplash)](https://commons.wikimedia.org/wiki/File:Model_Features_(Unsplash).jpg)
+- **Photographer:** [Clem Onojeghuo](https://unsplash.com/@clemono2) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/pistachio_gel_rose.jpg` → `post-edit/pistachio_gel_rose.png` (preset `pistachio_gel_rose`)
+
+## `sky_gel_amber`
+
+- **Photograph:** [First Shoot (Unsplash)](https://commons.wikimedia.org/wiki/File:First_Shoot_(Unsplash).jpg)
+- **Photographer:** [Raquel Santana](https://unsplash.com/@raquelsantana09) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/sky_gel_amber.jpg` → `post-edit/sky_gel_amber.png` (preset `sky_gel_amber`)
+
+## `coral_gel_lagoon`
+
+- **Photograph:** [Haley (Unsplash)](https://commons.wikimedia.org/wiki/File:Haley_(Unsplash).jpg)
+- **Photographer:** [Eric Nopanen](https://unsplash.com/@rexcuando) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/coral_gel_lagoon.jpg` → `post-edit/coral_gel_lagoon.png` (preset `coral_gel_lagoon`)

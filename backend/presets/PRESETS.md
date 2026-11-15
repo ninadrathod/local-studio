@@ -502,6 +502,18 @@ Ten looks built on point curves (`tone_curve`) and local shadow / highlight reco
 - **Text input:** `no`
 - **DB:** seeded via `seed_default_presets()` / setup
 
+#### More gel colour pairs
+
+Five variations on `red_gel_portrait` with the same steps — `extract_subject` (`single_subject: false`) → `color` 0.55 + tint `tone_curve` + `color_grade` (exposure -0.15, contrast 0.05) on background → tint `tone_curve` on subject → `composite` — but different colours. The subject curve sends pure white to a **light shade** of the gel colour (darks stay put), and the background curve pushes the muted background toward a **contrasting** tint. Curves come from a target colour: each channel's white point is the target, the midpoint moves by its offset from the target's mean (×0.36 on the subject, ×1.0 on the background). Black points: the background lifts at most 10 (blacks stay near-black, so night shots don't turn deep red / teal), and the subject's darks lean toward the gel by up to 18 (offset × 0.45), so dark clothing still picks up a little colour. The background tint sits ≥ 90° of hue from the gel (complementary-ish). All `ar: non-square`, `text_input: no`, no HD, seeded via `seed_default_presets()` / setup.
+
+| Preset | Subject whites → | Background tint | File |
+|---|---|---|---|
+| `amber_teal_gel` — Amber teal gel | light cream-amber [255, 222, 170] | teal | `backend/presets/amber_teal_gel.json` |
+| `ice_gel_orange` — Ice gel orange | light ice blue [180, 236, 255] | warm orange | `backend/presets/ice_gel_orange.json` |
+| `pistachio_gel_rose` — Pistachio gel rose | light pistachio green [185, 255, 215] | rose pink | `backend/presets/pistachio_gel_rose.json` |
+| `sky_gel_amber` — Sky gel amber | light sky blue [190, 210, 255] | golden amber (the reverse of red gel) | `backend/presets/sky_gel_amber.json` |
+| `coral_gel_lagoon` — Coral gel lagoon | light coral peach [255, 190, 170] | lagoon turquoise | `backend/presets/coral_gel_lagoon.json` |
+
 ### Typographic split
 
 #### `split_word_portrait` — Split word portrait
