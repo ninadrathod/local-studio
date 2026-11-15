@@ -1,0 +1,39 @@
+{
+  "name": "squiggle_wave",
+  "label": "Squiggle wave",
+  "description": "The background wobbles in squiggly diagonal waves with boosted colour while the subject stays crisp.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "warp",
+      "on": "background",
+      "mode": "wave",
+      "amount": 0.025,
+      "wavelength": 0.09,
+      "angle": 20,
+      "exclude": "subject"
+    },
+    {
+      "filter": "color_grade",
+      "on": "background",
+      "saturation": 1.35,
+      "contrast": 0.1
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    }
+  ]
+}

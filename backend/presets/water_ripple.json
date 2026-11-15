@@ -1,0 +1,40 @@
+{
+  "name": "water_ripple",
+  "label": "Water ripple",
+  "description": "Concentric water rings spread out from behind the subject, with shaded crests and a cool grade on the background.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "warp",
+      "on": "background",
+      "mode": "ripple",
+      "amount": 0.014,
+      "wavelength": 0.06,
+      "shade": 0.35,
+      "falloff": 1.6,
+      "exclude": "subject"
+    },
+    {
+      "filter": "color_grade",
+      "on": "background",
+      "temperature": -0.2,
+      "saturation": 0.9
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    }
+  ]
+}

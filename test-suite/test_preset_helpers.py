@@ -1828,6 +1828,187 @@ def test_speed_pan_streak_excludes_subject() -> None:
     assert step["on"] == "background" and step["exclude"] == "subject"
 
 
+def _ring_image(size: int = 200) -> Image.Image:
+    """Radial spokes (alternating wedges) around the centre: spin smears them, zoom keeps them."""
+    import numpy as np
+
+    ys, xs = np.indices((size, size))
+    ang = np.arctan2(ys - size / 2, xs - size / 2)
+    spokes = ((np.floor(ang / (np.pi / 12)) % 2) * 255).astype(np.uint8)
+    return Image.fromarray(np.stack([spokes] * 3, axis=-1), "RGB")
+
+
+def test_radial_blur_spin_smears_spokes_and_zoom_keeps_them() -> None:
+    import numpy as np
+
+    img = _ring_image()
+    spin = np.asarray(F.radial_blur(img, mode="spin", amount=40), dtype=np.float32)
+    zoom = np.asarray(F.radial_blur(img, mode="zoom", amount=0.3), dtype=np.float32)
+    ring = (slice(5, 25), slice(90, 110))  # near the top edge, across spokes
+    assert spin[ring].std() < 40  # spokes averaged out along circles
+    assert zoom[ring].std() > 90  # rays are along the spokes, so they survive
+    assert F.radial_blur(img, amount=0).tobytes() == img.tobytes()
+    with pytest.raises(ValueError, match="mode"):
+        F.radial_blur(img, mode="twirl")
+
+
+def test_radial_blur_centres_on_exclude_and_keeps_hole_colour_out() -> None:
+    import numpy as np
+
+    bg = _ring_image(240)
+    bg.paste((255, 0, 0), (40, 40, 80, 80))  # subject-coloured fill in the hole
+    subject = Image.new("RGBA", bg.size, (0, 0, 0, 0))
+    subject.paste((255, 0, 0, 255), (40, 40, 80, 80))
+    out = F.radial_blur(bg, mode="spin", amount=30, exclude=subject)
+    px = np.asarray(out, dtype=np.int16)
+    red = (px[..., 0] - px[..., 1]) > 60
+    assert not red[:, 90:].any() and not red[90:, :].any()  # no red swirl away from the hole
+    assert F._alpha_centroid(subject.getchannel("A")) == pytest.approx((60, 60), abs=1)
+
+
+def test_radial_blur_rgba_and_lightweight(monkeypatch: pytest.MonkeyPatch) -> None:
+    img = _gradient(1400, 300).convert("RGBA")
+    full = F.radial_blur(img, mode="zoom", amount=0.1)
+    assert full.mode == "RGBA" and full.size == img.size
+    monkeypatch.setenv("LIGHTWEIGHT", "1")
+    light = F.radial_blur(img, mode="zoom", amount=0.1)
+    assert light.size == full.size and light.tobytes() != full.tobytes()
+
+
+def test_radial_swirl_preset_spins_background_behind_subject() -> None:
+    data = load_preset(PRESETS / "radial_swirl.json")
+    assert data["name"] == "radial_swirl" and data["ar"] == "non-square"
+    assert data["text_input"] == "no" and data["text_character_limit"] == 0
+    steps = data["steps"]
+    assert all(s["filter"] in FILTERS for s in steps)
+    step = next(s for s in steps if s["filter"] == "radial_blur")
+    assert step["on"] == "background" and step["exclude"] == "subject" and step["mode"] == "spin"
+    assert "x" not in step and "y" not in step  # centre follows the subject
+
+
+def test_warp_modes_move_pixels_and_zero_amount_is_identity() -> None:
+    img = _ring_image(160)
+    for mode, amount in (("twirl", 90), ("ripple", 0.03), ("wave", 0.03), ("liquid", 0.05)):
+        out = F.warp(img, mode=mode, amount=amount, wavelength=0.2)
+        assert out.size == img.size and out.mode == "RGB"
+        assert out.tobytes() != img.tobytes(), mode
+        assert F.warp(img, mode=mode, amount=0).tobytes() == img.tobytes(), mode
+    with pytest.raises(ValueError, match="mode"):
+        F.warp(img, mode="melt")
+    with pytest.raises(ValueError, match="wavelength"):
+        F.warp(img, mode="wave", wavelength=0)
+
+
+def test_warp_liquid_is_seeded_and_strips_match(monkeypatch: pytest.MonkeyPatch) -> None:
+    img = _gradient(120, 80)
+    a = F.warp(img, mode="liquid", amount=0.08, wavelength=0.3, shade=0.5, seed=3)
+    assert F.warp(img, mode="liquid", amount=0.08, wavelength=0.3, shade=0.5, seed=3).tobytes() == a.tobytes()
+    assert F.warp(img, mode="liquid", amount=0.08, wavelength=0.3, shade=0.5, seed=4).tobytes() != a.tobytes()
+    monkeypatch.setattr(F, "_WARP_STRIP_PIXELS", 120 * 7)
+    assert F.warp(img, mode="liquid", amount=0.08, wavelength=0.3, shade=0.5, seed=3).tobytes() == a.tobytes()
+
+
+def test_warp_exclude_keeps_subject_colour_out_of_background() -> None:
+    import numpy as np
+
+    bg = Image.new("RGB", (240, 240), (0, 0, 255))
+    bg.paste((255, 0, 0), (60, 60, 120, 120))  # subject-coloured fill in the hole
+    subject = Image.new("RGBA", bg.size, (0, 0, 0, 0))
+    subject.paste((255, 0, 0, 255), (60, 60, 120, 120))
+    plain = np.asarray(F.warp(bg, mode="twirl", amount=120), dtype=np.int16)
+    kept = np.asarray(F.warp(bg, mode="twirl", amount=120, exclude=subject), dtype=np.int16)
+    outside = np.ones(bg.size[::-1], bool)
+    outside[50:130, 50:130] = False
+    assert ((plain[..., 0] - plain[..., 2]) > 60)[outside].any()  # red dragged out without exclude
+    assert not ((kept[..., 0] - kept[..., 2]) > 60)[outside].any()
+
+
+def test_warp_twirl_reflects_samples_out_of_the_subject() -> None:
+    import numpy as np
+
+    # Stripes background; the hole (subject) is a tall bar left of centre, filled flat grey.
+    bg = _ring_image(240)
+    bg.paste((128, 128, 128), (100, 40, 140, 200))
+    subject = Image.new("RGBA", bg.size, (0, 0, 0, 0))
+    subject.paste((255, 255, 255, 255), (100, 40, 140, 200))
+    out = np.asarray(F.warp(bg, mode="twirl", amount=150, exclude=subject), dtype=np.float32)
+    # Around the subject, the twist must show stripe texture, not a flat refill patch.
+    ring = out[20:60, 150:200]
+    assert ring.std() > 40
+
+
+def test_ray_reach_and_reflection() -> None:
+    import numpy as np
+
+    from PIL import ImageDraw
+
+    mask = Image.new("L", (200, 200), 0)
+    ImageDraw.Draw(mask).ellipse((70, 70, 130, 130), fill=255)  # radius 30 round (100, 100)
+    reach = F._ray_reach(mask, 100, 100)
+    assert reach.min() > 28 and reach.max() < 36
+    sx, sy = F._reflect_out_of_subject(np.array([110.0, 180.0]), np.array([100.0, 100.0]), 100, 100, reach)
+    assert sx[0] > 130 and sx[1] == 180  # inside → mirrored past the edge; outside untouched
+    assert not F._ray_reach(Image.new("L", (50, 50), 0), 25, 25).any()
+
+
+def test_warp_fills_hole_on_rgba_layers_too() -> None:
+    bg = Image.new("RGBA", (200, 200), (0, 0, 255, 255))
+    bg.paste((255, 0, 0, 255), (80, 80, 120, 120))
+    subject = Image.new("RGBA", bg.size, (0, 0, 0, 0))
+    subject.paste((255, 0, 0, 255), (80, 80, 120, 120))
+    import numpy as np
+
+    out = F.warp(bg, mode="twirl", amount=150, exclude=subject)
+    assert out.mode == "RGBA"
+    px = np.asarray(out, dtype=np.int16)
+    assert int(((px[..., 0] > 150) & (px[..., 2] < 100)).sum()) < 40 * 40  # the red block isn't swirled out into the background
+
+
+def test_warp_and_radial_blur_need_both_x_and_y() -> None:
+    img = _gradient(80, 60)
+    with pytest.raises(ValueError, match="x and y"):
+        F.warp(img, mode="twirl", amount=30, x=0.3)
+    with pytest.raises(ValueError, match="x and y"):
+        F.radial_blur(img, amount=10, y=0.3)
+    assert F.warp(img, mode="twirl", amount=30, x=0.3, y=0.4).size == img.size
+
+
+def test_warp_liquid_noise_grid_is_capped(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(F, "_WARP_LIQUID_MAX_CELLS", 100)
+    img = _gradient(400, 300)
+    out = F.warp(img, mode="liquid", amount=0.02, wavelength=1e-6)  # would be ~10^11 cells uncapped
+    assert out.size == img.size
+
+
+def test_warp_lightweight_uses_smaller_strips_with_same_result(monkeypatch: pytest.MonkeyPatch) -> None:
+    img = _gradient(300, 200)
+    full = F.warp(img, mode="liquid", amount=0.05, wavelength=0.3, shade=0.4)
+    monkeypatch.setenv("LIGHTWEIGHT", "1")
+    monkeypatch.setattr(F, "_WARP_STRIP_PIXELS_LIGHT", 300 * 3)
+    assert F.warp(img, mode="liquid", amount=0.05, wavelength=0.3, shade=0.4).tobytes() == full.tobytes()
+
+
+def test_radial_blur_caps_sweep() -> None:
+    img = _ring_image(120)
+    assert F.radial_blur(img, mode="spin", amount=400).tobytes() == F.radial_blur(img, mode="spin", amount=45).tobytes()
+    assert F.radial_blur(img, mode="zoom", amount=3).tobytes() == F.radial_blur(img, mode="zoom", amount=0.5).tobytes()
+
+
+WARP_PRESETS = {"twirl_vortex": "twirl", "water_ripple": "ripple", "squiggle_wave": "wave", "liquid_spill": "liquid"}
+
+
+@pytest.mark.parametrize("name,mode", WARP_PRESETS.items())
+def test_warp_preset_files(name: str, mode: str) -> None:
+    data = load_preset(PRESETS / f"{name}.json")
+    assert data["name"] == name and data["ar"] == "non-square"
+    assert data["text_input"] == "no" and data["default_text"] == "" and data["text_character_limit"] == 0
+    steps = data["steps"]
+    assert all(s["filter"] in FILTERS for s in steps)
+    assert steps[0]["filter"] == "extract_subject"
+    step = next(s for s in steps if s["filter"] == "warp")
+    assert step["mode"] == mode and step["on"] == "background" and step["exclude"] == "subject"
+
+
 def test_motion_blur_lightweight_uses_smaller_work_copy(monkeypatch: pytest.MonkeyPatch) -> None:
     img = _gradient(1400, 300)
     full = F.motion_blur(img, length_ratio=0.2)

@@ -77,7 +77,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     init_db(db)
     first = seed_default_presets(db_path=db)
     second = seed_default_presets(db_path=db)
-    assert len(first) == 80
+    assert len(first) == 85
     names = {row["preset_name"] for row in first}
     assert names == {
         "bw_bg_glowing_subject",
@@ -160,6 +160,11 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "graffiti_sticker_slap",
         "graffiti_outline_mural",
         "graffiti_outline_tower",
+        "radial_swirl",
+        "twirl_vortex",
+        "water_ripple",
+        "squiggle_wave",
+        "liquid_spill",
     }
     by_name = {row["preset_name"]: row for row in first}
     assert by_name["bw_bg_glowing_subject"]["ar"] == "non-square"
@@ -240,6 +245,11 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "digicam_flash",
         "red_gel_portrait",
         "shape_window_portrait",
+        "radial_swirl",
+        "twirl_vortex",
+        "water_ripple",
+        "squiggle_wave",
+        "liquid_spill",
     ):
         assert by_name[name]["ar"] == "non-square"
         assert by_name[name]["text_input"] == "no"
@@ -247,6 +257,11 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     assert second == []
     names_in_order = [row["preset_name"] for row in list_presets(db_path=db)]
     assert names_in_order == [
+        "liquid_spill",
+        "squiggle_wave",
+        "water_ripple",
+        "twirl_vortex",
+        "radial_swirl",
         "graffiti_outline_tower",
         "graffiti_outline_mural",
         "graffiti_sticker_slap",
@@ -329,7 +344,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "bw_bg_glowing_subject",
     ]
     popular = list_popular(db_path=db)
-    assert len(popular) == 80
+    assert len(popular) == 85
     assert all(row["used_count"] == 0 for row in popular)
 
 
@@ -429,6 +444,11 @@ def test_seed_default_presets_syncs_text_fields(tmp_path: Path) -> None:
         "graffiti_sticker_slap",
         "graffiti_outline_mural",
         "graffiti_outline_tower",
+        "radial_swirl",
+        "twirl_vortex",
+        "water_ripple",
+        "squiggle_wave",
+        "liquid_spill",
     ]
     synced =get_preset_by_name("bw_bg_glowing_subject", db_path=db)
     assert synced is not None

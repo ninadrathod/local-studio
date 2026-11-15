@@ -1,0 +1,37 @@
+{
+  "name": "twirl_vortex",
+  "label": "Twirl vortex",
+  "description": "Subject stays sharp while the background is twisted into a whirlpool centred behind the subject, with a light vignette.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "warp",
+      "on": "background",
+      "mode": "twirl",
+      "amount": 160,
+      "radius": 1.0,
+      "exclude": "subject"
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    },
+    {
+      "filter": "vignette",
+      "on": "image",
+      "amount": 0.3
+    }
+  ]
+}

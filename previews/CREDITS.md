@@ -571,3 +571,38 @@ is required where the license says so; CC0 and public-domain sources need none.
 - **Photographer:** [Ryan Holloway](https://unsplash.com/@hollowaykryan) (via Wikimedia Commons Unsplash CC0 archive)
 - **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
 - **Files:** `pre-edit/graffiti_outline_tower.jpg` → `post-edit/graffiti_outline_tower.png` (preset `graffiti_outline_tower`, default text `HUSTLE`)
+
+## `radial_swirl`
+
+- **Photograph:** [Sprinting in Vienna (Unsplash)](https://commons.wikimedia.org/wiki/File:Sprinting_in_Vienna_(Unsplash).jpg)
+- **Photographer:** [Alexander Redl](https://unsplash.com/@alexanderredl) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/radial_swirl.jpg` → `post-edit/radial_swirl.png` (preset `radial_swirl`)
+
+## `water_ripple`
+
+- **Photograph:** [Woman in black in a flower field (Unsplash)](https://commons.wikimedia.org/wiki/File:Woman_in_black_in_a_flower_field_(Unsplash).jpg)
+- **Photographer:** [Allef Vinicius](https://unsplash.com/@seteales) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/water_ripple.jpg` → `post-edit/water_ripple.png` (preset `water_ripple`)
+
+## `squiggle_wave`
+
+- **Photograph:** [Woman near red flower bush (Unsplash)](https://commons.wikimedia.org/wiki/File:Woman_near_red_flower_bush_(Unsplash).jpg)
+- **Photographer:** [Alex Blăjan](https://unsplash.com/@alexb) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/squiggle_wave.jpg` → `post-edit/squiggle_wave.png` (preset `squiggle_wave`)
+
+## `liquid_spill`
+
+- **Photograph:** [Woman in cherry blossoms (Unsplash)](https://commons.wikimedia.org/wiki/File:Woman_in_cherry_blossoms_(Unsplash).jpg)
+- **Photographer:** [Antonina Bukowska](https://unsplash.com/@tosbuk) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/liquid_spill.jpg` → `post-edit/liquid_spill.png` (preset `liquid_spill`)
+
+## `twirl_vortex`
+
+- **Photograph:** [Woman exploring a forest (Unsplash)](https://commons.wikimedia.org/wiki/File:Woman_exploring_a_forest_(Unsplash).jpg)
+- **Photographer:** [Michelle Spencer](https://unsplash.com/@michellespencer77) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/twirl_vortex.jpg` → `post-edit/twirl_vortex.png` (preset `twirl_vortex`)
