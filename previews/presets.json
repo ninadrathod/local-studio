@@ -561,7 +561,7 @@
     "preset_name": "retrowave_neon_title",
     "ar": "non-square",
     "text_input": "yes",
-    "default_text": "TITLE",
+    "default_text": "MIDNIGHT DRIVE",
     "text_character_limit": 16,
     "pre_edit_image": "previews/pre-edit/retrowave_neon_title.jpg",
     "post_edit_image": "previews/post-edit/retrowave_neon_title.png"
@@ -579,7 +579,7 @@
     "preset_name": "mission_passed_title",
     "ar": "non-square",
     "text_input": "yes",
-    "default_text": "TITLE",
+    "default_text": "LEVEL UP",
     "text_character_limit": 16,
     "pre_edit_image": "previews/pre-edit/mission_passed_title.jpg",
     "post_edit_image": "previews/post-edit/mission_passed_title.png"
@@ -588,7 +588,7 @@
     "preset_name": "neon_nights_script",
     "ar": "non-square",
     "text_input": "yes",
-    "default_text": "TITLE",
+    "default_text": "Neon Nights",
     "text_character_limit": 16,
     "pre_edit_image": "previews/pre-edit/neon_nights_script.jpg",
     "post_edit_image": "previews/post-edit/neon_nights_script.png"

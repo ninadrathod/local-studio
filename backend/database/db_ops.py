@@ -1214,7 +1214,7 @@ def seed_default_presets(*, db_path: Path = DB_PATH) -> list[dict[str, Any]]:
             ],
             "ar": "non-square",
             "text_input": "yes",
-            "default_text": "TITLE",
+            "default_text": "Neon Nights",
             "text_character_limit": 16,
         },
         {
@@ -1237,7 +1237,7 @@ def seed_default_presets(*, db_path: Path = DB_PATH) -> list[dict[str, Any]]:
             ],
             "ar": "non-square",
             "text_input": "yes",
-            "default_text": "TITLE",
+            "default_text": "LEVEL UP",
             "text_character_limit": 16,
         },
         {
@@ -1283,7 +1283,7 @@ def seed_default_presets(*, db_path: Path = DB_PATH) -> list[dict[str, Any]]:
             ],
             "ar": "non-square",
             "text_input": "yes",
-            "default_text": "TITLE",
+            "default_text": "MIDNIGHT DRIVE",
             "text_character_limit": 16,
         },
         {

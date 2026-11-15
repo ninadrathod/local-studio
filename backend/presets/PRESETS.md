@@ -261,7 +261,7 @@ Ten looks recreated from popular Prequel app filters, aimed at a professionally 
 
 ### Poster titles (text behind subject)
 
-Ten poster looks: subject cut out (`single_subject: true`) → one colour family pushed on the background with `selective_color` → a large `$text` title painted on the **background** → subject composited back on top, so it covers part of the title. All are `ar: non-square`, `text_input: yes`, `default_text: "TITLE"`, `text_character_limit: 16`, no HD pass, seeded via `seed_default_presets()` / setup. Titles are top-aligned (`margin_ratio` 0.03–0.05), stretched tall with `scale_y`, and auto-fit to 90% of the width. Text keeps the user's casing, except `neon_lines` (Monoton) and `marquee` (Bungee), whose fonts only have capitals.
+Ten poster looks: subject cut out (`single_subject: true`) → one colour family pushed on the background with `selective_color` → a large `$text` title painted on the **background** → subject composited back on top, so it covers part of the title. All are `ar: non-square`, `text_input: yes`, `default_text: "TITLE"` (`retrowave_neon_title` defaults to `MIDNIGHT DRIVE`, `mission_passed_title` to `LEVEL UP`, `neon_nights_script` to `Neon Nights`), `text_character_limit: 16`, no HD pass, seeded via `seed_default_presets()` / setup. Titles are top-aligned (`margin_ratio` 0.03–0.05), stretched tall with `scale_y`, and auto-fit to 90% of the width. Text keeps the user's casing, except `neon_lines` (Monoton) and `marquee` (Bungee), whose fonts only have capitals.
 
 #### `poster_title_yellow_pop` — Poster title: yellow pop
 
