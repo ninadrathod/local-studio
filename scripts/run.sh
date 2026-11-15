@@ -126,5 +126,6 @@ trap - EXIT INT TERM
 
 echo ""
 echo "Open http://localhost:${FRONTEND_PORT} in your browser."
+echo "Seeing an old version of the page? Hard-refresh once (Cmd+Shift+R / Ctrl+Shift+R)."
 echo "Running in the background — logs: logs/api.log, logs/frontend.log"
 echo "Stop with: ./scripts/stop.sh"

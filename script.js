@@ -46,6 +46,8 @@ const els = {
   selectedPresetLabel: document.getElementById("selected-preset-label"),
   presetSearch: document.getElementById("preset-search"),
   presetReset: document.getElementById("preset-reset"),
+  presetCount: document.getElementById("preset-count"),
+  presetCountSr: document.getElementById("preset-count-sr"),
   squareFilter: document.getElementById("square-filter"),
   popularSortBtn: document.getElementById("popular-sort-btn"),
   searchError: document.getElementById("search-error"),
@@ -782,12 +784,39 @@ function renderVisibleGallery() {
   else if (!inputImageIsSquare) emptyMessage = "No non-square presets to show.";
 
   renderPresetGrid(visible, { emptyMessage });
+  updatePresetCount(visible.length, allGalleryPresets.length);
 
   if (
     selectedPresetName &&
     !visible.some((p) => p.preset_name === selectedPresetName)
   ) {
     setSelectedPreset(null);
+  }
+}
+
+/**
+ * Pill beside the "Presets" heading: the total, or "shown / total" when a
+ * search or the square filter narrows the gallery.
+ * @param {number} shown
+ * @param {number} total
+ */
+function updatePresetCount(shown, total) {
+  const el = els.presetCount;
+  if (!el) return;
+  if (!total) {
+    el.hidden = true;
+    if (els.presetCountSr) els.presetCountSr.textContent = "";
+    return;
+  }
+  const filtered = shown !== total;
+  // Visible pill is aria-hidden; the sr-only twin carries the spoken sentence.
+  el.textContent = filtered ? `${shown} / ${total}` : String(total);
+  el.classList.toggle("preset-count--filtered", filtered);
+  el.hidden = false;
+  if (els.presetCountSr) {
+    els.presetCountSr.textContent = filtered
+      ? `Showing ${shown} of ${total} presets`
+      : `${total} presets`;
   }
 }
 
