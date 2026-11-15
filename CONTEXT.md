@@ -68,7 +68,7 @@ Repo: https://github.com/ninadrathod/local-studio
 
 ## Current scope
 
-- Preset gallery (left, ~65% width on desktop): search + **Input square?** yes/no switch + **Popular** mode (off by default) + refresh control beside search + post-edit thumbnails from `previews/presets.json` (shuffled into a fresh random order on every page load); hover/focus (or press-and-hold on touch) reveals pre-edit original; click/tap to select
+- Preset gallery (left, ~65% width on desktop): "Presets" heading with a count pill (total, or `shown / total` while filtered) + custom lemon-pill scroller + search + **Input square?** yes/no switch + **Popular** mode (off by default) + refresh control beside search + post-edit thumbnails from `previews/presets.json` (shuffled into a fresh random order on every page load); hover/focus (or press-and-hold on touch) reveals pre-edit original; click/tap to select
 - Search filters the gallery in place via realtime `GET /api/presets/search?q=…` (DB `preset_name` + `keywords`)
 - **Input square?** **Yes** shows all presets; **No** hides `ar=square` presets
 - Gallery default order is a fresh random shuffle on every page load (`previews/presets.json` is stored newest first; `script.js` shuffles it once per load). Search shows only the matches, kept in that same shuffled order. The 5 newest presets (top of the manifest) carry a **New** badge so they stay easy to spot. **Popular** selects popular-sort mode. The search-row refresh reloads the visible gallery from `GET /api/presets/popular` (`used_count` descending). Unclicking **Popular** restores that visit's shuffled order. Download does not reorder the grid.

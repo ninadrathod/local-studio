@@ -48,6 +48,8 @@ To pull the latest code and restart the app in one step:
 ./scripts/update.sh
 ```
 
+If the page still looks like the old version after updating, hard-refresh it once (**Cmd+Shift+R** on macOS, **Ctrl+Shift+R** on Windows/Linux). After that, updates load on a normal refresh.
+
 If `./scripts/run.sh` reports a broken virtualenv or a port already in use, re-run `./scripts/setup.sh` (it recreates a relocated/broken `backend/.venv`) and run `./scripts/stop.sh` (the API always uses port 8000; only the frontend port can be changed, with `FRONTEND_PORT=…`).
 
 <details>

@@ -555,6 +555,106 @@ html:has(.studio-page) {
   font-weight: 800;
 }
 
+/* ---- Gallery scroller: a lemon pill thumb on a dashed ink rail ----------
+   The search row reserves the same gutter as the grid (scrollbar-gutter:
+   stable) so its fields line up with the cards, so both get the same width. */
+.preset-grid,
+.preset-search-row.preset-cols {
+  --scroller-width: 14px;
+}
+
+.preset-grid::-webkit-scrollbar,
+.preset-search-row.preset-cols::-webkit-scrollbar {
+  width: var(--scroller-width);
+}
+
+.preset-grid::-webkit-scrollbar-track {
+  margin-block: 0.35rem;
+  border-radius: 999px;
+  /* A thin dashed rail down the middle of the gutter. */
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--ink) 22%, transparent) 0 6px,
+      transparent 6px 11px
+    )
+    center / 2px 100% no-repeat;
+}
+
+.preset-grid::-webkit-scrollbar-thumb {
+  min-height: 2.75rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background:
+    /* Three grip lines in the middle of the pill. */
+    linear-gradient(var(--ink), var(--ink)) center calc(50% - 4px) / 6px 1.5px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) center 50% / 6px 1.5px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) center calc(50% + 4px) / 6px 1.5px no-repeat,
+    var(--lemon);
+  box-shadow: inset -1.5px -1.5px 0 color-mix(in srgb, var(--ink) 18%, transparent);
+}
+
+.preset-grid::-webkit-scrollbar-thumb:hover {
+  background-color: var(--coral);
+}
+
+.preset-grid::-webkit-scrollbar-thumb:active {
+  background-color: var(--coral-deep);
+}
+
+.preset-grid::-webkit-scrollbar-button,
+.preset-grid::-webkit-scrollbar-corner,
+.preset-search-row.preset-cols::-webkit-scrollbar-track,
+.preset-search-row.preset-cols::-webkit-scrollbar-thumb {
+  display: none;
+  background: transparent;
+}
+
+/* Firefox has no ::-webkit-scrollbar; give it matching colours instead.
+   (Chrome also understands scrollbar-color, which would override the custom
+   thumb above, so it is scoped to Firefox only.) */
+@supports (-moz-appearance: none) {
+  .preset-grid,
+  .preset-search-row.preset-cols {
+    scrollbar-width: auto;
+    scrollbar-color: var(--lemon) color-mix(in srgb, var(--ink) 10%, transparent);
+  }
+}
+
+/* ---- Preset counter pill beside the "Presets" heading ------------------ */
+.preset-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.preset-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.05rem 0.5rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--chalk);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.7em;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 1.5px 1.5px 0 var(--ink);
+  white-space: nowrap;
+}
+
+.preset-count[hidden] {
+  display: none;
+}
+
+/* Filtered view (search / square filter): highlight that the list is narrowed. */
+.preset-count--filtered {
+  background: var(--lemon);
+}
+
 .studio-section-head {
   display: flex;
   align-items: baseline;
