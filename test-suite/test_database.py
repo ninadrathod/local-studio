@@ -77,7 +77,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     init_db(db)
     first = seed_default_presets(db_path=db)
     second = seed_default_presets(db_path=db)
-    assert len(first) == 95
+    assert len(first) == 100
     names = {row["preset_name"] for row in first}
     assert names == {
         "bw_bg_glowing_subject",
@@ -175,6 +175,11 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "pistachio_gel_rose",
         "sky_gel_amber",
         "coral_gel_lagoon",
+        "vista_red_film",
+        "golden_consumer_film",
+        "green_cast_film",
+        "classic_slide_64",
+        "expired_film",
     }
     by_name = {row["preset_name"]: row for row in first}
     assert by_name["bw_bg_glowing_subject"]["ar"] == "non-square"
@@ -270,6 +275,11 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "pistachio_gel_rose",
         "sky_gel_amber",
         "coral_gel_lagoon",
+        "vista_red_film",
+        "golden_consumer_film",
+        "green_cast_film",
+        "classic_slide_64",
+        "expired_film",
     ):
         assert by_name[name]["ar"] == "non-square"
         assert by_name[name]["text_input"] == "no"
@@ -277,6 +287,11 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     assert second == []
     names_in_order = [row["preset_name"] for row in list_presets(db_path=db)]
     assert names_in_order == [
+        "expired_film",
+        "classic_slide_64",
+        "green_cast_film",
+        "golden_consumer_film",
+        "vista_red_film",
         "coral_gel_lagoon",
         "sky_gel_amber",
         "pistachio_gel_rose",
@@ -374,7 +389,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "bw_bg_glowing_subject",
     ]
     popular = list_popular(db_path=db)
-    assert len(popular) == 95
+    assert len(popular) == 100
     assert all(row["used_count"] == 0 for row in popular)
 
 
@@ -489,6 +504,11 @@ def test_seed_default_presets_syncs_text_fields(tmp_path: Path) -> None:
         "pistachio_gel_rose",
         "sky_gel_amber",
         "coral_gel_lagoon",
+        "vista_red_film",
+        "golden_consumer_film",
+        "green_cast_film",
+        "classic_slide_64",
+        "expired_film",
     ]
     synced =get_preset_by_name("bw_bg_glowing_subject", db_path=db)
     assert synced is not None

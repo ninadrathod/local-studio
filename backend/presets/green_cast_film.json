@@ -1,0 +1,109 @@
+{
+  "name": "green_cast_film",
+  "label": "Green cast film",
+  "description": "HD pass, then an everyday colour-negative look with a green-cyan cast: green lifted in the shadows and low mids, red trimmed, slightly cool, fine grain.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "shadows_highlights",
+      "on": "image",
+      "shadows": 0.2,
+      "highlights": -0.3
+    },
+    {
+      "filter": "tone_curve",
+      "on": "image",
+      "master": [
+        [
+          0,
+          10
+        ],
+        [
+          64,
+          60
+        ],
+        [
+          128,
+          130
+        ],
+        [
+          200,
+          206
+        ],
+        [
+          255,
+          246
+        ]
+      ],
+      "red": [
+        [
+          0,
+          0
+        ],
+        [
+          128,
+          122
+        ],
+        [
+          255,
+          248
+        ]
+      ],
+      "green": [
+        [
+          0,
+          16
+        ],
+        [
+          64,
+          70
+        ],
+        [
+          128,
+          134
+        ],
+        [
+          255,
+          252
+        ]
+      ],
+      "blue": [
+        [
+          0,
+          12
+        ],
+        [
+          128,
+          128
+        ],
+        [
+          255,
+          240
+        ]
+      ]
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "saturation": 1.05,
+      "vibrance": 0.1
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0.0,
+      "grain": 0.06,
+      "stains": 0.0,
+      "seed": 5
+    }
+  ]
+}

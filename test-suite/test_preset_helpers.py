@@ -2618,3 +2618,72 @@ def test_gel_presets_tint_whites_and_contrast_background(name: str, expected) ->
         assert subject[ch][0][1] <= 18
     tinted = F.tone_curve(Image.new("RGB", (4, 4), (0, 0, 0)), **params).getpixel((0, 0))
     assert max(tinted) > 0 and max(range(3), key=lambda c: tinted[c]) == max(range(3), key=lambda c: white[c])
+
+
+# --- RGB-curve film looks (HD pass + per-channel curves) ----------------------
+
+RGB_FILM_PRESETS = ("vista_red_film", "golden_consumer_film", "green_cast_film", "classic_slide_64", "expired_film")
+
+
+@pytest.mark.parametrize("name", RGB_FILM_PRESETS)
+def test_rgb_film_preset_files(name: str) -> None:
+    data = load_preset(PRESETS / f"{name}.json")
+    assert data["name"] == name and data["ar"] == "non-square"
+    assert data["text_input"] == "no" and data["default_text"] == "" and data["text_character_limit"] == 0
+    steps = data["steps"]
+    assert steps[0] == {"filter": "ai_upscale", "on": "image", "long_edge": 1920, "denoise": 0.3}
+    assert all(s["filter"] in FILTERS for s in steps)
+    curve = next(s for s in steps if s["filter"] == "tone_curve")
+    assert all(ch in curve for ch in ("red", "green", "blue"))  # per-channel RGB curves
+
+
+@pytest.mark.parametrize("name", RGB_FILM_PRESETS)
+def test_rgb_film_presets_apply_without_upscale(name: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    from apply_preset import FILTERS as REG, _run_simple
+
+    monkeypatch.setitem(REG, "ai_upscale", _run_simple(lambda image, **kw: F.upscale(image, long_edge=kw.get("long_edge", 1920))))
+    source = _gradient(640, 480)
+    out = apply_preset(source, PRESETS / f"{name}.json")
+    assert out.size == (1920, 1440)
+    assert out.tobytes() != F.upscale(source, long_edge=1920).convert(out.mode).tobytes()
+
+
+def test_rgb_film_curve_signatures() -> None:
+    """Each look's defining channel move, checked on mid-grey / white / black."""
+    def curve(name: str) -> dict:
+        steps = load_preset(PRESETS / f"{name}.json")["steps"]
+        return {k: v for k, v in next(s for s in steps if s["filter"] == "tone_curve").items() if k not in ("filter", "on")}
+
+    def through(name: str, value: int) -> tuple[int, int, int]:
+        return F.tone_curve(Image.new("RGB", (2, 2), (value,) * 3), **curve(name)).getpixel((0, 0))
+
+    r, g, b = through("golden_consumer_film", 255)
+    assert b < g < r  # golden highlights: blue dipped most
+    for level in (0, 128):  # green-cyan cast: green leads at black and mid-grey
+        r, g, b = through("green_cast_film", level)
+        assert g > r and g > b
+    r, g, b = through("vista_red_film", 64)
+    assert r < b  # red pulled from shadows, cool shadow cast
+    r, g, b = through("classic_slide_64", 255)
+    assert b < r - 20  # warm slide highlights
+    r, g, b = through("expired_film", 0)
+    assert min(r, g, b) > 0 and r > g and b > g  # faded magenta blacks
+
+
+def test_paper_texture_auto_seed_varies_per_photo_and_is_stable() -> None:
+    a = _gradient(160, 120)
+    b = a.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+    kw = dict(tint=0.0, grain=0.1, stains=0.3, seed="auto")
+    out_a = F.paper_texture(a, **kw)
+    assert F.paper_texture(a, **kw).tobytes() == out_a.tobytes()  # same photo → same render
+    assert F._image_seed(a) != F._image_seed(b)  # different photos → different stain layouts
+    # "auto" really uses the photo's seed (matches the equivalent explicit integer seed).
+    assert F.paper_texture(a, tint=0.0, grain=0.1, stains=0.3, seed=F._image_seed(a)).tobytes() == out_a.tobytes()
+
+
+def test_rgb_film_descriptions_and_expired_seed() -> None:
+    for name in RGB_FILM_PRESETS:
+        text = load_preset(PRESETS / f"{name}.json")["description"].lower()
+        assert not any(brand in text for brand in ("agfa", "kodak", "fuji", "kodachrome"))
+    steps = load_preset(PRESETS / "expired_film.json")["steps"]
+    assert next(s for s in steps if s["filter"] == "paper_texture")["seed"] == "auto"

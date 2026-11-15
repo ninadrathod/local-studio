@@ -2025,6 +2025,14 @@ def halftone(
     return _keep_alpha(printed, image)
 
 
+def _image_seed(image: Image.Image) -> int:
+    """Stable per-photo seed: CRC32 of a 16×16 greyscale thumbnail (same photo → same seed)."""
+    import zlib
+
+    thumb = image.convert("L").resize((16, 16), Image.Resampling.BILINEAR)
+    return zlib.crc32(thumb.tobytes())
+
+
 def paper_texture(
     image: Image.Image,
     color: Sequence[int] | None = None,
@@ -2033,20 +2041,22 @@ def paper_texture(
     grain: float = 0.08,
     stains: float = 0.12,
     fade: float = 0.0,
-    seed: int = 11,
+    seed: int | str = 11,
 ) -> Image.Image:
     """
     Age a print onto paper: multiply-tint toward `color` by `tint`, add fine
     `grain` speckle and low-frequency `stains` (blotchy yellowing), then `fade`
     (lift blacks toward the paper). All randomness is seeded; grain size scales
-    with resolution.
+    with resolution. `seed: "auto"` derives the seed from the photo itself, so
+    each picture gets its own stain / grain layout while the same photo always
+    renders the same way.
     """
     import random
 
     out = _as_rgb(image)
     w, h = out.size
     paper_rgb = _rgb_tint(color, rgb, (236, 222, 190))
-    rng = random.Random(int(seed))
+    rng = random.Random(_image_seed(out) if seed == "auto" else int(seed))
 
     # Tint, stain darkening and fade are per-channel tone curves, so they run as
     # point tables instead of allocating full-size solid/blend layers.

@@ -676,3 +676,38 @@ is required where the license says so; CC0 and public-domain sources need none.
 - **Photographer:** [Eric Nopanen](https://unsplash.com/@rexcuando) (via Wikimedia Commons Unsplash CC0 archive)
 - **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
 - **Files:** `pre-edit/coral_gel_lagoon.jpg` → `post-edit/coral_gel_lagoon.png` (preset `coral_gel_lagoon`)
+
+## `vista_red_film`
+
+- **Photograph:** [Vintage car driving in Centro Havana (Unsplash)](https://commons.wikimedia.org/wiki/File:Vintage_car_driving_in_Centro_Havana_(Unsplash).jpg)
+- **Photographer:** [Eva Blue](https://unsplash.com/@evablue) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/vista_red_film.jpg` → `post-edit/vista_red_film.png` (preset `vista_red_film`; post-edit Lanczos-downscaled from the 1920 px HD output)
+
+## `golden_consumer_film`
+
+- **Photograph:** [Road trip (Unsplash)](https://commons.wikimedia.org/wiki/File:Road_trip_(Unsplash).jpg)
+- **Photographer:** [Epicurrence](https://unsplash.com/@epicurrence) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/golden_consumer_film.jpg` → `post-edit/golden_consumer_film.png` (preset `golden_consumer_film`; post-edit Lanczos-downscaled from the 1920 px HD output)
+
+## `green_cast_film`
+
+- **Photograph:** [Tram Salt Lake City (Unsplash)](https://commons.wikimedia.org/wiki/File:Tram_Salt_Lake_City_(Unsplash).jpg)
+- **Photographer:** [Ashton Bingham](https://unsplash.com/@ashtonbingham) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/green_cast_film.jpg` → `post-edit/green_cast_film.png` (preset `green_cast_film`; post-edit Lanczos-downscaled from the 1920 px HD output)
+
+## `classic_slide_64`
+
+- **Photograph:** [Yellow vintage car (Unsplash)](https://commons.wikimedia.org/wiki/File:Yellow_vintage_car_(Unsplash).jpg)
+- **Photographer:** [John-Mark Kuznietsov](https://unsplash.com/@mrrrk_smith) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/classic_slide_64.jpg` → `post-edit/classic_slide_64.png` (preset `classic_slide_64`; post-edit Lanczos-downscaled from the 1920 px HD output)
+
+## `expired_film`
+
+- **Photograph:** [Red vintage car (Unsplash)](https://commons.wikimedia.org/wiki/File:Red_vintage_car_(Unsplash).jpg)
+- **Photographer:** [Scott Webb](https://unsplash.com/@scottwebb) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/expired_film.jpg` → `post-edit/expired_film.png` (preset `expired_film`; post-edit Lanczos-downscaled from the 1920 px HD output)

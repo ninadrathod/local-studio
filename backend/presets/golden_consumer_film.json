@@ -1,0 +1,105 @@
+{
+  "name": "golden_consumer_film",
+  "label": "Golden consumer film",
+  "description": "HD pass, then a warm consumer colour-negative look: blue dipped in the highlights for golden warmth, lifted blacks, soft contrast, fine grain.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "shadows_highlights",
+      "on": "image",
+      "shadows": 0.2,
+      "highlights": -0.35
+    },
+    {
+      "filter": "tone_curve",
+      "on": "image",
+      "master": [
+        [
+          0,
+          14
+        ],
+        [
+          64,
+          66
+        ],
+        [
+          128,
+          134
+        ],
+        [
+          200,
+          212
+        ],
+        [
+          255,
+          248
+        ]
+      ],
+      "red": [
+        [
+          0,
+          6
+        ],
+        [
+          128,
+          138
+        ],
+        [
+          255,
+          255
+        ]
+      ],
+      "green": [
+        [
+          0,
+          8
+        ],
+        [
+          128,
+          132
+        ],
+        [
+          255,
+          246
+        ]
+      ],
+      "blue": [
+        [
+          0,
+          0
+        ],
+        [
+          128,
+          110
+        ],
+        [
+          255,
+          212
+        ]
+      ]
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "saturation": 1.08,
+      "vibrance": 0.15
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0.0,
+      "grain": 0.05,
+      "stains": 0.0,
+      "seed": 5
+    }
+  ]
+}

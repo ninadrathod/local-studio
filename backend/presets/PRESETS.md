@@ -472,6 +472,40 @@ Ten looks built on point curves (`tone_curve`) and local shadow / highlight reco
 - **Steps:** `extract_subject` → `warp` on background (`mode: liquid`, amount 0.06, wavelength 0.18, shade 0.6, seed 7, `exclude: subject`) → `composite` → `bloom` (threshold 0.75, radius_ratio 0.02, amount 0.15)
 - **File:** `backend/presets/liquid_spill.json`
 
+### RGB-curve film looks
+
+Five professional film-stock looks driven by per-channel RGB curves (`tone_curve`), built from published film-emulation principles (soft consumer-film curves with lifted matte blacks; red pulled from shadows / lifted in mid-highs; blue dipped in highlights for warmth; green lifted in shadows for a green-cyan cast). They are stylised interpretations of classic film character, hand-built from those principles — not measured emulations of any specific stock — and brand names stay out of names, labels, descriptions and keywords. All `ar: non-square`, `text_input: no`, and start with the HD pass `{ "filter": "ai_upscale", "long_edge": 1920, "denoise": 0.3 }` (denoise 0.3 keeps texture under the added grain). Grain is `paper_texture` with `tint` 0 (grain only; size scales with resolution). `expired_film` uses `seed: "auto"`, so each photo gets its own stain layout.
+
+#### `vista_red_film` — Vista red film
+
+- **Idea:** a crisp colour-negative look: red pulled down in the shadows and lifted in the mid-highs, slightly cool shadows, saturated reds and cyan-leaning skies, fine grain.
+- **Steps:** HD → `shadows_highlights` → `tone_curve` (master 0→6 64→56 128→132 192→204 255→250; red 0→0 64→54 128→134 200→214 255→255; green 0→4 128→128 255→250; blue 0→14 128→124 255→236) → `color_grade` → `paper_texture`
+- **File:** `backend/presets/vista_red_film.json`
+
+#### `golden_consumer_film` — Golden consumer film
+
+- **Idea:** a warm consumer colour-negative look: blue dipped in the highlights for golden warmth, lifted blacks, soft contrast, fine grain.
+- **Steps:** HD → `shadows_highlights` → `tone_curve` (master 0→14 64→66 128→134 200→212 255→248; red 0→6 128→138 255→255; green 0→8 128→132 255→246; blue 0→0 128→110 255→212) → `color_grade` → `paper_texture`
+- **File:** `backend/presets/golden_consumer_film.json`
+
+#### `green_cast_film` — Green cast film
+
+- **Idea:** an everyday colour-negative look with a green-cyan cast: green lifted in the shadows and low mids, red trimmed, slightly cool, fine grain.
+- **Steps:** HD → `shadows_highlights` → `tone_curve` (master 0→10 64→60 128→130 200→206 255→246; red 0→0 128→122 255→248; green 0→16 64→70 128→134 255→252; blue 0→12 128→128 255→240) → `color_grade` → `paper_texture`
+- **File:** `backend/presets/green_cast_film.json`
+
+#### `classic_slide_64` — Classic slide 64
+
+- **Idea:** a dense classic slide-film look: firm contrast, rich reds, blue lowered in the highlights for warmth, teal-cyan shadows, vignette, fine grain.
+- **Steps:** HD → `shadows_highlights` → `tone_curve` (master 0→0 48→30 128→126 205→222 255→252; red 0→0 64→58 128→136 255→255; green 0→0 128→126 255→246; blue 0→10 64→66 128→120 255→214) → `color_grade` → `vignette` → `paper_texture`
+- **File:** `backend/presets/classic_slide_64.json`
+
+#### `expired_film` — Expired film
+
+- **Idea:** an expired-roll look: flattened, faded blacks, a magenta-cyan colour crossover (red and blue lifted in the shadows, green dipped), muted colour, grain and faint stains.
+- **Steps:** HD → `tone_curve` (master 0→20 128→128 255→235; red 0→26 128→138 255→238; green 0→10 128→118 255→230; blue 0→32 128→132 255→224) → `color_grade` → `paper_texture`
+- **File:** `backend/presets/expired_film.json`
+
 ### Subject spotlights
 
 #### `red_halo_spotlight` — Red halo spotlight
@@ -696,7 +730,7 @@ Five notebook-page looks inspired by Leonardo da Vinci's codices: rough mirror-w
 | `posterize` | Flatten each RGB channel to N levels (comic colour bands); optional median smooth first | `on`, `levels` (2–32), `smooth` (0 or odd ≥ 3) |
 | `ink_edges` | Comic ink outlines via difference of Gaussians on luminance; scales with resolution; RGBA is flattened on white first so hidden pixels don't create edges | `on`, `detail` (blur, fraction of short side), `threshold` (lower = more lines), `thickness` (fraction of short side), `color`/`rgb`, `opacity` |
 | `halftone` | Printed dot screen: `mono` (one ink at `angle`) or `cmyk` (process inks at 15/75/0/45° with grey-component replacement); dot area ≈ ink coverage; processed at ≤ 2400 px long edge then resized back; pitch auto-enlarges if a screen would need > 160k dots; transparent pixels print as paper | `on`, `mode`, `cell` (dot pitch, 0.002–0.1 of short side), `angle`, `paper`, `ink`, `mix` (blend back over original), `gcr` (0–1, share of grey on black plate) |
-| `paper_texture` | Age onto paper: multiply tint, seeded fine grain (scales with resolution), low-frequency stains (grid follows aspect ratio), fade toward paper; tone steps run as point tables, grain is applied tile by tile | `on`, `color`/`rgb`, `tint`, `grain`, `stains`, `fade` (0–1 each), `seed` |
+| `paper_texture` | Age onto paper: multiply tint, seeded fine grain (scales with resolution), low-frequency stains (grid follows aspect ratio), fade toward paper; tone steps run as point tables, grain is applied tile by tile | `on`, `color`/`rgb`, `tint`, `grain`, `stains`, `fade` (0–1 each), `seed` (int, or `"auto"` = derived from the photo so each picture gets its own layout) |
 | `color_grade` | Photographic grade in one pass: white balance, exposure, contrast S-curve (or flatten), matte black lift, soft highlight shoulder (per-channel point tables, flat cost); luminance-preserving split toning, saturation and vibrance (numpy in ≤ 1 MP strips); out-of-gamut pixels are pulled back along their own luma so highlights don't clip or shift hue; neutral params are an exact no-op | `on`, `temperature` (−1 cool…1 warm), `tint` (−1 green…1 magenta), `exposure` (stops), `contrast` (−1…1), `pivot`, `black_lift` (0–0.3), `white_rolloff` (0–1), `shadows` / `highlights` ([r,g,b]), `split` (0–1), `balance` (−1…1 crossover), `saturation`, `vibrance` (0–1) |
 | `tone_curve` | Photoshop / Lightroom point curves: `[[in, out], …]` on 0–255 joined by a monotone cubic spline (no overshoot); `master` on all channels first, then `red` / `green` / `blue`; folded into one point table, flat cost; omitted curves are identity | `on`, `master`, `red`, `green`, `blue` |
 | `shadows_highlights` | Local Shadows / Highlights: a gamma bend weighted by a tone mask (pixel luma mixed with an edge-aware fast guided filter of it, fitted at ≤ 1024 px and applied at full resolution, so hard edges get no halo), so dark regions open up and bright ones recover as areas; black and white stay fixed, colour scales with brightness (hue kept, gamut-fitted); numpy in ≤ 1 MP strips | `on`, `shadows` (−1 deepen…1 open), `highlights` (−1 recover…1 brighten), `radius_ratio` (mask blur, fraction of short side; 0.02), `local` (0–1 share of the blurred mask; 0.6) |
