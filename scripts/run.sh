@@ -87,7 +87,8 @@ API_PID=$!
 echo "==> Starting frontend on http://localhost:${FRONTEND_PORT}"
 (
   cd "${ROOT_DIR}"
-  exec nohup "${PYTHON}" -m http.server "${FRONTEND_PORT}"
+  # serve_frontend.py = http.server + Cache-Control: no-cache, so browsers pick up updated JS/CSS.
+  exec nohup "${PYTHON}" scripts/serve_frontend.py "${FRONTEND_PORT}"
 ) >"${LOG_DIR}/frontend.log" 2>&1 </dev/null &
 FRONTEND_PID=$!
 
