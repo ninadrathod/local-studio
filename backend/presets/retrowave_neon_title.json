@@ -4,7 +4,7 @@
   "description": "Purple night background; cyan multi-line neon title with a pink glow behind the subject; pink rim light on the subject.",
   "ar": "non-square",
   "text_input": "yes",
-  "default_text": "TITLE",
+  "default_text": "MIDNIGHT DRIVE",
   "text_character_limit": 16,
   "steps": [
     {

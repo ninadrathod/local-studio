@@ -1562,6 +1562,14 @@ POSTER_TITLE_PRESETS = (
 )
 
 
+# Poster titles default to "TITLE" unless they ship their own sample title.
+POSTER_TITLE_DEFAULTS = {
+    "retrowave_neon_title": "MIDNIGHT DRIVE",
+    "mission_passed_title": "LEVEL UP",
+    "neon_nights_script": "Neon Nights",
+}
+
+
 @pytest.mark.parametrize("name", POSTER_TITLE_PRESETS)
 def test_poster_title_presets_shape(name: str) -> None:
     data = load_preset(PRESETS / f"{name}.json")
@@ -1569,7 +1577,7 @@ def test_poster_title_presets_shape(name: str) -> None:
     assert (data["ar"], data["text_input"], data["default_text"], data["text_character_limit"]) == (
         "non-square",
         "yes",
-        "TITLE",
+        POSTER_TITLE_DEFAULTS.get(name, "TITLE"),
         16,
     )
     steps = data["steps"]
@@ -2687,3 +2695,16 @@ def test_rgb_film_descriptions_and_expired_seed() -> None:
         assert not any(brand in text for brand in ("agfa", "kodak", "fuji", "kodachrome"))
     steps = load_preset(PRESETS / "expired_film.json")["steps"]
     assert next(s for s in steps if s["filter"] == "paper_texture")["seed"] == "auto"
+
+
+def test_draw_text_widens_near_zero_width_spaces() -> None:
+    neon = F._load_font(100, "neon_lines")
+    assert neon.getlength(" ") < F._NARROW_SPACE_EM * 100  # Monoton's space is ~0.11 em
+    widened = F._widen_narrow_spaces("MIDNIGHT DRIVE", neon, 100)
+    assert neon.getlength(widened) - neon.getlength("MIDNIGHTDRIVE") >= F._MIN_WORD_GAP_EM * 100
+    # Fonts with a normal space are untouched.
+    for style in ("sans", "signature", "bold_display", "poster", "marquee"):
+        font = F._load_font(100, style)
+        assert F._widen_narrow_spaces("LEVEL UP", font, 100) == "LEVEL UP"
+    # Single words are untouched too.
+    assert F._widen_narrow_spaces("MIDNIGHT", neon, 100) == "MIDNIGHT"

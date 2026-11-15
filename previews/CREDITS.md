@@ -189,11 +189,10 @@ is required where the license says so; CC0 and public-domain sources need none.
 
 ## `disposable_flash`
 
-- **Photograph:** [Friends laugh](https://commons.wikimedia.org/wiki/File:Friends_laugh.jpg)
-- **Photographer:** Ezeflorence
-- **License:** [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+- **Photograph:** [Photographer Friends (Unsplash)](https://commons.wikimedia.org/wiki/File:Photographer_Friends_(Unsplash).jpg)
+- **Photographer:** [Katie Treadway](https://unsplash.com/@katietreadway) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
 - **Files:** `pre-edit/disposable_flash.jpg` → `post-edit/disposable_flash.png` (preset `disposable_flash`)
-
 ## `portrait_bokeh`
 
 - **Photograph:** [Fashion Model Gary Borden](https://commons.wikimedia.org/wiki/File:Fashion_Model_Gary_Borden.jpg)
@@ -252,18 +251,16 @@ is required where the license says so; CC0 and public-domain sources need none.
 
 ## `neon_nights_script`
 
-- **Photograph:** [DFC 2374 A smiling young woman in a patterned dress sits on a bar stool holding a colorful cup as vibrant neon lights and a lively night scene glow behind her](https://commons.wikimedia.org/wiki/File:DFC_2374_A_smiling_young_woman_in_a_patterned_dress_sits_on_a_bar_stool_holding_a_colorful_cup_as_vibrant_neon_lights_and_a_lively_night_scene_glow_behind_her.jpg)
-- **Photographer:** [PattayaPatrol](https://www.flickr.com/people/PattayaPatrol/) (Flickr, via Wikimedia Commons)
-- **License:** [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+- **Photograph:** [Fire Breathing (Unsplash)](https://commons.wikimedia.org/wiki/File:Fire_Breathing_(Unsplash).jpg)
+- **Photographer:** [Alejandro Alvarez](https://unsplash.com/@a2foto) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
 - **Files:** `pre-edit/neon_nights_script.jpg` → `post-edit/neon_nights_script.png` (preset `neon_nights_script`)
-
 ## `mission_passed_title`
 
-- **Photograph:** [DFC 1049 Smiling woman lines up a shot on a blue pool table under vibrant bar lights](https://commons.wikimedia.org/wiki/File:DFC_1049_Smiling_woman_lines_up_a_shot_on_a_blue_pool_table_under_vibrant_bar_lights.jpg)
-- **Photographer:** [PattayaPatrol](https://www.flickr.com/people/PattayaPatrol/) (Flickr, via Wikimedia Commons)
-- **License:** [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+- **Photograph:** [Boy on skateboard graffiti (Unsplash)](https://commons.wikimedia.org/wiki/File:Boy_on_skateboard_graffiti_(Unsplash).jpg)
+- **Photographer:** [Mateo Avila Chinchilla](https://unsplash.com/@mattbass) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
 - **Files:** `pre-edit/mission_passed_title.jpg` → `post-edit/mission_passed_title.png` (preset `mission_passed_title`)
-
 ## `wanted_stencil_title`
 
 - **Photograph:** [Date night (Unsplash)](https://commons.wikimedia.org/wiki/File:Date_night_(Unsplash).jpg)
@@ -273,11 +270,10 @@ is required where the license says so; CC0 and public-domain sources need none.
 
 ## `retrowave_neon_title`
 
-- **Photograph:** [CN Tower night 1 (7927030938)](https://commons.wikimedia.org/wiki/File:CN_Tower_night_1_(7927030938).jpg)
-- **Photographer:** [Tony Hisgett](https://www.flickr.com/people/37804979@N00) (Flickr, via Wikimedia Commons)
-- **License:** [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/)
+- **Photograph:** [NYC rain (Unsplash)](https://commons.wikimedia.org/wiki/File:NYC_rain_(Unsplash).jpg)
+- **Photographer:** [Jason Edwards](https://unsplash.com/@jasonedwa) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
 - **Files:** `pre-edit/retrowave_neon_title.jpg` → `post-edit/retrowave_neon_title.png` (preset `retrowave_neon_title`)
-
 ## `art_deco_marquee`
 
 - **Photograph:** [Woman in fashionable dress (Unsplash)](https://commons.wikimedia.org/wiki/File:Woman_in_fashionable_dress_(Unsplash).jpg)

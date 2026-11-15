@@ -4,7 +4,7 @@
   "description": "Deep-blue night background; tall gold game-cover title with a heavy black outline, slightly tilted, behind the subject.",
   "ar": "non-square",
   "text_input": "yes",
-  "default_text": "TITLE",
+  "default_text": "LEVEL UP",
   "text_character_limit": 16,
   "steps": [
     {

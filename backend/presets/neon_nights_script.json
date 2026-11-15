@@ -4,7 +4,7 @@
   "description": "Night-darkened magenta background with a sunset split-tone; hot-pink neon brush-script title, tilted and glowing, behind the subject; cyan rim light on the subject.",
   "ar": "non-square",
   "text_input": "yes",
-  "default_text": "TITLE",
+  "default_text": "Neon Nights",
   "text_character_limit": 16,
   "steps": [
     {

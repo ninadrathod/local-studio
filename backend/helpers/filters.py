@@ -3585,6 +3585,23 @@ def _paste_text_block(
     return canvas
 
 
+# Some display fonts ship an almost zero-width space (Monoton / `neon_lines` is
+# 0.11 em), so "MIDNIGHT DRIVE" reads as one word. Below the threshold, each
+# space is repeated until the gap reaches about the target width.
+_NARROW_SPACE_EM = 0.15
+_MIN_WORD_GAP_EM = 0.28
+
+
+def _widen_narrow_spaces(text: str, font: ImageFont.ImageFont, size: int) -> str:
+    """Repeat spaces when the font's own space is too narrow to separate words."""
+    if " " not in text or size <= 0:
+        return text
+    gap = font.getlength(" ")
+    if gap <= 0 or gap >= _NARROW_SPACE_EM * size:
+        return text
+    return text.replace(" ", " " * math.ceil(_MIN_WORD_GAP_EM * size / gap))
+
+
 def draw_text(
     image: Image.Image,
     text: str = "",
@@ -3671,6 +3688,7 @@ def draw_text(
     style = (font_style or "sans").strip().lower()
     path = str(font_path).strip() if font_path else None
     font = _load_font(size, style, path or None)
+    value = _widen_narrow_spaces(value, font, size)
     draw = ImageDraw.Draw(canvas)
     width_cap = 0.9 if max_width_ratio is None else float(max_width_ratio)
     if not math.isfinite(width_cap) or not 0.05 <= width_cap <= 1.0:
