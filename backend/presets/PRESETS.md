@@ -380,7 +380,7 @@ Ten looks that keep the photo intact: an optional colour treatment, then a few s
 
 ### Tone curves & motion
 
-Ten looks built on point curves (`tone_curve`) and local shadow / highlight recovery (`shadows_highlights`); the last two add a directional shutter `motion_blur`. All are `ar: non-square`, `text_input: no`, seeded via `seed_default_presets()` / setup. The eight grades start with the HD pass `{ "filter": "ai_upscale", "long_edge": 1920, "denoise": 0.3 }`; `shutter_drag` and `speed_pan` skip it on purpose (motion blur hides the extra detail, and with `LIGHTWEIGHT=1` the enlarged cut-out would push a 1 GB host past its RAM). Grades run in ~3.7 s / ~0.9 GiB peak at 24 MP; the motion presets ~6 s / ~2.9 GiB (rembg cutout), and ~0.83–0.9 GiB with `LIGHTWEIGHT=1` at 2 MP (like `portrait_bokeh`).
+Ten looks built on point curves (`tone_curve`) and local shadow / highlight recovery (`shadows_highlights`); the last two add a directional shutter `motion_blur` (plus `radial_swirl`, a circular `radial_blur`). All are `ar: non-square`, `text_input: no`, seeded via `seed_default_presets()` / setup. The eight grades start with the HD pass `{ "filter": "ai_upscale", "long_edge": 1920, "denoise": 0.3 }`; `shutter_drag` and `speed_pan` skip it on purpose (motion blur hides the extra detail, and with `LIGHTWEIGHT=1` the enlarged cut-out would push a 1 GB host past its RAM). Grades run in ~3.7 s / ~0.9 GiB peak at 24 MP; the motion presets ~6 s / ~2.9 GiB (rembg cutout), and ~0.83–0.9 GiB with `LIGHTWEIGHT=1` at 2 MP (like `portrait_bokeh`).
 
 #### `print_film_2383` — Print film 2383
 
@@ -441,6 +441,36 @@ Ten looks built on point curves (`tone_curve`) and local shadow / highlight reco
 - **Idea:** Panning shot: subject sharp, background streaked horizontally; warm punchy S-curve with opened shadows and a vignette.
 - **Steps:** `extract_subject` (`single_subject: true`) → `motion_blur` on background (length_ratio 0.09, angle 0, trail 0) → `composite` → `shadows_highlights` (+0.35 / -0.5) → `tone_curve` (master 0→0 50→36 128→132 205→224 255→252; red 0→0 128→136 255→255; blue 0→10 128→122 255→240) → `color_grade` (saturation 1.05, vibrance 0.25) → `vignette` 0.3
 - **File:** `backend/presets/speed_pan.json`
+
+#### `radial_swirl` — Radial swirl
+
+- **Idea:** Subject stays sharp while the background spins in a circular (rotational) blur centred behind the subject — the swirl gets stronger toward the frame edges. `ar: non-square`, `text_input: no`, no HD.
+- **Steps:** `extract_subject` (`single_subject: true`) → `radial_blur` on background (`mode: spin`, amount 14°, `exclude: subject` — centre = subject's alpha centroid, hole colours kept out) → `composite`
+- **File:** `backend/presets/radial_swirl.json`
+
+#### `twirl_vortex` — Twirl vortex
+
+- **Idea:** Subject sharp; the background twisted into a whirlpool centred behind the subject (detail stays sharp — a warp, not a blur), light vignette. `ar: non-square`, `text_input: no`, no HD.
+- **Steps:** `extract_subject` (`single_subject: true`) → `warp` on background (`mode: twirl`, amount 160°, radius 1.0, `exclude: subject`) → `composite` → `vignette` 0.3
+- **File:** `backend/presets/twirl_vortex.json`
+
+#### `water_ripple` — Water ripple
+
+- **Idea:** Concentric pond rings spread out from behind the subject, shaded crests fading toward the edges, cool grade on the background.
+- **Steps:** `extract_subject` → `warp` on background (`mode: ripple`, amount 0.014, wavelength 0.06, shade 0.35, falloff 1.6, `exclude: subject`) → `color_grade` on background (temperature -0.2, saturation 0.9) → `composite`
+- **File:** `backend/presets/water_ripple.json`
+
+#### `squiggle_wave` — Squiggle wave
+
+- **Idea:** Psychedelic squiggly background — diagonal sine wobble on both axes with boosted colour; subject crisp.
+- **Steps:** `extract_subject` → `warp` on background (`mode: wave`, amount 0.025, wavelength 0.09, angle 20, `exclude: subject`) → `color_grade` on background (saturation 1.35, contrast 0.1) → `composite`
+- **File:** `backend/presets/squiggle_wave.json`
+
+#### `liquid_spill` — Liquid spill
+
+- **Idea:** Background melts into a glossy, marbled flow like spilled water (seeded noise warp with slope shading), soft highlight bloom.
+- **Steps:** `extract_subject` → `warp` on background (`mode: liquid`, amount 0.06, wavelength 0.18, shade 0.6, seed 7, `exclude: subject`) → `composite` → `bloom` (threshold 0.75, radius_ratio 0.02, amount 0.15)
+- **File:** `backend/presets/liquid_spill.json`
 
 ### Subject spotlights
 
@@ -624,6 +654,8 @@ Five street-graffiti looks inspired by Indian hip-hop street posters (original a
 | `tone_curve` | Photoshop / Lightroom point curves: `[[in, out], …]` on 0–255 joined by a monotone cubic spline (no overshoot); `master` on all channels first, then `red` / `green` / `blue`; folded into one point table, flat cost; omitted curves are identity | `on`, `master`, `red`, `green`, `blue` |
 | `shadows_highlights` | Local Shadows / Highlights: a gamma bend weighted by a tone mask (pixel luma mixed with an edge-aware fast guided filter of it, fitted at ≤ 1024 px and applied at full resolution, so hard edges get no halo), so dark regions open up and bright ones recover as areas; black and white stay fixed, colour scales with brightness (hue kept, gamut-fitted); numpy in ≤ 1 MP strips | `on`, `shadows` (−1 deepen…1 open), `highlights` (−1 recover…1 brighten), `radius_ratio` (mask blur, fraction of short side; 0.02), `local` (0–1 share of the blurred mask; 0.6) |
 | `motion_blur` | Directional shutter blur: averaged shifted copies along `angle` with edge-extended borders; RGBA uses premultiplied alpha so a cut-out streaks into transparency; worked at ≤ 1600 px long edge (≤ 1024 with `LIGHTWEIGHT=1`) and scaled back (flat cost). `exclude` names a layer (e.g. `subject`, RGB layers only) whose alpha, grown by `exclude_grow`, gets zero weight, so the subject-coloured hole fill isn't smeared past the outline | `on`, `length_ratio` (streak, fraction of short side, ≤ 0.5), `angle` (motion direction, 0 → right, 90 → up), `trail` (0 both ways / pan … 1 behind only), `fade` (0–1 thinner tail), `freeze` (0–1 sharp copy on top, rear-curtain flash), `exclude`, `exclude_grow` (fraction of short side; 0.004) |
+| `radial_blur` | Circular blur around one centre: `spin` streaks along circles (rotational), `zoom` along rays; blur grows with distance so the centre stays sharp. Centre = `x` / `y` (0–1, both or neither) if set, else the alpha centroid of `exclude` (e.g. `subject`, so the swirl sits behind it), else frame centre; `offset_y` nudges it. `exclude` also gives the hole zero weight (grown by `exclude_grow`). Edge-extended, worked at ≤ 1600 px long edge (≤ 1024 with `LIGHTWEIGHT=1`), flat cost; RGBA blurs with alpha as weight | `on`, `mode` (`spin`/`zoom`), `amount` (spin: total sweep in degrees, capped at 45; zoom: scale spread, capped at 0.5, e.g. 0.12 — caps bound memory), `x`, `y`, `offset_y`, `exclude`, `exclude_grow` (0.004) |
+| `warp` | Displace (re-map) pixels around one centre — sharp distortion, not blur. `twirl` rotates by `amount` **degrees** at the centre easing to 0 at `radius` × farthest corner; `ripple` = concentric rings (radial shift `amount` × sin(2πr / `wavelength`)); `wave` = squiggly sin wobble on both axes, rotated by `angle`; `liquid` = smooth seeded noise flow (feature size `wavelength`). `falloff` fades the shift with distance; `shade` lights ripple / liquid slopes (water sheen). Centre like `radial_blur` (`x` / `y` both or neither, else `exclude` alpha centroid, else frame centre; `offset_y`). With `exclude` (RGB or RGBA layers), the hole (grown by `exclude_grow`) is first refilled from its surroundings, and any sample landing behind the subject is reflected outward past the subject's outline along its ray from the centre — so subject colours aren't dragged out and no smooth refill patch shows beside the subject. Row strips (smaller with `LIGHTWEIGHT=1`), mirrored at frame edges (no border streaks); liquid noise grid is capped, so a tiny `wavelength` can't blow up memory | `on`, `mode` (`twirl`/`ripple`/`wave`/`liquid`), `amount` (twirl: degrees; others: fraction of short side), `wavelength` (fraction of short side; 0.06), `radius` (twirl, 0–1 of farthest corner), `falloff` (fraction of short side, 0 off), `shade` (0–1), `angle` (wave, degrees), `seed` (liquid), `x`, `y`, `offset_y`, `exclude`, `exclude_grow` (0.006) |
 | `vignette` | Edge falloff toward black (or `color`); mask built at ≤ 256 px and scaled up, so it is resolution-independent | `on`, `amount` (0–1), `midpoint` (0–1), `feather`, `roundness` (0 frame-shaped…1 circle), `color`/`rgb` |
 | `bloom` | Diffusion glow: highlights above `threshold` are blurred and screened back (Pro-Mist / dreamy); worked at ≤ 1024 px, so cost is flat | `on`, `threshold` (0–1), `radius_ratio` (fraction of short side), `amount` (0–1), `color`/`rgb` (glow tint) |
 | `halation` | Film halation: a red-orange halo around (not on) bright highlights; worked at ≤ 1024 px | `on`, `threshold`, `radius_ratio`, `amount`, `color`/`rgb` (default [255, 70, 30]) |

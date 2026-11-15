@@ -1,0 +1,41 @@
+{
+  "name": "liquid_spill",
+  "label": "Liquid spill",
+  "description": "The background melts into a glossy, marbled flow like spilled water, with a soft highlight bloom; the subject stays sharp.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "warp",
+      "on": "background",
+      "mode": "liquid",
+      "amount": 0.06,
+      "wavelength": 0.18,
+      "shade": 0.6,
+      "seed": 7,
+      "exclude": "subject"
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    },
+    {
+      "filter": "bloom",
+      "on": "image",
+      "threshold": 0.75,
+      "radius_ratio": 0.02,
+      "amount": 0.15
+    }
+  ]
+}

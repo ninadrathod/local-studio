@@ -333,6 +333,8 @@ FILTERS: dict[str, FilterHandler] = {
     "film_dust": _run_simple(F.film_dust),
     "chromatic_aberration": _run_simple(F.chromatic_aberration),
     "motion_blur": _run_excluding(F.motion_blur),
+    "radial_blur": _run_excluding(F.radial_blur),
+    "warp": _run_excluding(F.warp),
     "blur": _run_excluding(F.blur),
     "draw_text": _run_simple(F.draw_text),
     "place_on_canvas": _run_simple(F.place_on_canvas),

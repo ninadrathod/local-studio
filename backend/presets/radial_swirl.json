@@ -1,0 +1,31 @@
+{
+  "name": "radial_swirl",
+  "label": "Radial swirl",
+  "description": "Subject stays sharp while the background spins in a circular (rotational) blur centred behind the subject.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "radial_blur",
+      "on": "background",
+      "mode": "spin",
+      "amount": 14,
+      "exclude": "subject"
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    }
+  ]
+}

@@ -1,5 +1,50 @@
 [
   {
+    "preset_name": "twirl_vortex",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/twirl_vortex.jpg",
+    "post_edit_image": "previews/post-edit/twirl_vortex.png"
+  },
+  {
+    "preset_name": "liquid_spill",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/liquid_spill.jpg",
+    "post_edit_image": "previews/post-edit/liquid_spill.png"
+  },
+  {
+    "preset_name": "squiggle_wave",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/squiggle_wave.jpg",
+    "post_edit_image": "previews/post-edit/squiggle_wave.png"
+  },
+  {
+    "preset_name": "water_ripple",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/water_ripple.jpg",
+    "post_edit_image": "previews/post-edit/water_ripple.png"
+  },
+  {
+    "preset_name": "radial_swirl",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/radial_swirl.jpg",
+    "post_edit_image": "previews/post-edit/radial_swirl.png"
+  },
+  {
     "preset_name": "graffiti_outline_tower",
     "ar": "non-square",
     "text_input": "yes",

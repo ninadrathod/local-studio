@@ -2361,6 +2361,406 @@ def motion_blur(
     return out
 
 
+def _check_xy(name: str, x: float | None, y: float | None) -> None:
+    """`x` / `y` pin the centre only as a pair; one without the other is a preset typo."""
+    if (x is None) != (y is None):
+        raise ValueError(f"{name}: x and y must be given together")
+
+
+def _alpha_centroid(alpha: Image.Image) -> tuple[float, float] | None:
+    """Alpha-weighted centre (x, y) in pixels of an L mask, or None when empty."""
+    import numpy as np
+
+    small = alpha
+    scale = 1.0
+    if max(alpha.size) > 512:
+        scale = 512 / max(alpha.size)
+        small = alpha.resize((max(1, round(alpha.width * scale)), max(1, round(alpha.height * scale))), Image.Resampling.BILINEAR)
+    a = np.asarray(small, dtype=np.float64)
+    total = a.sum()
+    if total <= 0:
+        return None
+    ys, xs = np.indices(a.shape)
+    return ((xs * a).sum() / total + 0.5) / scale, ((ys * a).sum() / total + 0.5) / scale
+
+
+# radial_blur limits: sweep caps keep the padded work copy ≤ ~2× the frame; enough
+# samples that the outer streaks stay smooth (≤ ~2 px between taps at the caps).
+_RADIAL_SPIN_MAX = 45.0
+_RADIAL_ZOOM_MAX = 0.5
+_RADIAL_MAX_SAMPLES = 96
+
+
+def radial_blur(
+    image: Image.Image,
+    mode: str = "spin",
+    amount: float = 10.0,
+    x: float | None = None,
+    y: float | None = None,
+    offset_y: float = 0.0,
+    exclude: Image.Image | None = None,
+    exclude_grow: float = 0.004,
+) -> Image.Image:
+    """
+    Circular (radial) blur around one centre: `spin` streaks along circles
+    (rotational blur, `amount` = total sweep in degrees, ≤ 45) and `zoom`
+    streaks along rays (`amount` = scale spread, e.g. 0.12 → 0.94×…1.06×, ≤ 0.5).
+    The caps bound the edge padding (and so memory) of the work copy.
+    Blur grows with distance from the centre, so the centre stays sharp.
+
+    The centre is `x` / `y` (fractions of width / height) when given, else the
+    alpha-weighted centre of `exclude` (e.g. the subject cutout, so the swirl
+    sits behind the subject), else the frame centre; `offset_y` (fraction of
+    the short side, negative = up) then nudges it. `exclude` also gives zero
+    weight to the pixels under its alpha (grown by `exclude_grow` × short
+    side), so a cut-out hole doesn't smear the subject's colours outward.
+    Worked at ≤ 1600 px long edge (≤ 1024 with LIGHTWEIGHT=1) with edge-extended
+    borders and scaled back, so cost is flat. RGBA blurs with its alpha as weight.
+    """
+    import numpy as np
+
+    kind = (mode or "spin").strip().lower()
+    if kind not in ("spin", "zoom"):
+        raise ValueError("radial_blur: mode must be 'spin' or 'zoom'")
+    for name, value in (("amount", amount), ("offset_y", offset_y), ("exclude_grow", exclude_grow)):
+        if not math.isfinite(float(value)):
+            raise ValueError(f"radial_blur: {name} must be a finite number")
+    _check_xy("radial_blur", x, y)
+    spread = max(0.0, min(_RADIAL_SPIN_MAX if kind == "spin" else _RADIAL_ZOOM_MAX, float(amount)))
+    has_alpha = image.mode == "RGBA"
+    src = _as_rgba(image) if has_alpha else _as_rgb(image)
+    w, h = src.size
+    if spread <= 0:
+        return src.copy()
+
+    # Centre in full-resolution pixels.
+    hole = None
+    if exclude is not None:
+        hole = _as_rgba(exclude).getchannel("A")
+        if hole.size != (w, h):
+            hole = hole.resize((w, h), Image.Resampling.BILINEAR)
+    if x is not None and y is not None:
+        cx, cy = float(x) * w, float(y) * h
+    else:
+        found = _alpha_centroid(hole) if hole is not None else None
+        cx, cy = found if found is not None else (w / 2, h / 2)
+    cy += float(offset_y) * min(w, h)
+
+    light = os.environ.get("LIGHTWEIGHT", "0").strip() == "1"
+    work_edge = _MOTION_WORK_EDGE_LIGHT if light else _MOTION_WORK_EDGE
+    scale = min(1.0, work_edge / max(w, h))
+    ww, wh = max(1, round(w * scale)), max(1, round(h * scale))
+    work = src if scale >= 1.0 else src.resize((ww, wh), Image.Resampling.BILINEAR)
+    cx, cy = cx * scale, cy * scale
+
+    rgb = np.asarray(work.convert("RGB"), dtype=np.float32)
+    weight = np.asarray(work.getchannel("A"), dtype=np.float32) / 255 if has_alpha else None
+    if hole is not None:
+        small_hole = hole.resize((ww, wh), Image.Resampling.BILINEAR) if scale < 1.0 else hole
+        grow = max(0.0, float(exclude_grow)) * min(ww, wh)
+        if grow >= 0.5:
+            small_hole = _dilate(small_hole, grow)
+        keep_w = 1 - np.asarray(small_hole, dtype=np.float32) / 255
+        weight = keep_w if weight is None else weight * keep_w
+    # Planes: weighted colour (or plain colour) [, weight, plain colour].
+    planes = [rgb[..., c] * weight if weight is not None else rgb[..., c] for c in range(3)]
+    if weight is not None:
+        planes += [weight] + [rgb[..., c] for c in range(3)]
+
+    corners = [(0, 0), (ww, 0), (0, wh), (ww, wh)]
+    max_r = max(math.hypot(px_ - cx, py_ - cy) for px_, py_ in corners)
+    half = math.radians(spread) / 2 if kind == "spin" else spread / 2
+    disp = half * max_r  # largest one-sided displacement (px), both modes
+    samples = max(8, min(_RADIAL_MAX_SAMPLES, math.ceil(2 * disp / 1.5)))
+    pad = math.ceil(disp) + 2
+    padded = [
+        Image.fromarray(np.pad(p, pad, mode="edge").astype(np.float32), "F") for p in planes
+    ]
+    acc = [np.zeros((wh, ww), dtype=np.float32) for _ in planes]
+    for i in range(samples):
+        t = i / (samples - 1) * 2 - 1  # −1…1
+        if kind == "spin":
+            th = t * half
+            a, b, d, e = math.cos(th), -math.sin(th), math.sin(th), math.cos(th)
+        else:
+            s = 1 + t * half
+            a, b, d, e = s, 0.0, 0.0, s
+        coeffs = (a, b, cx - a * cx - b * cy + pad, d, e, cy - d * cx - e * cy + pad)
+        for k, plane in enumerate(padded):
+            acc[k] += np.asarray(
+                plane.transform((ww, wh), Image.Transform.AFFINE, coeffs, Image.Resampling.BILINEAR)
+            )
+    del padded
+    acc = [a_ / samples for a_ in acc]
+    if weight is not None:
+        wt = acc[3]
+        t_ = np.clip(wt / 0.06, 0, 1)
+        colour = [acc[c] / np.maximum(wt, 1e-4) * t_ + acc[4 + c] * (1 - t_) for c in range(3)]
+    else:
+        colour = acc[:3]
+    out_px = np.clip(np.stack(colour, axis=-1) + 0.5, 0, 255).astype(np.uint8)
+    out = Image.fromarray(out_px, "RGB")
+    if has_alpha:
+        alpha_src = work.getchannel("A")
+        spun = radial_blur(alpha_src.convert("RGB"), kind, spread, x=cx / ww, y=cy / wh)
+        out.putalpha(spun.convert("L"))
+    if out.size != (w, h):
+        out = out.resize((w, h), Image.Resampling.BICUBIC)
+    return out
+
+
+def _fill_hole(image: Image.Image, hole: Image.Image, radius_ratio: float = 0.05) -> Image.Image:
+    """Replace the pixels under `hole` (L) with a hole-aware blur of their surroundings."""
+    smooth = blur(image, radius_ratio, exclude=Image.merge("RGBA", (hole, hole, hole, hole)), exclude_grow=0)
+    return Image.composite(smooth, image, hole)
+
+
+def _mirror(coord: "np.ndarray", size: int) -> "np.ndarray":
+    """Fold coordinates back into [0, size - 1] by mirroring at the edges."""
+    import numpy as np
+
+    if size <= 1:
+        return np.zeros_like(coord)
+    period = 2 * (size - 1)
+    m = np.mod(coord, period)
+    return np.where(m > size - 1, period - m, m)
+
+
+def _bilinear(src: "np.ndarray", sx: "np.ndarray", sy: "np.ndarray", mirror: bool = False) -> "np.ndarray":
+    """Sample `src` (H, W[, C]) at float coords; edges clamp, or mirror with `mirror`."""
+    import numpy as np
+
+    h, w = src.shape[:2]
+    if mirror:
+        sx, sy = _mirror(sx, w), _mirror(sy, h)
+    sx = np.clip(sx, 0, w - 1)
+    sy = np.clip(sy, 0, h - 1)
+    x0 = np.floor(sx).astype(np.int32)
+    y0 = np.floor(sy).astype(np.int32)
+    x1 = np.minimum(x0 + 1, w - 1)
+    y1 = np.minimum(y0 + 1, h - 1)
+    fx = (sx - x0).astype(np.float32)
+    fy = (sy - y0).astype(np.float32)
+    if src.ndim == 3:
+        fx, fy = fx[..., None], fy[..., None]
+    top = src[y0, x0] * (1 - fx) + src[y0, x1] * fx
+    bottom = src[y1, x0] * (1 - fx) + src[y1, x1] * fx
+    return top * (1 - fy) + bottom * fy
+
+
+_RAY_BINS = 720
+
+
+def _ray_reach(mask: Image.Image, cx: float, cy: float) -> "np.ndarray":
+    """
+    Farthest mask pixel (alpha > half) from (cx, cy) per angle bin (`_RAY_BINS`
+    around the circle), in full-resolution px; 0 where a ray never meets the
+    mask. Measured on a ≤ 512 px copy, widened by one bin each side so the
+    outline isn't jagged.
+    """
+    import numpy as np
+
+    scale = min(1.0, 512 / max(mask.size))
+    small = mask if scale >= 1.0 else mask.resize(
+        (max(1, round(mask.width * scale)), max(1, round(mask.height * scale))), Image.Resampling.BILINEAR
+    )
+    ys, xs = np.nonzero(np.asarray(small) > 127)
+    reach = np.zeros(_RAY_BINS, dtype=np.float32)
+    if len(xs) == 0:
+        return reach
+    # Pixel corners farthest from the centre: + 1 px of slack at the work scale.
+    dx = (xs + 0.5) / scale - cx
+    dy = (ys + 0.5) / scale - cy
+    r = np.hypot(dx, dy) + 1.0 / scale
+    bins = ((np.arctan2(dy, dx) + math.pi) / (2 * math.pi) * _RAY_BINS).astype(np.int64) % _RAY_BINS
+    np.maximum.at(reach, bins, r.astype(np.float32))
+    return np.maximum(reach, np.maximum(np.roll(reach, 1), np.roll(reach, -1)))
+
+
+def _reflect_out_of_subject(
+    sx: "np.ndarray", sy: "np.ndarray", cx: float, cy: float, reach: "np.ndarray"
+) -> tuple["np.ndarray", "np.ndarray"]:
+    """Move samples inside the subject's reach outward, mirrored at that radius."""
+    import numpy as np
+
+    dx, dy = sx - cx, sy - cy
+    r = np.hypot(dx, dy)
+    pos = (np.arctan2(dy, dx) + math.pi) / (2 * math.pi) * _RAY_BINS - 0.5
+    lo = np.floor(pos).astype(np.int64)
+    f = (pos - lo).astype(np.float32)
+    edge = reach[lo % _RAY_BINS] * (1 - f) + reach[(lo + 1) % _RAY_BINS] * f
+    inside = r < edge
+    if not inside.any():
+        return sx, sy
+    k = np.where(inside, (2 * edge - r) / np.maximum(r, 1e-3), 1.0)
+    return cx + dx * k, cy + dy * k
+
+
+_WARP_MODES = ("twirl", "ripple", "wave", "liquid")
+_WARP_STRIP_PIXELS = 1_000_000
+_WARP_STRIP_PIXELS_LIGHT = 250_000
+# Liquid noise grid cap (coarse cells); keeps the 6× upsampled field ≤ ~1.5 MP per plane.
+_WARP_LIQUID_MAX_CELLS = 40_000
+
+
+def warp(
+    image: Image.Image,
+    mode: str = "ripple",
+    amount: float = 0.012,
+    wavelength: float = 0.06,
+    radius: float = 1.0,
+    falloff: float = 0.0,
+    shade: float = 0.0,
+    angle: float = 0.0,
+    seed: int = 7,
+    x: float | None = None,
+    y: float | None = None,
+    offset_y: float = 0.0,
+    exclude: Image.Image | None = None,
+    exclude_grow: float = 0.006,
+) -> Image.Image:
+    """
+    Displace (re-map) pixels around one centre — a liquid / distortion warp
+    that keeps detail sharp, unlike a blur.
+
+    Modes (`amount` / `wavelength` are fractions of the short side unless noted):
+    - `twirl`: rotate by `amount` **degrees** at the centre, easing to 0 at
+      `radius` × the farthest corner (whirlpool).
+    - `ripple`: concentric water rings — radial shift `amount` × sin(2πr / `wavelength`).
+    - `wave`: squiggly wobble — x shifts with sin(y), y with sin(x), period
+      `wavelength`, rotated by `angle` degrees.
+    - `liquid`: smooth seeded noise flow (feature size `wavelength`, shift
+      `amount`) — marbled, spilt-water look.
+    `falloff` (fraction of the short side, 0 = off) fades the shift with
+    distance from the centre (ripple / wave / liquid). `shade` (0–1) lights the
+    slopes of ripple / liquid (bright crest, dark trough) for a water sheen.
+
+    The centre is `x` / `y` (0–1) when both are given, else the alpha centroid
+    of `exclude` (e.g. the subject cutout), else the frame centre; `offset_y`
+    (fraction of short side) nudges it. With `exclude`, the pixels under its
+    alpha (grown by `exclude_grow`) are first refilled from their surroundings,
+    so the warp can't drag subject colours into the background (RGB and RGBA),
+    and any sample that lands behind the subject is reflected outward past the
+    subject's outline along its ray from the centre, so it picks up real
+    texture instead of the smooth refill (no blurry patch beside the subject,
+    even with a strong twirl).
+    Sampled in row strips (smaller with LIGHTWEIGHT=1), mirrored at the frame
+    edges (no smeared border streaks), so memory stays ≈ a few copies of the
+    image. Liquid noise is capped at a fixed grid size, so a tiny `wavelength`
+    can't blow up memory (features just stop shrinking).
+    """
+    import numpy as np
+
+    kind = (mode or "").strip().lower()
+    if kind not in _WARP_MODES:
+        raise ValueError(f"warp: mode must be one of {', '.join(_WARP_MODES)}")
+    for name, value in (("amount", amount), ("wavelength", wavelength), ("radius", radius),
+                        ("falloff", falloff), ("shade", shade), ("angle", angle), ("offset_y", offset_y)):
+        if not math.isfinite(float(value)):
+            raise ValueError(f"warp: {name} must be a finite number")
+    if float(wavelength) <= 0 or float(radius) <= 0:
+        raise ValueError("warp: wavelength and radius must be > 0")
+    _check_xy("warp", x, y)
+
+    has_alpha = image.mode == "RGBA"
+    src = _as_rgba(image) if has_alpha else _as_rgb(image)
+    w, h = src.size
+    short = min(w, h)
+    hole = None
+    if exclude is not None:
+        hole = _as_rgba(exclude).getchannel("A")
+        if hole.size != (w, h):
+            hole = hole.resize((w, h), Image.Resampling.BILINEAR)
+    if x is not None and y is not None:
+        cx, cy = float(x) * w, float(y) * h
+    else:
+        found = _alpha_centroid(hole) if hole is not None else None
+        cx, cy = found if found is not None else (w / 2, h / 2)
+    cy += float(offset_y) * short
+
+    reach = None  # outer radius of the subject along each ray from the centre
+    if hole is not None and hole.getbbox() is not None:
+        grow = max(0.0, float(exclude_grow)) * short
+        filled_hole = _dilate(hole, grow) if grow >= 0.5 else hole
+        src = _fill_hole(src, filled_hole)
+        reach = _ray_reach(filled_hole, cx, cy)
+
+    amt = float(amount)
+    lam = float(wavelength) * short
+    fall = max(0.0, float(falloff)) * short
+    shd = max(0.0, min(1.0, float(shade)))
+    max_r = max(math.hypot(px_ - cx, py_ - cy) for px_, py_ in ((0, 0), (w, 0), (0, h), (w, h)))
+
+    field = None
+    if kind == "liquid":
+        # Smooth noise: one random value per half feature, bicubic-upsampled 6×.
+        cell = max(2.0, lam / 2, math.sqrt(w * h / _WARP_LIQUID_MAX_CELLS))
+        gw, gh = max(4, math.ceil(w / cell) + 2), max(4, math.ceil(h / cell) + 2)
+        rng = np.random.default_rng(int(seed))
+        planes = []
+        for _ in range(2):
+            noise = Image.fromarray(rng.standard_normal((gh, gw)).astype(np.float32), "F")
+            smooth = np.asarray(noise.resize((gw * 6, gh * 6), Image.Resampling.BICUBIC), dtype=np.float32)
+            planes.append(smooth / max(float(smooth.std()), 1e-6))
+        field = np.stack(planes, axis=-1)
+        div = np.gradient(field[..., 0], axis=1) + np.gradient(field[..., 1], axis=0)
+        div /= max(float(np.abs(div).max()), 1e-6)
+
+    px = np.asarray(src)  # uint8; _bilinear promotes per strip, so no full float copy
+    out = np.empty_like(px)
+    light_host = os.environ.get("LIGHTWEIGHT", "0").strip() == "1"
+    strip = _WARP_STRIP_PIXELS_LIGHT if light_host else _WARP_STRIP_PIXELS
+    rows = max(1, strip // max(1, w))
+    xs = np.arange(w, dtype=np.float32) + 0.5
+    rad = math.radians(float(angle))
+    ca, sa = math.cos(rad), math.sin(rad)
+    for top in range(0, h, rows):
+        ys = np.arange(top, min(h, top + rows), dtype=np.float32) + 0.5
+        gx, gy = np.meshgrid(xs, ys)
+        dx_, dy_ = gx - cx, gy - cy
+        r = np.hypot(dx_, dy_)
+        light = None
+        fade = np.exp(-r / fall) if fall > 0 else 1.0
+        if kind == "twirl":
+            t = np.clip(1 - r / (float(radius) * max_r), 0, 1)
+            th = math.radians(amt) * t * t
+            c, s = np.cos(th), np.sin(th)
+            sx, sy = cx + c * dx_ - s * dy_, cy + s * dx_ + c * dy_
+        elif kind == "ripple":
+            phase = 2 * math.pi * r / lam
+            shift = amt * short * np.sin(phase) * fade
+            ux, uy = dx_ / np.maximum(r, 1e-3), dy_ / np.maximum(r, 1e-3)
+            sx, sy = gx + ux * shift, gy + uy * shift
+            if shd > 0:
+                light = np.cos(phase) * fade
+        elif kind == "wave":
+            u = gx * ca + gy * sa
+            v = -gx * sa + gy * ca
+            k = 2 * math.pi / lam
+            du = amt * short * np.sin(v * k) * fade
+            dv = amt * short * np.sin(u * k) * fade
+            sx, sy = gx + du * ca - dv * sa, gy + du * sa + dv * ca
+        else:
+            fxg = gx / w * (field.shape[1] - 1)
+            fyg = gy / h * (field.shape[0] - 1)
+            flow = _bilinear(field, fxg, fyg)
+            sx = gx + flow[..., 0] * amt * short * fade
+            sy = gy + flow[..., 1] * amt * short * fade
+            if shd > 0:
+                light = _bilinear(div, fxg, fyg) * fade
+        if reach is not None:
+            sx, sy = _reflect_out_of_subject(sx, sy, cx, cy, reach)
+        sampled = _bilinear(px, sx - 0.5, sy - 0.5, mirror=True)
+        if light is not None:
+            gain = (1 + shd * 0.6 * light)[..., None]
+            if has_alpha:
+                sampled[..., :3] *= gain
+            else:
+                sampled *= gain
+        out[top : top + len(ys)] = np.clip(sampled + 0.5, 0, 255).astype(np.uint8)
+    return Image.fromarray(out, "RGBA" if has_alpha else "RGB")
+
+
 def composite(base: Image.Image, overlay: Image.Image) -> Image.Image:
     """Paste overlay (with alpha) on top of base."""
     bottom = _as_rgba(base)
