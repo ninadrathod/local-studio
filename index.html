@@ -42,7 +42,9 @@
         },
       };
     </script>
-    <link rel="stylesheet" href="css/styles.css" />
+    <!-- ?v=2 is a one-time break from copies cached before scripts/serve_frontend.py sent
+         Cache-Control: no-cache. Browsers now revalidate on every load, so no further bumps are needed. -->
+    <link rel="stylesheet" href="css/styles.css?v=2" />
   </head>
   <body class="font-sans text-ink bg-paper antialiased studio-page">
     <div class="page-shell studio-shell flex flex-col">
@@ -298,6 +300,6 @@
       </footer>
     </div>
 
-    <script type="module" src="script.js"></script>
+    <script type="module" src="script.js?v=2"></script>
   </body>
 </html>

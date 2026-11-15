@@ -443,6 +443,35 @@ html:has(.studio-page) {
   -webkit-user-drag: none;
 }
 
+/* "New" pill on the newest presets (gallery order is shuffled, so they need a marker). */
+.preset-card__badge {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.4rem;
+  z-index: 2;
+  padding: 0.1rem 0.45rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--lemon);
+  color: var(--ink);
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 1.5px 1.5px 0 var(--ink);
+  pointer-events: none;
+}
+
+@media (max-width: 379px) {
+  .preset-card__badge {
+    top: 0.3rem;
+    left: 0.3rem;
+    padding: 0.05rem 0.35rem;
+    font-size: 0.55rem;
+  }
+}
+
 .preset-card__img--original {
   position: absolute;
   inset: 0;
@@ -890,6 +919,17 @@ html:has(.studio-page) {
 
 /* Narrow phones */
 @media (max-width: 379px) {
+  /* Drop the empty left spacer so the brand can shrink/truncate instead of
+     overlapping "About" (the brand size follows viewport height, so tall
+     narrow phones made it too wide). Extra class beats Tailwind's runtime CSS. */
+  .site-header .studio-header-inner {
+    grid-template-columns: 0 minmax(0, 1fr) auto;
+  }
+
+  .site-header .site-brand {
+    font-size: min(1.15rem, 5.4vw);
+  }
+
   .preset-cols {
     grid-template-columns: 1fr 1fr;
     gap: 0.55rem;

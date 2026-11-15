@@ -10,7 +10,7 @@ A local **image editor** for applying JSON presets to photos:
 2. Image upload unlocks after a preset is selected. If that preset has `text_input: yes`, a text field appears (default + character limit from the preset).
 3. Frontend `POST`s preset name + file (+ optional `text`) to `POST /api/apply-preset`.
 4. Backend resolves the preset from SQLite, runs the JSON filter pipeline (each step names a helper + params; `$text` is bound in), returns a JPEG (for JPEG / HEIC uploads) or PNG.
-5. Frontend shows (and can download) the result. Clicking **Download** increments `popular.used_count` immediately. The gallery does not reorder until the refresh control beside search is clicked (with **Popular** on). Unclicking **Popular** restores newest-first order. A page refresh clears in-memory session state.
+5. Frontend shows (and can download) the result. Clicking **Download** increments `popular.used_count` immediately. The gallery does not reorder until the refresh control beside search is clicked (with **Popular** on). Unclicking **Popular** restores that visit's shuffled order. A page refresh clears in-memory session state.
 
 Repo: https://github.com/ninadrathod/local-studio
 
@@ -55,7 +55,7 @@ Repo: https://github.com/ninadrathod/local-studio
 ## Local defaults
 
 - API: `http://localhost:8000`
-- Frontend static server: typically `http://localhost:5500` (any static host of the repo root)
+- Frontend static server: typically `http://localhost:5500` via `scripts/serve_frontend.py` (`http.server` that sends `Cache-Control: no-cache`, so browsers revalidate JS / CSS and never mix an old `styles.css` with a new `script.js`); any static host of the repo root works, ideally with the same header
 - Health check: `GET /health`
 - Blur endpoint: `POST /api/blur` (multipart field name: `file`)
 - Apply-preset endpoint: `POST /api/apply-preset` (multipart fields: `preset_name`, `file`, optional `text`) → JPEG for JPEG / HEIC uploads, else PNG
@@ -68,10 +68,10 @@ Repo: https://github.com/ninadrathod/local-studio
 
 ## Current scope
 
-- Preset gallery (left, ~65% width on desktop): search + **Input square?** yes/no switch + **Popular** mode (off by default) + refresh control beside search + post-edit thumbnails from `previews/presets.json` (newest first); hover/focus (or press-and-hold on touch) reveals pre-edit original; click/tap to select
+- Preset gallery (left, ~65% width on desktop): search + **Input square?** yes/no switch + **Popular** mode (off by default) + refresh control beside search + post-edit thumbnails from `previews/presets.json` (shuffled into a fresh random order on every page load); hover/focus (or press-and-hold on touch) reveals pre-edit original; click/tap to select
 - Search filters the gallery in place via realtime `GET /api/presets/search?q=…` (DB `preset_name` + `keywords`)
 - **Input square?** **Yes** shows all presets; **No** hides `ar=square` presets
-- Gallery default order is newest `preset_id` first (`list_presets` / `previews/presets.json`). **Popular** selects popular-sort mode. The search-row refresh reloads the visible gallery from `GET /api/presets/popular` (`used_count` descending). Unclicking **Popular** restores newest-first order. Download does not reorder the grid.
+- Gallery default order is a fresh random shuffle on every page load (`previews/presets.json` is stored newest first; `script.js` shuffles it once per load). Search shows only the matches, kept in that same shuffled order. The 5 newest presets (top of the manifest) carry a **New** badge so they stay easy to spot. **Popular** selects popular-sort mode. The search-row refresh reloads the visible gallery from `GET /api/presets/popular` (`used_count` descending). Unclicking **Popular** restores that visit's shuffled order. Download does not reorder the grid.
 - Image upload (right, ~35% width on desktop): locked until a preset is selected; clearing the preset clears the upload; then client-side type check + preview
 - Studio UI uses the full browser viewport (no page scroll); the preset gallery scrolls internally when needed
 - Generate edit when both preset + file are set → `POST /api/apply-preset` → result + download

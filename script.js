@@ -25,6 +25,8 @@ function apiBaseUrl() {
 
 const API_BASE = apiBaseUrl();
 const PRESETS_MANIFEST = "previews/presets.json";
+/** The manifest lists newest presets first; this many get a "New" badge (the gallery itself is shuffled). */
+const NEW_BADGE_COUNT = 5;
 const SEARCH_DEBOUNCE_MS = 180;
 
 /** Allowed relative paths for gallery thumbnails (no schemes / traversal). */
@@ -92,10 +94,43 @@ let searchMatchNames = null;
 let inputImageIsSquare = true;
 /** When true, the search-row refresh loads gallery order from the `popular` table. */
 let popularSortActive = false;
-/** Last applied popular `preset_name` order; `null` means newest-first gallery order. */
+/** Last applied popular `preset_name` order; `null` means this visit's shuffled gallery order. */
 let popularOrderNames = null;
 /** Bumped on each popular refresh — ignores stale responses. */
 let popularGeneration = 0;
+
+/**
+ * Random integer in [0, n). Uses `crypto.getRandomValues` when available
+ * (rejection sampling, so every index is equally likely), else Math.random.
+ * @param {number} n
+ */
+function randomIndex(n) {
+  const cryptoObj = globalThis.crypto;
+  if (cryptoObj?.getRandomValues) {
+    const limit = Math.floor(0x100000000 / n) * n;
+    const buf = new Uint32Array(1);
+    do {
+      cryptoObj.getRandomValues(buf);
+    } while (buf[0] >= limit);
+    return buf[0] % n;
+  }
+  return Math.floor(Math.random() * n);
+}
+
+/**
+ * Fisher–Yates shuffle into a new array (the input is left untouched).
+ * @template T
+ * @param {T[]} list
+ * @returns {T[]}
+ */
+function shuffled(list) {
+  const out = [...list];
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = randomIndex(i + 1);
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
 
 function formatPresetLabel(name) {
   return String(name || "")
@@ -507,7 +542,7 @@ function createPresetCard(preset) {
   if (isSelected) button.classList.add("preset-card--selected");
   button.setAttribute(
     "aria-label",
-    `Select preset ${label}. Hover, focus, or press and hold to compare with the original photo.`,
+    `Select ${preset.is_new ? "new " : ""}preset ${label}. Hover, focus, or press and hold to compare with the original photo.`,
   );
 
   const media = document.createElement("span");
@@ -531,6 +566,13 @@ function createPresetCard(preset) {
   imgOriginal.draggable = false;
 
   media.append(imgEdited, imgOriginal);
+  if (preset.is_new) {
+    const badge = document.createElement("span");
+    badge.className = "preset-card__badge";
+    badge.textContent = "New";
+    badge.setAttribute("aria-hidden", "true"); // announced via the card's aria-label
+    media.append(badge);
+  }
 
   const nameEl = document.createElement("span");
   nameEl.className = "preset-card__name";
@@ -614,6 +656,8 @@ async function loadPresets() {
         text_character_limit: textLimit,
         pre_edit_image: preset.pre_edit_image,
         post_edit_image: preset.post_edit_image,
+        // Manifest order is newest first, so the first valid entries are the newest.
+        is_new: allGalleryPresets.length < NEW_BADGE_COUNT,
       });
     }
 
@@ -625,6 +669,8 @@ async function loadPresets() {
       );
     }
 
+    // Fresh random order on every page load; search / Popular reorder on top of it.
+    allGalleryPresets = shuffled(allGalleryPresets);
     renderVisibleGallery();
   } catch (err) {
     els.presetLoading?.remove();
@@ -656,18 +702,16 @@ function galleryAfterArFilter(list) {
 
 /**
  * Reorders `list` to match the order of names in `orderNames`. Entries whose
- * name isn't in `orderNames` sort after ranked ones (dropped entirely when
- * `dropUnranked` is set).
+ * name isn't in `orderNames` keep their current relative order after the
+ * ranked ones (Array.prototype.sort is stable).
  * @param {Array<{ preset_name: string }>} list
  * @param {Array<string>|null} orderNames
- * @param {{ dropUnranked?: boolean }} [options]
  * @returns {Array<{ preset_name: string }>}
  */
-function reorderByNameRank(list, orderNames, { dropUnranked = false } = {}) {
+function reorderByNameRank(list, orderNames) {
   if (!orderNames) return list;
   const rank = new Map(orderNames.map((name, i) => [name, i]));
-  const source = dropUnranked ? list.filter((p) => rank.has(p.preset_name)) : list;
-  return [...source].sort((a, b) => {
+  return [...list].sort((a, b) => {
     const ra = rank.has(a.preset_name) ? rank.get(a.preset_name) : Number.MAX_SAFE_INTEGER;
     const rb = rank.has(b.preset_name) ? rank.get(b.preset_name) : Number.MAX_SAFE_INTEGER;
     return ra - rb;
@@ -675,12 +719,15 @@ function reorderByNameRank(list, orderNames, { dropUnranked = false } = {}) {
 }
 
 /**
- * Search hits keep API order (newest `preset_id` first). No search → JSON order.
+ * Search keeps only the matches, in this visit's shuffled order (stable while
+ * typing, so cards don't jump on each keystroke). No search → full shuffled order.
  * @param {Array<{ preset_name: string }>} list
  * @returns {Array<{ preset_name: string }>}
  */
 function galleryAfterSearchOrder(list) {
-  return reorderByNameRank(list, searchMatchNames, { dropUnranked: true });
+  if (!searchMatchNames) return list;
+  const allowed = new Set(searchMatchNames);
+  return list.filter((p) => allowed.has(p.preset_name));
 }
 
 /**
@@ -706,8 +753,8 @@ function updateGalleryActionButton() {
   }
   if (popularOrderNames) {
     els.presetReset.disabled = false;
-    els.presetReset.setAttribute("aria-label", "Restore newest-first preset order");
-    els.presetReset.title = "Restore newest-first preset order";
+    els.presetReset.setAttribute("aria-label", "Restore default preset order");
+    els.presetReset.title = "Restore default preset order";
     return;
   }
   els.presetReset.disabled = !selectedPresetName;
@@ -715,7 +762,7 @@ function updateGalleryActionButton() {
   els.presetReset.title = "Clear selected preset";
 }
 
-function restoreNewestFirstOrder() {
+function restoreDefaultOrder() {
   popularGeneration += 1;
   popularOrderNames = null;
 }
@@ -786,7 +833,7 @@ function handlePopularSortClick() {
     refreshPopularGallery();
     return;
   }
-  restoreNewestFirstOrder();
+  restoreDefaultOrder();
   renderVisibleGallery();
   updateGalleryActionButton();
 }
@@ -797,7 +844,7 @@ function handleGalleryActionClick() {
     return;
   }
   if (popularOrderNames) {
-    restoreNewestFirstOrder();
+    restoreDefaultOrder();
     updateGalleryActionButton();
     renderVisibleGallery();
     return;
