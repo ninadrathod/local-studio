@@ -41,6 +41,7 @@ const MAX_PRESET_TEXT_CHARS = 200;
 
 const els = {
   presetGrid: document.getElementById("preset-grid"),
+  presetScroller: document.getElementById("preset-scroller"),
   presetLoading: document.getElementById("preset-loading"),
   presetError: document.getElementById("preset-error"),
   selectedPresetLabel: document.getElementById("selected-preset-label"),
@@ -820,6 +821,106 @@ function updatePresetCount(shown, total) {
   }
 }
 
+/**
+ * Page-drawn scroller for the preset grid (the native bar is hidden in CSS,
+ * because mobile browsers and Firefox ignore scrollbar styling). Keeps the
+ * thumb in sync with scroll / resize / re-render, and supports dragging the
+ * thumb or tapping the rail to page up / down — with mouse, pen or finger.
+ */
+function initPresetScroller() {
+  const grid = els.presetGrid;
+  const bar = els.presetScroller;
+  const thumb = bar?.querySelector(".preset-scroller__thumb");
+  if (!grid || !bar || !thumb) return;
+
+  let frame = 0;
+  let thumbTop = 0;
+  let thumbHeight = 0;
+  let travel = 0; // px the thumb can move
+  let drag = null; // { pointerId, startY, startScroll }
+
+  function inset() {
+    return parseFloat(getComputedStyle(bar).getPropertyValue("--scroller-inset")) * 16 || 6;
+  }
+
+  function layout() {
+    frame = 0;
+    const view = grid.clientHeight;
+    const total = grid.scrollHeight;
+    const scrollable = total - view;
+    if (scrollable <= 1 || view <= 0) {
+      bar.hidden = true;
+      return;
+    }
+    bar.hidden = false;
+    // Sit over the grid's right padding, the full height of the grid box.
+    bar.style.top = `${grid.offsetTop}px`;
+    bar.style.height = `${view}px`;
+    bar.style.left = `${grid.offsetLeft + grid.offsetWidth - bar.offsetWidth - 2}px`;
+    const pad = inset();
+    const track = Math.max(0, view - 2 * pad);
+    const minThumb = parseFloat(getComputedStyle(thumb).minHeight) || 44;
+    thumbHeight = Math.min(track, Math.max(minThumb, (track * view) / total));
+    travel = Math.max(0, track - thumbHeight);
+    thumbTop = pad + (travel * grid.scrollTop) / scrollable;
+    thumb.style.height = `${thumbHeight}px`;
+    thumb.style.transform = `translateY(${thumbTop}px)`;
+    // ARIA scrollbar value (0–100) so assistive tech still gets the position.
+    const percent = Math.round((100 * grid.scrollTop) / scrollable);
+    if (bar.getAttribute("aria-valuenow") !== String(percent)) {
+      bar.setAttribute("aria-valuenow", String(percent));
+      bar.setAttribute("aria-valuetext", `Scrolled ${percent}% through presets`);
+    }
+  }
+
+  function schedule() {
+    if (!frame) frame = requestAnimationFrame(layout);
+  }
+
+  grid.addEventListener("scroll", schedule, { passive: true });
+  window.addEventListener("resize", schedule);
+  if ("ResizeObserver" in window) new ResizeObserver(schedule).observe(grid);
+  // Cards are re-rendered on search / filter / sort.
+  new MutationObserver(schedule).observe(grid, { childList: true });
+
+  thumb.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    drag = { pointerId: event.pointerId, startY: event.clientY, startScroll: grid.scrollTop };
+    bar.classList.add("preset-scroller--dragging");
+    try {
+      // Keep receiving moves when the finger / cursor leaves the thin thumb.
+      thumb.setPointerCapture(event.pointerId);
+    } catch {
+      // Pointer already gone (or synthetic): dragging still works while over the thumb.
+    }
+  });
+
+  thumb.addEventListener("pointermove", (event) => {
+    if (!drag || event.pointerId !== drag.pointerId || travel <= 0) return;
+    const scrollable = grid.scrollHeight - grid.clientHeight;
+    grid.scrollTop = drag.startScroll + ((event.clientY - drag.startY) * scrollable) / travel;
+  });
+
+  const endDrag = (event) => {
+    if (!drag || event.pointerId !== drag.pointerId) return;
+    drag = null;
+    bar.classList.remove("preset-scroller--dragging");
+  };
+  thumb.addEventListener("pointerup", endDrag);
+  thumb.addEventListener("pointercancel", endDrag);
+
+  // Tap / click on the rail: page toward that point.
+  bar.addEventListener("pointerdown", (event) => {
+    if (event.target === thumb) return;
+    const y = event.clientY - bar.getBoundingClientRect().top;
+    const direction = y < thumbTop ? -1 : 1;
+    grid.scrollBy({ top: direction * grid.clientHeight * 0.9, behavior: "smooth" });
+  });
+
+  schedule();
+}
+
 function readInputSquareSwitch() {
   const checked = els.squareFilter?.querySelector(
     'input[name="input-square"]:checked',
@@ -1078,4 +1179,5 @@ if (els.presetText) {
   });
 }
 
+initPresetScroller();
 loadPresets();

@@ -159,6 +159,24 @@
                   Loading presets…
                 </p>
               </div>
+              <!-- Page-drawn scroller for #preset-grid (script.js initPresetScroller). Exposed as an
+                   ARIA scrollbar so assistive tech still gets the scroll position; not a tab stop,
+                   like a native scrollbar (keyboard users scroll by tabbing through the cards). -->
+              <div
+                id="preset-scroller"
+                class="preset-scroller"
+                role="scrollbar"
+                aria-controls="preset-grid"
+                aria-orientation="vertical"
+                aria-label="Preset gallery scroll position"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="0"
+                aria-valuetext="Scrolled 0% through presets"
+                hidden
+              >
+                <div class="preset-scroller__thumb"></div>
+              </div>
               <p id="preset-error" class="hidden text-sm text-rose font-bold px-0.5 shrink-0" role="alert"></p>
             </aside>
 

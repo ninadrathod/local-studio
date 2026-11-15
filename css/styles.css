@@ -555,69 +555,94 @@ html:has(.studio-page) {
   font-weight: 800;
 }
 
-/* ---- Gallery scroller: a lemon pill thumb on a dashed ink rail ----------
-   The search row reserves the same gutter as the grid (scrollbar-gutter:
-   stable) so its fields line up with the cards, so both get the same width. */
+/* ---- Gallery scroller ---------------------------------------------------
+   A page-drawn scroller (lemon pill thumb on a dashed ink rail) instead of the
+   browser's scrollbar: mobile browsers and Firefox ignore scrollbar styling,
+   so this is the only way to get the same look everywhere. The native bar is
+   hidden; wheel / trackpad / touch / keyboard scrolling still work as usual.
+   script.js (initPresetScroller) positions it over the grid's right edge. */
+.studio-columns__left {
+  position: relative;
+}
+
 .preset-grid,
 .preset-search-row.preset-cols {
-  --scroller-width: 14px;
+  scrollbar-width: none;
+  scrollbar-gutter: auto;
 }
 
 .preset-grid::-webkit-scrollbar,
 .preset-search-row.preset-cols::-webkit-scrollbar {
-  width: var(--scroller-width);
+  display: none;
+  width: 0;
 }
 
-.preset-grid::-webkit-scrollbar-track {
-  margin-block: 0.35rem;
+/* Room for the scroller; the search row matches so its fields line up with the cards. */
+.studio-page .preset-cols.preset-grid,
+.studio-page .preset-search-row.preset-cols {
+  padding-right: var(--scroller-space, 1.25rem);
+}
+
+.preset-scroller {
+  --scroller-inset: 0.35rem;
+  position: absolute;
+  z-index: 3;
+  width: 14px;
   border-radius: 999px;
-  /* A thin dashed rail down the middle of the gutter. */
+  cursor: pointer;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  /* Dashed rail down the middle of the track. */
   background:
     repeating-linear-gradient(
       to bottom,
       color-mix(in srgb, var(--ink) 22%, transparent) 0 6px,
       transparent 6px 11px
     )
-    center / 2px 100% no-repeat;
+    center / 2px calc(100% - 2 * var(--scroller-inset)) no-repeat;
 }
 
-.preset-grid::-webkit-scrollbar-thumb {
+.preset-scroller[hidden] {
+  display: none;
+}
+
+.preset-scroller__thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   min-height: 2.75rem;
   border: 2px solid var(--ink);
   border-radius: 999px;
   background:
-    /* Three grip lines in the middle of the pill. */
     linear-gradient(var(--ink), var(--ink)) center calc(50% - 4px) / 6px 1.5px no-repeat,
     linear-gradient(var(--ink), var(--ink)) center 50% / 6px 1.5px no-repeat,
     linear-gradient(var(--ink), var(--ink)) center calc(50% + 4px) / 6px 1.5px no-repeat,
     var(--lemon);
-  box-shadow: inset -1.5px -1.5px 0 color-mix(in srgb, var(--ink) 18%, transparent);
+  box-shadow:
+    1.5px 1.5px 0 var(--ink),
+    inset -1.5px -1.5px 0 color-mix(in srgb, var(--ink) 18%, transparent);
+  cursor: grab;
+  will-change: transform;
+  transition: background-color 0.15s var(--ease);
 }
 
-.preset-grid::-webkit-scrollbar-thumb:hover {
+.preset-scroller:hover .preset-scroller__thumb {
   background-color: var(--coral);
 }
 
-.preset-grid::-webkit-scrollbar-thumb:active {
+.preset-scroller--dragging .preset-scroller__thumb {
   background-color: var(--coral-deep);
+  cursor: grabbing;
 }
 
-.preset-grid::-webkit-scrollbar-button,
-.preset-grid::-webkit-scrollbar-corner,
-.preset-search-row.preset-cols::-webkit-scrollbar-track,
-.preset-search-row.preset-cols::-webkit-scrollbar-thumb {
-  display: none;
-  background: transparent;
-}
-
-/* Firefox has no ::-webkit-scrollbar; give it matching colours instead.
-   (Chrome also understands scrollbar-color, which would override the custom
-   thumb above, so it is scoped to Firefox only.) */
-@supports (-moz-appearance: none) {
-  .preset-grid,
-  .preset-search-row.preset-cols {
-    scrollbar-width: auto;
-    scrollbar-color: var(--lemon) color-mix(in srgb, var(--ink) 10%, transparent);
+/* Bigger touch target on touch screens (the visible pill stays the same width). */
+@media (pointer: coarse) {
+  .preset-scroller::before {
+    content: "";
+    position: absolute;
+    inset: 0 -10px;
   }
 }
 
