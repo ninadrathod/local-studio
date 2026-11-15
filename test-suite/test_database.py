@@ -77,7 +77,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     init_db(db)
     first = seed_default_presets(db_path=db)
     second = seed_default_presets(db_path=db)
-    assert len(first) == 90
+    assert len(first) == 95
     names = {row["preset_name"] for row in first}
     assert names == {
         "bw_bg_glowing_subject",
@@ -170,6 +170,11 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "vitruvian_study",
         "inventors_notebook",
         "da_vinci_wings",
+        "amber_teal_gel",
+        "ice_gel_orange",
+        "pistachio_gel_rose",
+        "sky_gel_amber",
+        "coral_gel_lagoon",
     }
     by_name = {row["preset_name"]: row for row in first}
     assert by_name["bw_bg_glowing_subject"]["ar"] == "non-square"
@@ -260,6 +265,11 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "vitruvian_study",
         "inventors_notebook",
         "da_vinci_wings",
+        "amber_teal_gel",
+        "ice_gel_orange",
+        "pistachio_gel_rose",
+        "sky_gel_amber",
+        "coral_gel_lagoon",
     ):
         assert by_name[name]["ar"] == "non-square"
         assert by_name[name]["text_input"] == "no"
@@ -267,6 +277,11 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     assert second == []
     names_in_order = [row["preset_name"] for row in list_presets(db_path=db)]
     assert names_in_order == [
+        "coral_gel_lagoon",
+        "sky_gel_amber",
+        "pistachio_gel_rose",
+        "ice_gel_orange",
+        "amber_teal_gel",
         "da_vinci_wings",
         "inventors_notebook",
         "vitruvian_study",
@@ -359,7 +374,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "bw_bg_glowing_subject",
     ]
     popular = list_popular(db_path=db)
-    assert len(popular) == 90
+    assert len(popular) == 95
     assert all(row["used_count"] == 0 for row in popular)
 
 
@@ -469,6 +484,11 @@ def test_seed_default_presets_syncs_text_fields(tmp_path: Path) -> None:
         "vitruvian_study",
         "inventors_notebook",
         "da_vinci_wings",
+        "amber_teal_gel",
+        "ice_gel_orange",
+        "pistachio_gel_rose",
+        "sky_gel_amber",
+        "coral_gel_lagoon",
     ]
     synced =get_preset_by_name("bw_bg_glowing_subject", db_path=db)
     assert synced is not None

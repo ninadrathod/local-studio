@@ -1,0 +1,127 @@
+{
+  "name": "ice_gel_orange",
+  "label": "Ice gel orange",
+  "description": "Cyan gel light on the subject (whites turn a light ice blue) against a muted background pushed toward warm orange.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": false
+    },
+    {
+      "filter": "color",
+      "on": "background",
+      "amount": 0.55
+    },
+    {
+      "filter": "tone_curve",
+      "on": "background",
+      "red": [
+        [
+          0,
+          10
+        ],
+        [
+          128,
+          166
+        ],
+        [
+          255,
+          255
+        ]
+      ],
+      "green": [
+        [
+          0,
+          0
+        ],
+        [
+          128,
+          126
+        ],
+        [
+          255,
+          215
+        ]
+      ],
+      "blue": [
+        [
+          0,
+          0
+        ],
+        [
+          128,
+          91
+        ],
+        [
+          255,
+          180
+        ]
+      ]
+    },
+    {
+      "filter": "color_grade",
+      "on": "background",
+      "exposure": -0.15,
+      "contrast": 0.05
+    },
+    {
+      "filter": "tone_curve",
+      "on": "subject",
+      "red": [
+        [
+          0,
+          0
+        ],
+        [
+          128,
+          112
+        ],
+        [
+          255,
+          180
+        ]
+      ],
+      "green": [
+        [
+          0,
+          6
+        ],
+        [
+          128,
+          132
+        ],
+        [
+          255,
+          236
+        ]
+      ],
+      "blue": [
+        [
+          0,
+          14
+        ],
+        [
+          128,
+          139
+        ],
+        [
+          255,
+          255
+        ]
+      ]
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    }
+  ]
+}

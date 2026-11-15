@@ -1,0 +1,127 @@
+{
+  "name": "sky_gel_amber",
+  "label": "Sky gel amber",
+  "description": "Blue gel light on the subject (whites turn a light sky blue) against a muted background pushed toward golden amber - the reverse of red gel.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": false
+    },
+    {
+      "filter": "color",
+      "on": "background",
+      "amount": 0.55
+    },
+    {
+      "filter": "tone_curve",
+      "on": "background",
+      "red": [
+        [
+          0,
+          10
+        ],
+        [
+          128,
+          165
+        ],
+        [
+          255,
+          255
+        ]
+      ],
+      "green": [
+        [
+          0,
+          9
+        ],
+        [
+          128,
+          135
+        ],
+        [
+          255,
+          225
+        ]
+      ],
+      "blue": [
+        [
+          0,
+          0
+        ],
+        [
+          128,
+          85
+        ],
+        [
+          255,
+          175
+        ]
+      ]
+    },
+    {
+      "filter": "color_grade",
+      "on": "background",
+      "exposure": -0.15,
+      "contrast": 0.05
+    },
+    {
+      "filter": "tone_curve",
+      "on": "subject",
+      "red": [
+        [
+          0,
+          0
+        ],
+        [
+          128,
+          118
+        ],
+        [
+          255,
+          190
+        ]
+      ],
+      "green": [
+        [
+          0,
+          0
+        ],
+        [
+          128,
+          125
+        ],
+        [
+          255,
+          210
+        ]
+      ],
+      "blue": [
+        [
+          0,
+          16
+        ],
+        [
+          128,
+          141
+        ],
+        [
+          255,
+          255
+        ]
+      ]
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    }
+  ]
+}

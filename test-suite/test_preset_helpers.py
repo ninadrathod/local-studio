@@ -2573,3 +2573,48 @@ def test_codex_unknown_font_style_is_rejected() -> None:
 def test_inventors_notebook_page_is_square_for_square_photos() -> None:
     out = apply_preset(_gradient(200, 200), PRESETS / "inventors_notebook.json")
     assert out.size[0] == out.size[1]
+
+
+# --- gel light portraits (whites → light shade, contrasting background) -------
+
+GEL_PRESETS = {
+    # name: (subject whites become…, background tint direction)
+    "amber_teal_gel": ((255, 222, 170), "teal"),
+    "ice_gel_orange": ((180, 236, 255), "orange"),
+    "pistachio_gel_rose": ((185, 255, 215), "rose"),
+    "sky_gel_amber": ((190, 210, 255), "amber"),
+    "coral_gel_lagoon": ((255, 190, 170), "turquoise"),
+}
+
+
+@pytest.mark.parametrize("name,expected", GEL_PRESETS.items())
+def test_gel_presets_tint_whites_and_contrast_background(name: str, expected) -> None:
+    whites, _ = expected
+    data = load_preset(PRESETS / f"{name}.json")
+    assert data["name"] == name and data["ar"] == "non-square"
+    assert data["text_input"] == "no" and data["default_text"] == "" and data["text_character_limit"] == 0
+    steps = data["steps"]
+    assert all(s["filter"] in FILTERS for s in steps)
+    curves = {s["on"]: s for s in steps if s["filter"] == "tone_curve"}
+    subject, background = curves["subject"], curves["background"]
+    # Pure white on the subject becomes the light gel shade (not white).
+    params = {k: subject[k] for k in ("red", "green", "blue")}
+    white = F.tone_curve(Image.new("RGB", (4, 4), (255, 255, 255)), **params).getpixel((0, 0))
+    assert white == pytest.approx(whites, abs=2) and white != (255, 255, 255)
+    # Contrasting tints: the background's hue sits ≥ 90° from the subject's on the colour wheel.
+    import colorsys
+
+    bg_white = F.tone_curve(Image.new("RGB", (4, 4), (255, 255, 255)),
+                            **{k: background[k] for k in ("red", "green", "blue")}).getpixel((0, 0))
+
+    def hue(rgb) -> float:
+        return colorsys.rgb_to_hsv(*(v / 255 for v in rgb))[0] * 360
+
+    gap = abs(hue(white) - hue(bg_white)) % 360
+    assert min(gap, 360 - gap) >= 90
+    # Blacks stay near-black on the background; subject darks lean gently toward the gel.
+    for ch in ("red", "green", "blue"):
+        assert background[ch][0][1] <= 10
+        assert subject[ch][0][1] <= 18
+    tinted = F.tone_curve(Image.new("RGB", (4, 4), (0, 0, 0)), **params).getpixel((0, 0))
+    assert max(tinted) > 0 and max(range(3), key=lambda c: tinted[c]) == max(range(3), key=lambda c: white[c])
