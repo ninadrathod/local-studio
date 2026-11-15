@@ -1,0 +1,117 @@
+{
+  "name": "classic_slide_64",
+  "label": "Classic slide 64",
+  "description": "HD pass, then a dense classic slide-film look: firm contrast, rich reds, blue lowered in the highlights for warmth, teal-cyan shadows, vignette, fine grain.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "shadows_highlights",
+      "on": "image",
+      "shadows": 0.05,
+      "highlights": -0.3
+    },
+    {
+      "filter": "tone_curve",
+      "on": "image",
+      "master": [
+        [
+          0,
+          0
+        ],
+        [
+          48,
+          30
+        ],
+        [
+          128,
+          126
+        ],
+        [
+          205,
+          222
+        ],
+        [
+          255,
+          252
+        ]
+      ],
+      "red": [
+        [
+          0,
+          0
+        ],
+        [
+          64,
+          58
+        ],
+        [
+          128,
+          136
+        ],
+        [
+          255,
+          255
+        ]
+      ],
+      "green": [
+        [
+          0,
+          0
+        ],
+        [
+          128,
+          126
+        ],
+        [
+          255,
+          246
+        ]
+      ],
+      "blue": [
+        [
+          0,
+          10
+        ],
+        [
+          64,
+          66
+        ],
+        [
+          128,
+          120
+        ],
+        [
+          255,
+          214
+        ]
+      ]
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "saturation": 1.2
+    },
+    {
+      "filter": "vignette",
+      "on": "image",
+      "amount": 0.25
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0.0,
+      "grain": 0.04,
+      "stains": 0.0,
+      "seed": 5
+    }
+  ]
+}

@@ -1,5 +1,50 @@
 [
   {
+    "preset_name": "expired_film",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/expired_film.jpg",
+    "post_edit_image": "previews/post-edit/expired_film.png"
+  },
+  {
+    "preset_name": "classic_slide_64",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/classic_slide_64.jpg",
+    "post_edit_image": "previews/post-edit/classic_slide_64.png"
+  },
+  {
+    "preset_name": "green_cast_film",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/green_cast_film.jpg",
+    "post_edit_image": "previews/post-edit/green_cast_film.png"
+  },
+  {
+    "preset_name": "golden_consumer_film",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/golden_consumer_film.jpg",
+    "post_edit_image": "previews/post-edit/golden_consumer_film.png"
+  },
+  {
+    "preset_name": "vista_red_film",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/vista_red_film.jpg",
+    "post_edit_image": "previews/post-edit/vista_red_film.png"
+  },
+  {
     "preset_name": "coral_gel_lagoon",
     "ar": "non-square",
     "text_input": "no",

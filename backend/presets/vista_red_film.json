@@ -1,0 +1,113 @@
+{
+  "name": "vista_red_film",
+  "label": "Vista red film",
+  "description": "HD pass, then a crisp colour-negative look: red pulled down in the shadows and lifted in the mid-highs, slightly cool shadows, saturated reds and cyan-leaning skies, fine grain.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "shadows_highlights",
+      "on": "image",
+      "shadows": 0.15,
+      "highlights": -0.3
+    },
+    {
+      "filter": "tone_curve",
+      "on": "image",
+      "master": [
+        [
+          0,
+          6
+        ],
+        [
+          64,
+          56
+        ],
+        [
+          128,
+          132
+        ],
+        [
+          192,
+          204
+        ],
+        [
+          255,
+          250
+        ]
+      ],
+      "red": [
+        [
+          0,
+          0
+        ],
+        [
+          64,
+          54
+        ],
+        [
+          128,
+          134
+        ],
+        [
+          200,
+          214
+        ],
+        [
+          255,
+          255
+        ]
+      ],
+      "green": [
+        [
+          0,
+          4
+        ],
+        [
+          128,
+          128
+        ],
+        [
+          255,
+          250
+        ]
+      ],
+      "blue": [
+        [
+          0,
+          14
+        ],
+        [
+          128,
+          124
+        ],
+        [
+          255,
+          236
+        ]
+      ]
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "saturation": 1.18,
+      "vibrance": 0.1
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0.0,
+      "grain": 0.05,
+      "stains": 0.0,
+      "seed": 5
+    }
+  ]
+}

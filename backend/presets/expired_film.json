@@ -1,0 +1,90 @@
+{
+  "name": "expired_film",
+  "label": "Expired film",
+  "description": "HD pass, then an expired-roll look: flattened, faded blacks, a magenta-cyan colour crossover (red and blue lifted in the shadows, green dipped), muted colour, grain and faint stains.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "ai_upscale",
+      "on": "image",
+      "long_edge": 1920,
+      "denoise": 0.3
+    },
+    {
+      "filter": "tone_curve",
+      "on": "image",
+      "master": [
+        [
+          0,
+          20
+        ],
+        [
+          128,
+          128
+        ],
+        [
+          255,
+          235
+        ]
+      ],
+      "red": [
+        [
+          0,
+          26
+        ],
+        [
+          128,
+          138
+        ],
+        [
+          255,
+          238
+        ]
+      ],
+      "green": [
+        [
+          0,
+          10
+        ],
+        [
+          128,
+          118
+        ],
+        [
+          255,
+          230
+        ]
+      ],
+      "blue": [
+        [
+          0,
+          32
+        ],
+        [
+          128,
+          132
+        ],
+        [
+          255,
+          224
+        ]
+      ]
+    },
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "saturation": 0.85
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0.0,
+      "grain": 0.08,
+      "stains": 0.15,
+      "seed": "auto"
+    }
+  ]
+}
