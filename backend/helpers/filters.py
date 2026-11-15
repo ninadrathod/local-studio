@@ -1118,6 +1118,627 @@ def doodle(
 
 
 
+# --- Codex (Leonardo-style notebook) doodles --------------------------------
+
+CODEX_KINDS = (
+    "notes", "geometry", "vitruvian", "gears", "wing", "vortex", "proportion",
+    "aerial_screw", "parachute", "pulley", "optics",
+    "bird_wing", "bat_wing",
+)
+CODEX_SEPIA = (88, 54, 28)
+# Largest element: at most this × the short side (bounds the drawing buffer).
+CODEX_MAX_SPAN = 1.2
+# Drawing buffer cap: bigger elements are drawn at reduced scale, then enlarged.
+_CODEX_MAX_BUFFER_PIXELS = 16_000_000
+# Image.info key where each codex element records the box it drew, so later
+# `avoid_subject` elements can steer clear of earlier ones.
+CODEX_BOXES_KEY = "codex_boxes"
+_CODEX_EDGE_ANCHORS = ("left", "right", "top", "bottom")
+_CODEX_MAX_TAKEN_OVERLAP = 0.3
+
+
+def _known_font_style(style: str) -> bool:
+    text = (style or "").strip().lower()
+    return text in {"sans", "flow", "script", "hand", "cursive", "stamp", "mono", "typewriter"} or text in _DISPLAY_FONT_CANDIDATES
+
+
+def _box_overlap(a: tuple[float, float, float, float], b: tuple[float, float, float, float]) -> float:
+    """Fraction of box `a` covered by box `b`."""
+    ix = max(0.0, min(a[2], b[2]) - max(a[0], b[0]))
+    iy = max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
+    area = max(1e-6, (a[2] - a[0]) * (a[3] - a[1]))
+    return ix * iy / area
+
+
+def _codex_pick_anchor(
+    base: Image.Image,
+    anchor: str,
+    half: float,
+    around: Image.Image,
+    taken: Sequence[Sequence[float]],
+) -> str:
+    """
+    Like `_clear_anchor`, but also avoids boxes earlier codex elements drew
+    (`taken`) and, when every mirror corner is blocked, tries the edge centres.
+    First candidate clear of both wins; otherwise the lowest combined score.
+    """
+    width, height = base.size
+    alpha = around.getchannel("A")
+    candidates = [a for a in _mirror_anchors(anchor) + list(_CODEX_EDGE_ANCHORS) if a != "center"]
+    seen: list[str] = []
+    best, best_score = anchor, float("inf")
+    for name in candidates:
+        if name in seen:
+            continue
+        seen.append(name)
+        fx, fy = _DOODLE_ANCHORS[name]
+        cx, cy = fx * width, fy * height
+        box = (max(0, int(cx - half)), max(0, int(cy - half)), min(width, int(cx + half)), min(height, int(cy + half)))
+        if box[2] <= box[0] or box[3] <= box[1]:
+            continue
+        subject = ImageStat.Stat(alpha.crop(box)).mean[0] / 255
+        clash = max((_box_overlap(box, tuple(t)) for t in taken), default=0.0)
+        if subject <= DOODLE_AVOID_MAX_OVERLAP and clash <= _CODEX_MAX_TAKEN_OVERLAP:
+            return name
+        score = subject / DOODLE_AVOID_MAX_OVERLAP + clash / _CODEX_MAX_TAKEN_OVERLAP
+        if score < best_score:
+            best, best_score = name, score
+    return best
+# Italian-flavoured filler for the mirror-written notes (generic words, no quotation).
+_CODEX_WORDS = (
+    "il", "la", "del", "della", "che", "per", "moto", "acqua", "aria", "peso", "forza",
+    "ala", "uccello", "ruota", "linea", "punto", "corpo", "lume", "ombra", "occhio",
+    "misura", "braccio", "testa", "piede", "centro", "cerchio", "quadro", "vento",
+    "onda", "vite", "leva", "polo", "moto", "tempo", "sole", "terra", "sopra", "sotto",
+    "come", "quanto", "sia", "dove", "ogni", "parte", "grado", "angolo", "natura",
+)
+
+
+def _codex_notes(layer, rng, cx, cy, span, ink, lines, font_px, mirror, font_style):
+    """A paragraph of pseudo-handwriting (optionally mirror-written) centred at (cx, cy)."""
+    width = span
+    line_h = font_px * 1.25
+    total = line_h * lines
+    font = _load_font(max(6, int(font_px)), font_style)
+    block = Image.new("L", (int(width) + 4, int(total + font_px) + 4), 0)
+    bdraw = ImageDraw.Draw(block)
+    for i in range(lines):
+        # Ragged right edge; the last line is short, like the end of a paragraph.
+        limit = width * (rng.uniform(0.35, 0.6) if i == lines - 1 else rng.uniform(0.82, 1.0))
+        words: list[str] = []
+        while True:
+            cand = " ".join(words + [rng.choice(_CODEX_WORDS)])
+            if bdraw.textlength(cand, font=font) > limit and words:
+                break
+            words = cand.split(" ")
+            if len(words) > 40:
+                break
+        bdraw.text((rng.uniform(0, font_px * 0.3), i * line_h), " ".join(words), fill=255, font=font)
+    if mirror:
+        block = block.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+    x0, y0 = int(cx - block.width / 2), int(cy - total / 2)
+    color_layer = Image.new("RGBA", block.size, ink)
+    color_layer.putalpha(ImageChops.multiply(block, Image.new("L", block.size, ink[3])))
+    layer.alpha_composite(color_layer, (max(0, x0), max(0, y0)), (max(0, -x0), max(0, -y0)))
+
+
+def _codex_label(draw, rng, x, y, text, size, fill, font_style):
+    font = _load_font(max(6, int(size)), font_style)
+    draw.text((x, y), text, fill=fill, font=font, anchor="mm")
+
+
+def _quad(a, m, b, n=12):
+    """Quadratic Bézier a→b through control m, as n+1 points."""
+    return [((1 - t) ** 2 * a[0] + 2 * (1 - t) * t * m[0] + t * t * b[0],
+             (1 - t) ** 2 * a[1] + 2 * (1 - t) * t * m[1] + t * t * b[1])
+            for t in (i / n for i in range(n + 1))]
+
+
+def _codex_feather(draw, base, ang, length, width, line_w, fill, paper, barbs=3):
+    """
+    One flight feather as a closed shape: asymmetric vanes (wider trailing
+    side), filled with `paper` (so later feathers overlap earlier ones like
+    shingles) and outlined in ink, plus a shaft and a few barb strokes.
+    """
+    import math
+
+    ux, uy = math.cos(ang), math.sin(ang)
+    nx, ny = -uy, ux
+    tip = (base[0] + ux * length, base[1] + uy * length)
+    thin = max(1, line_w // 2)
+    sides = []
+    for side, wscale in ((1, 1.0), (-1, 0.5)):
+        ctrl = (base[0] + ux * length * 0.62 + nx * width * wscale * side * 1.6,
+                base[1] + uy * length * 0.62 + ny * width * wscale * side * 1.6)
+        sides.append(_quad(base, ctrl, tip, 14))
+    outline = sides[0] + sides[1][::-1]
+    if paper is not None:
+        draw.polygon(outline, fill=paper)
+    _stroke(draw, outline + [outline[0]], max(1, line_w * 2 // 3), fill)
+    _stroke(draw, [base, (base[0] + ux * length * 0.9, base[1] + uy * length * 0.9)], thin, fill)
+    for k in range(barbs):
+        t = 0.28 + 0.52 * k / max(1, barbs - 1)
+        on = (base[0] + ux * length * t, base[1] + uy * length * t)
+        out = (on[0] + (nx * 0.8 + ux * 0.45) * width * 0.9, on[1] + (ny * 0.8 + uy * 0.45) * width * 0.9)
+        _stroke(draw, [on, out], thin, fill)
+
+
+def _codex_bird_wing(draw, rng, cx, cy, span, line_w, fill, paper):
+    import math
+
+    root = (cx - span * 0.44, cy + span * 0.06)
+    wrist = (cx + span * 0.1, cy - span * 0.27)
+    arm = _quad(root, (cx - span * 0.2, cy - span * 0.3), wrist, 24)
+    # Primaries fanned from the wrist: inner (pointing down) first, outer on top.
+    for k in range(9, -1, -1):
+        ang = math.radians(-14 + k * 9.5)
+        length = span * (0.47 - 0.017 * k)
+        base = (wrist[0] - span * 0.012 * k, wrist[1] + span * 0.012 * k)
+        _codex_feather(draw, base, ang, length, span * 0.042, line_w, fill, paper, 3)
+    # Secondaries hanging from the arm, root side first.
+    for k in range(9):
+        base = arm[1 + k * 2]
+        ang = math.radians(98 - k * 2.2)
+        _codex_feather(draw, base, ang, span * (0.27 + 0.006 * k), span * 0.038, line_w, fill, paper, 2)
+    # Two rows of short covert feathers over the secondaries' bases.
+    for row, (length, width) in enumerate(((0.15, 0.034), (0.08, 0.028))):
+        for k in range(10):
+            base = arm[k * 2 + row]
+            ang = math.radians(100 - k * 3.5)
+            _codex_feather(draw, base, ang, span * length, span * width, line_w, fill, paper, 1)
+    # Leading-edge bone drawn last, over every feather base.
+    _stroke(draw, arm, line_w + max(1, line_w // 2), fill)
+    r = line_w * 2.2
+    draw.ellipse((wrist[0] - r, wrist[1] - r, wrist[0] + r, wrist[1] + r), fill=fill)
+
+
+def _codex_bat_wing(draw, rng, cx, cy, span, line_w, fill, wob):
+    import math
+
+    root = (cx - span * 0.44, cy + span * 0.04)
+    elbow = (cx - span * 0.12, cy - span * 0.2)
+    wrist = (cx + span * 0.08, cy - span * 0.28)
+    bone_w = line_w + max(1, line_w // 2)
+    thin = max(1, line_w // 2)
+    _stroke(draw, _wobble_line(rng, root, elbow, wob * 0.4, 8), bone_w, fill)
+    _stroke(draw, _wobble_line(rng, elbow, wrist, wob * 0.4, 8), bone_w, fill)
+    # Jointed finger spars fanning from the wrist (each with a knuckle).
+    tips = []
+    for k, (ang, length) in enumerate(((-18, 0.44), (8, 0.46), (34, 0.42), (62, 0.36))):
+        a = math.radians(ang)
+        knuckle = (wrist[0] + math.cos(a) * span * length * 0.45, wrist[1] + math.sin(a) * span * length * 0.45)
+        bend = a + math.radians(10)
+        tipp = (knuckle[0] + math.cos(bend) * span * length * 0.55, knuckle[1] + math.sin(bend) * span * length * 0.55)
+        _stroke(draw, _wobble_line(rng, wrist, knuckle, wob * 0.3, 6), line_w, fill)
+        _stroke(draw, _wobble_line(rng, knuckle, tipp, wob * 0.3, 6), line_w, fill)
+        for pt in (knuckle,):
+            rr = line_w * 1.8
+            _stroke(draw, _wobble_circle(rng, pt[0], pt[1], rr, 0.0), thin, fill)
+        tips.append(tipp)
+    # Thumb claw at the wrist.
+    _stroke(draw, _quad(wrist, (wrist[0] - span * 0.02, wrist[1] - span * 0.08), (wrist[0] - span * 0.06, wrist[1] - span * 0.1), 6), line_w, fill)
+    for pt in (elbow, wrist):
+        rr = line_w * 2.4
+        draw.ellipse((pt[0] - rr, pt[1] - rr, pt[0] + rr, pt[1] + rr), fill=fill)
+    # Scalloped membrane edge: finger tip → finger tip, then back to the body.
+    chain = tips + [(root[0] + span * 0.06, root[1] + span * 0.12)]
+    for a, b in zip(chain, chain[1:]):
+        mx, my = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+        # Bow the edge inward toward the wrist.
+        dx, dy = wrist[0] - mx, wrist[1] - my
+        d = math.hypot(dx, dy) or 1.0
+        ctrl = (mx + dx / d * span * 0.07, my + dy / d * span * 0.07)
+        _stroke(draw, _quad(a, ctrl, b, 14), line_w, fill)
+    # Light shading: short parallel strokes along each membrane panel near the edge.
+    for a, b in zip(chain, chain[1:]):
+        for t in (0.25, 0.4, 0.55, 0.7):
+            px_, py_ = a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t
+            dx, dy = wrist[0] - px_, wrist[1] - py_
+            d = math.hypot(dx, dy) or 1.0
+            _stroke(draw, [(px_ + dx / d * span * 0.04, py_ + dy / d * span * 0.04),
+                           (px_ + dx / d * span * 0.1, py_ + dy / d * span * 0.1)], thin, fill)
+
+
+def _codex_gear(draw, rng, cx, cy, radius, teeth, line_w, fill, wob):
+    import math
+
+    pts = []
+    tooth = radius * 0.16
+    phase = rng.uniform(0, 2 * math.pi)
+    for k in range(teeth * 4 + 1):
+        t = phase + 2 * math.pi * k / (teeth * 4)
+        r = radius + (tooth if k % 4 in (1, 2) else 0) + rng.uniform(-wob, wob)
+        pts.append((cx + r * math.cos(t), cy + r * math.sin(t)))
+    _stroke(draw, pts, line_w, fill)
+    _stroke(draw, _wobble_circle(rng, cx, cy, radius * 0.22, wob), line_w, fill)
+    spokes = rng.choice((4, 5, 6))
+    for k in range(spokes):
+        t = phase + 2 * math.pi * k / spokes
+        a = (cx + radius * 0.22 * math.cos(t), cy + radius * 0.22 * math.sin(t))
+        b = (cx + radius * 0.82 * math.cos(t), cy + radius * 0.82 * math.sin(t))
+        _stroke(draw, _wobble_line(rng, a, b, wob, 6), max(1, line_w * 2 // 3), fill)
+    _stroke(draw, _wobble_circle(rng, cx, cy, radius * 0.82, wob), max(1, line_w * 2 // 3), fill)
+
+
+def codex_doodle(
+    image: Image.Image,
+    kind: str = "notes",
+    color: Sequence[int] | None = None,
+    rgb: Sequence[int] | None = None,
+    anchor: str = "top_left",
+    x: float | None = None,
+    y: float | None = None,
+    size: float = 0.3,
+    stroke: float = 0.003,
+    angle: float = 0.0,
+    opacity: float = 0.85,
+    lines: int = 6,
+    mirror: bool = True,
+    font_style: str = "scribble",
+    labels: bool = True,
+    subject_fit: float | None = None,
+    max_size: float | None = None,
+    subject_y: float | None = None,
+    paper: Sequence[int] | None = None,
+    flip: bool = False,
+    offset_x: float = 0.0,
+    offset_y: float = 0.0,
+    jitter: float = 0.35,
+    seed: int = 5,
+    around: Image.Image | None = None,
+    avoid_subject: bool = False,
+) -> Image.Image:
+    """
+    Draw one Leonardo-notebook element in thin ink (sepia by default).
+
+    `kind`: `notes` (a paragraph of `lines` rough handwritten lines of
+    Italian-flavoured filler, `size` wide, mirror-written when `mirror`), `geometry` (circle
+    with inscribed square + triangle, diagonals, lettered points), `vitruvian`
+    (circle + square, centred on the subject with `anchor: subject`), `gears`
+    (two meshing toothed wheels), `wing` (bat-like flying-machine wing with ribs),
+    `vortex` (water-eddy spiral studies), `proportion` (a measuring scale with
+    ticks and numbers), `aerial_screw` (helical flying machine on a platform),
+    `parachute` (pyramid canopy with cords and a hanging figure), `pulley`
+    (pulley block with ropes and a hanging weight), `optics` (an eye with
+    converging light rays and a lens).
+    `max_size` (fraction of the short side) caps the size from `subject_fit`,
+    so a full-frame subject doesn't push the element off the frame.
+    `subject_y` (with `anchor: subject`, 0 = top … 1 = bottom of the subject
+    bbox) sets the centre's height within the subject, e.g. 0.2 ≈ shoulders.
+    `bird_wing` (feather study: fanned primaries from the wrist, secondaries
+    along the arm, scalloped covert rows) and `bat_wing` (ornithopter frame:
+    jointed finger spars from the wrist with a scalloped, lightly shaded
+    membrane) both grow rightwards from a root at the element's left; flip
+    the second of a pair. `paper` ([r, g, b], `bird_wing`) fills each feather
+    so later feathers overlap earlier ones; without it they are outlines only.
+    `flip` mirrors the element left↔right (e.g. a pair of wings);
+    `offset_x` / `offset_y` shift its centre by that fraction of its size. Placement, `avoid_subject`, `size` / `stroke` (fractions
+    of the short side) work like `doodle`; `angle` rotates the element.
+    `subject_fit` (with `anchor: subject`) sets `size` to that multiple of the
+    subject bbox's long side. `labels` adds small handwritten letters/numbers.
+    `font_style` must be a known style (default `scribble`). Each element is
+    capped at `CODEX_MAX_SPAN` × the short side and records the box it drew in
+    `image.info["codex_boxes"]`; a later `avoid_subject` element avoids both
+    the subject and those boxes (trying mirror corners, then edge centres).
+    All randomness is seeded; drawn only in the element's region (2×
+    supersampled up to 4 MP, 1× up to 16 MP, reduced scale beyond).
+    """
+    import math
+    import random
+
+    mode = (kind or "notes").strip().lower()
+    if mode not in CODEX_KINDS:
+        raise ValueError(f"kind must be one of {', '.join(CODEX_KINDS)}")
+    n_lines = int(lines)
+    if not 1 <= n_lines <= 20:
+        raise ValueError("lines must be between 1 and 20")
+    for name, value in (("size", size), ("stroke", stroke), ("angle", angle), ("opacity", opacity), ("jitter", jitter)):
+        if not math.isfinite(float(value)):
+            raise ValueError(f"{name} must be a finite number")
+    if float(size) <= 0:
+        raise ValueError("size must be > 0")
+    if not _known_font_style(font_style):
+        raise ValueError(f"unknown font_style: {font_style!r}")
+
+    base = _as_rgba(image)
+    w, h = base.size
+    short = min(w, h)
+    span_px = float(size) * short
+    mode_anchor = (anchor or "center").strip().lower()
+    bbox = around.getchannel("A").getbbox() if around is not None and around.mode == "RGBA" else None
+    if subject_fit is not None and mode_anchor == "subject":
+        if bbox is None:
+            return image.copy()
+        span_px = float(subject_fit) * max(bbox[2] - bbox[0], bbox[3] - bbox[1])
+    if max_size is not None:
+        if not math.isfinite(float(max_size)) or float(max_size) <= 0:
+            raise ValueError("max_size must be > 0")
+        span_px = min(span_px, float(max_size) * short)
+    span_px = max(8.0, min(span_px, CODEX_MAX_SPAN * short))
+    stroke_px = max(1.0, float(stroke) * short)
+    taken = list(image.info.get(CODEX_BOXES_KEY, ()))
+    if (
+        avoid_subject and around is not None and around.mode == "RGBA" and (x is None or y is None)
+        and mode_anchor in _DOODLE_ANCHORS and mode_anchor != "center"
+    ):
+        anchor = _codex_pick_anchor(base, mode_anchor, span_px / 2, around, taken)
+    center_x, center_y = _doodle_center(base.size, anchor, x, y, around)
+    if subject_y is not None and mode_anchor == "subject" and bbox is not None:
+        if not math.isfinite(float(subject_y)):
+            raise ValueError("subject_y must be a finite number")
+        center_y = bbox[1] + float(subject_y) * (bbox[3] - bbox[1])
+    for name, value in (("offset_x", offset_x), ("offset_y", offset_y)):
+        if not math.isfinite(float(value)):
+            raise ValueError(f"{name} must be a finite number")
+    center_x += float(offset_x) * span_px
+    center_y += float(offset_y) * span_px
+
+    half = span_px * 0.75 + stroke_px * 6
+    # Draw on a square canvas around the centre so rotation keeps the element whole.
+    side = int(math.ceil(2 * half))
+    if side * side <= _DOODLE_SUPERSAMPLE_MAX_PIXELS:
+        ss = float(_DOODLE_SUPERSAMPLE)
+    elif side * side <= _CODEX_MAX_BUFFER_PIXELS:
+        ss = 1.0
+    else:  # huge element on a huge photo: draw smaller, enlarge after
+        ss = math.sqrt(_CODEX_MAX_BUFFER_PIXELS / (side * side))
+    ink = _rgb_tint(color, rgb, CODEX_SEPIA)
+    alpha = int(round(255 * max(0.0, min(1.0, float(opacity)))))
+    fill = (*ink, alpha)
+    rng = random.Random(int(seed))
+    span = span_px * ss
+    line_w = max(1, int(round(stroke_px * ss)))
+    wob = float(jitter) * line_w * 2
+    work_side = max(1, int(round(side * ss)))
+    layer = Image.new("RGBA", (work_side, work_side), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(layer)
+    cx = cy = work_side / 2
+    label_px = span * 0.07
+    style = font_style or "scribble"
+
+    if mode == "notes":
+        # Letter size follows the block width (~22 characters a line); many
+        # lines are squeezed so the block stays within ~1.1 × its width.
+        font_px = min(span * 0.075, span * 1.1 / n_lines / 1.25)
+        _codex_notes(layer, rng, cx, cy, span, fill, n_lines, font_px, bool(mirror), style)
+    elif mode in ("geometry", "vitruvian"):
+        r = span / 2
+        _stroke(draw, _wobble_circle(rng, cx, cy, r, wob), line_w, fill)
+        if mode == "vitruvian":
+            # Leonardo's square sits lower than the circle: base on the circle's bottom.
+            sq = r * 1.64
+            top, bottom = cy + r - sq, cy + r
+            corners = [(cx - sq / 2, top), (cx + sq / 2, top), (cx + sq / 2, bottom), (cx - sq / 2, bottom)]
+            for a, b in zip(corners, corners[1:] + corners[:1]):
+                _stroke(draw, _wobble_line(rng, a, b, wob), line_w, fill)
+            # Construction: centre lines + diagonals of the square, faint.
+            thin = max(1, line_w // 2)
+            _stroke(draw, _wobble_line(rng, (cx, cy - r), (cx, cy + r), wob), thin, fill)
+            _stroke(draw, _wobble_line(rng, (cx - r, cy), (cx + r, cy), wob), thin, fill)
+            _stroke(draw, _wobble_line(rng, corners[0], corners[2], wob), thin, fill)
+            _stroke(draw, _wobble_line(rng, corners[1], corners[3], wob), thin, fill)
+            for k in range(1, 8):  # tick marks along the square's base
+                tx = corners[3][0] + sq * k / 8
+                _stroke(draw, [(tx, bottom - line_w * 3), (tx, bottom + line_w * 3)], thin, fill)
+        else:
+            tri = [(cx + r * math.cos(t), cy + r * math.sin(t))
+                   for t in (-math.pi / 2, math.pi / 6, 5 * math.pi / 6)]
+            sqr = [(cx + r * math.cos(t), cy + r * math.sin(t))
+                   for t in (math.pi / 4, 3 * math.pi / 4, 5 * math.pi / 4, 7 * math.pi / 4)]
+            for poly in (tri, sqr):
+                for a, b in zip(poly, poly[1:] + poly[:1]):
+                    _stroke(draw, _wobble_line(rng, a, b, wob), line_w, fill)
+            thin = max(1, line_w // 2)
+            _stroke(draw, _wobble_line(rng, sqr[0], sqr[2], wob), thin, fill)
+            _stroke(draw, _wobble_line(rng, sqr[1], sqr[3], wob), thin, fill)
+            _stroke(draw, _wobble_line(rng, (cx - r * 1.25, cy), (cx + r * 1.25, cy), wob), thin, fill)
+            dot = line_w * 1.6
+            for px_, py_ in tri + sqr:
+                draw.ellipse((px_ - dot, py_ - dot, px_ + dot, py_ + dot), fill=fill)
+            if labels:
+                for letter, (px_, py_) in zip("abcdefg", tri + sqr):
+                    ox, oy = (px_ - cx) * 0.16, (py_ - cy) * 0.16
+                    _codex_label(draw, rng, px_ + ox, py_ + oy, letter, label_px * 1.4, fill, style)
+    elif mode == "gears":
+        r1 = span * 0.28
+        teeth1 = rng.randint(12, 16)
+        g1 = (cx - span * 0.14, cy - span * 0.06)
+        _codex_gear(draw, rng, *g1, r1, teeth1, line_w, fill, wob)
+        r2 = r1 * 0.58
+        t = rng.uniform(-0.6, 0.4)
+        d = (r1 + r2) * 1.12
+        g2 = (g1[0] + d * math.cos(t), g1[1] + d * math.sin(t) * -1)
+        _codex_gear(draw, rng, *g2, r2, max(7, int(teeth1 * 0.58)), line_w, fill, wob)
+        if labels:
+            _codex_label(draw, rng, g1[0], g1[1] + r1 * 1.45, "a", label_px * 1.4, fill, style)
+            _codex_label(draw, rng, g2[0], g2[1] + r2 * 1.6, "b", label_px * 1.4, fill, style)
+    elif mode == "wing":
+        root = (cx - span * 0.45, cy + span * 0.05)
+        tip = (cx + span * 0.48, cy - span * 0.12)
+        peak = (cx - span * 0.05, cy - span * 0.42)
+        spar = [((1 - t) ** 2 * root[0] + 2 * (1 - t) * t * peak[0] + t * t * tip[0],
+                 (1 - t) ** 2 * root[1] + 2 * (1 - t) * t * peak[1] + t * t * tip[1])
+                for t in (k / 40 for k in range(41))]
+        _stroke(draw, spar, line_w, fill)
+        ribs = 6
+        trail = []
+        for k in range(1, ribs + 1):
+            sp = spar[int(k / (ribs + 1) * 40)]
+            end = (sp[0] + span * 0.08 * (k - ribs / 2) / ribs, sp[1] + span * (0.42 - 0.04 * k))
+            _stroke(draw, _wobble_line(rng, sp, end, wob, 8), max(1, line_w * 2 // 3), fill)
+            trail.append(end)
+        # Scalloped trailing edge between rib ends (membrane).
+        edge_pts = [root] + trail + [tip]
+        for a, b in zip(edge_pts, edge_pts[1:]):
+            mid = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - span * 0.035)
+            arc = [((1 - t) ** 2 * a[0] + 2 * (1 - t) * t * mid[0] + t * t * b[0],
+                    (1 - t) ** 2 * a[1] + 2 * (1 - t) * t * mid[1] + t * t * b[1])
+                   for t in (k / 10 for k in range(11))]
+            _stroke(draw, arc, max(1, line_w * 2 // 3), fill)
+        # Pivot + pull cord.
+        dot = line_w * 2.2
+        draw.ellipse((root[0] - dot, root[1] - dot, root[0] + dot, root[1] + dot), fill=fill)
+        _stroke(draw, _wobble_line(rng, root, (root[0] + span * 0.1, root[1] + span * 0.35), wob), max(1, line_w // 2), fill)
+    elif mode == "bird_wing":
+        paper_fill = None if paper is None else (*_rgb_tint(paper, None, (236, 222, 190)), alpha)
+        _codex_bird_wing(draw, rng, cx, cy, span, line_w, fill, paper_fill)
+    elif mode == "bat_wing":
+        _codex_bat_wing(draw, rng, cx, cy, span, line_w, fill, wob)
+    elif mode == "vortex":
+        for k in range(3):
+            ex = cx + rng.uniform(-0.25, 0.25) * span
+            ey = cy + rng.uniform(-0.2, 0.2) * span
+            rad = span * rng.uniform(0.12, 0.24)
+            turns = rng.uniform(2.2, 3.2)
+            spin = rng.choice((-1, 1))
+            pts = []
+            steps = 90
+            for i in range(steps + 1):
+                t = i / steps
+                th = spin * 2 * math.pi * turns * t
+                rr = rad * (1 - t * 0.92) + rng.uniform(-wob, wob) * 0.3
+                pts.append((ex + rr * math.cos(th), ey + rr * math.sin(th) * 0.8))
+            _stroke(draw, pts, line_w, fill)
+        for k in range(5):  # flowing current lines
+            oy = cy + (k - 2) * span * 0.11
+            pts = [(cx - span * 0.48 + span * 0.96 * t,
+                    oy + span * 0.04 * math.sin(2 * math.pi * (t * 1.6 + k * 0.3)))
+                   for t in (i / 30 for i in range(31))]
+            _stroke(draw, pts, max(1, line_w // 2), fill)
+    elif mode == "aerial_screw":
+        # Helical sail: a squashed spiral (ellipses rising), mast, platform.
+        mast_top, mast_bot = (cx, cy - span * 0.42), (cx, cy + span * 0.3)
+        _stroke(draw, _wobble_line(rng, mast_top, mast_bot, wob), line_w, fill)
+        turns, steps = 2.6, 160
+        pts = []
+        for i in range(steps + 1):
+            t = i / steps
+            th = 2 * math.pi * turns * t
+            rr = span * (0.42 - 0.12 * t)
+            pts.append((cx + rr * math.cos(th), cy - span * 0.05 - span * 0.34 * t + rr * 0.22 * math.sin(th)))
+        _stroke(draw, pts, line_w, fill)
+        thin = max(1, line_w * 2 // 3)
+        for k in range(6):  # spokes from mast to the sail rim
+            t = (k + 0.5) / 6
+            idx = int(t * steps)
+            _stroke(draw, _wobble_line(rng, (cx, pts[idx][1]), pts[idx], wob, 6), thin, fill)
+        base_y = cy + span * 0.3
+        plat = [(cx - span * 0.3, base_y), (cx + span * 0.3, base_y),
+                (cx + span * 0.22, base_y + span * 0.08), (cx - span * 0.22, base_y + span * 0.08)]
+        for a, b in zip(plat, plat[1:] + plat[:1]):
+            _stroke(draw, _wobble_line(rng, a, b, wob), line_w, fill)
+        for sx_ in (-0.2, 0.2):  # crank handles
+            _stroke(draw, _wobble_line(rng, (cx, base_y - span * 0.06), (cx + span * sx_, base_y - span * 0.02), wob), thin, fill)
+    elif mode == "parachute":
+        apex = (cx, cy - span * 0.46)
+        bl, br = (cx - span * 0.36, cy - span * 0.04), (cx + span * 0.36, cy - span * 0.04)
+        back = (cx + span * 0.1, cy - span * 0.1)
+        for a, b in ((apex, bl), (apex, br), (bl, br), (apex, back)):
+            _stroke(draw, _wobble_line(rng, a, b, wob), line_w, fill)
+        _stroke(draw, _wobble_line(rng, bl, back, wob), max(1, line_w // 2), fill)
+        _stroke(draw, _wobble_line(rng, back, br, wob), max(1, line_w // 2), fill)
+        # Cords to a small stick figure.
+        hx, hy = cx, cy + span * 0.24
+        thin = max(1, line_w // 2)
+        for corner in (bl, br, back):
+            _stroke(draw, _wobble_line(rng, corner, (hx, hy), wob), thin, fill)
+        head = span * 0.035
+        _stroke(draw, _wobble_circle(rng, hx, hy - head, head, wob * 0.3), thin, fill)
+        body_bot = (hx, hy + span * 0.13)
+        _stroke(draw, _wobble_line(rng, (hx, hy), body_bot, wob), line_w, fill)
+        for dx_ in (-1, 1):
+            _stroke(draw, [(hx, hy + span * 0.03), (hx + dx_ * span * 0.07, hy - span * 0.03)], thin, fill)
+            _stroke(draw, [body_bot, (hx + dx_ * span * 0.05, body_bot[1] + span * 0.09)], thin, fill)
+    elif mode == "pulley":
+        beam_y = cy - span * 0.44
+        _stroke(draw, _wobble_line(rng, (cx - span * 0.4, beam_y), (cx + span * 0.4, beam_y), wob), line_w, fill)
+        for k in range(7):  # hatching on the beam
+            bx = cx - span * 0.38 + k * span * 0.12
+            _stroke(draw, [(bx, beam_y), (bx - span * 0.05, beam_y - span * 0.05)], max(1, line_w // 2), fill)
+        r1, r2 = span * 0.12, span * 0.09
+        p1 = (cx - span * 0.08, beam_y + span * 0.2)
+        p2 = (cx + span * 0.1, cy + span * 0.06)
+        _stroke(draw, _wobble_line(rng, (p1[0], beam_y), p1, wob), line_w, fill)
+        for (px_, py_), r in ((p1, r1), (p2, r2)):
+            _stroke(draw, _wobble_circle(rng, px_, py_, r, wob * 0.5), line_w, fill)
+            dot = line_w * 1.8
+            draw.ellipse((px_ - dot, py_ - dot, px_ + dot, py_ + dot), fill=fill)
+        thin = max(1, line_w * 2 // 3)
+        # Rope: down the left of p1 to the pull, over to p2, up to the beam.
+        _stroke(draw, _wobble_line(rng, (p1[0] - r1, p1[1]), (p1[0] - r1, cy + span * 0.42), wob), thin, fill)
+        _stroke(draw, _wobble_line(rng, (p1[0] + r1, p1[1]), (p2[0] - r2, p2[1]), wob), thin, fill)
+        _stroke(draw, _wobble_line(rng, (p2[0] + r2, p2[1]), (p2[0] + r2, beam_y), wob), thin, fill)
+        # Weight hanging from the lower pulley.
+        wy = p2[1] + r2 + span * 0.08
+        _stroke(draw, _wobble_line(rng, (p2[0], p2[1] + r2), (p2[0], wy), wob), thin, fill)
+        box = [(p2[0] - span * 0.08, wy), (p2[0] + span * 0.08, wy),
+               (p2[0] + span * 0.1, wy + span * 0.15), (p2[0] - span * 0.1, wy + span * 0.15)]
+        for a, b in zip(box, box[1:] + box[:1]):
+            _stroke(draw, _wobble_line(rng, a, b, wob), line_w, fill)
+        if labels:
+            _codex_label(draw, rng, p2[0], wy + span * 0.075, "p", label_px * 1.3, fill, style)
+    elif mode == "optics":
+        ex, ey = cx + span * 0.22, cy
+        # Eye: almond outline + iris + pupil.
+        top = [(ex - span * 0.2 + span * 0.4 * t, ey - span * 0.12 * math.sin(math.pi * t)) for t in (k / 24 for k in range(25))]
+        bot = [(ex - span * 0.2 + span * 0.4 * t, ey + span * 0.1 * math.sin(math.pi * t)) for t in (k / 24 for k in range(25))]
+        _stroke(draw, top, line_w, fill)
+        _stroke(draw, bot, line_w, fill)
+        _stroke(draw, _wobble_circle(rng, ex - span * 0.03, ey, span * 0.075, wob * 0.3), line_w, fill)
+        pr = span * 0.03
+        draw.ellipse((ex - span * 0.03 - pr, ey - pr, ex - span * 0.03 + pr, ey + pr), fill=fill)
+        # Lens + rays from an object converging through it to the eye.
+        lx = cx - span * 0.12
+        lens = [(lx + span * 0.03 * math.sin(math.pi * t), cy - span * 0.2 + span * 0.4 * t) for t in (k / 20 for k in range(21))]
+        lens2 = [(lx - span * 0.03 * math.sin(math.pi * t), cy - span * 0.2 + span * 0.4 * t) for t in (k / 20 for k in range(21))]
+        _stroke(draw, lens, line_w, fill)
+        _stroke(draw, lens2, line_w, fill)
+        thin = max(1, line_w // 2)
+        ox_ = cx - span * 0.46
+        for k in range(5):
+            oy_ = cy + (k - 2) * span * 0.09
+            mid = (lx, cy + (k - 2) * span * 0.07)
+            _stroke(draw, _wobble_line(rng, (ox_, oy_), mid, wob, 6), thin, fill)
+            _stroke(draw, _wobble_line(rng, mid, (ex - span * 0.1, ey), wob, 6), thin, fill)
+        # The object: a small arrow standing on the axis.
+        _stroke(draw, [(ox_, cy + span * 0.18), (ox_, cy - span * 0.18)], line_w, fill)
+        _stroke(draw, [(ox_ - span * 0.03, cy - span * 0.13), (ox_, cy - span * 0.18), (ox_ + span * 0.03, cy - span * 0.13)], line_w, fill)
+    else:  # proportion
+        top, bottom = cy - span / 2, cy + span / 2
+        _stroke(draw, _wobble_line(rng, (cx, top), (cx, bottom), wob), line_w, fill)
+        ticks = 8
+        for k in range(ticks + 1):
+            ty = top + span * k / ticks
+            length = span * (0.07 if k % 2 == 0 else 0.04)
+            _stroke(draw, [(cx - length, ty), (cx + length, ty)], max(1, line_w * 2 // 3), fill)
+            if labels and k % 2 == 0:
+                _codex_label(draw, rng, cx + span * 0.13, ty, str(k // 2 + 1), label_px * 1.2, fill, style)
+        for end in (top, bottom):  # arrow heads
+            sgn = 1 if end == top else -1
+            _stroke(draw, [(cx - span * 0.035, end + sgn * span * 0.05), (cx, end), (cx + span * 0.035, end + sgn * span * 0.05)], line_w, fill)
+
+    if flip:
+        layer = layer.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+    if float(angle) % 360:
+        layer = layer.rotate(float(angle), resample=Image.Resampling.BICUBIC)
+    if layer.size != (side, side):
+        down = layer.width > side
+        layer = layer.resize((side, side), Image.Resampling.LANCZOS if down else Image.Resampling.BICUBIC)
+    ox, oy = int(round(center_x - side / 2)), int(round(center_y - side / 2))
+    out = base.copy()
+    sx0, sy0 = max(0, -ox), max(0, -oy)
+    sx1, sy1 = min(side, w - ox), min(side, h - oy)
+    if sx1 > sx0 and sy1 > sy0:
+        out.alpha_composite(layer.crop((sx0, sy0, sx1, sy1)), (ox + sx0, oy + sy0))
+    if image.mode != "RGBA":
+        out = out.convert(image.mode if image.mode in {"RGB", "L"} else "RGB")
+    # Record where this element sits so later `avoid_subject` elements avoid it.
+    reach = span_px * 0.55
+    drawn = (max(0.0, center_x - reach), max(0.0, center_y - reach), min(float(w), center_x + reach), min(float(h), center_y + reach))
+    out.info[CODEX_BOXES_KEY] = taken + [drawn]
+    return out
+
+
 def circle_backdrop(
     image: Image.Image,
     color: Sequence[int] | None = None,

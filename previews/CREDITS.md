@@ -606,3 +606,38 @@ is required where the license says so; CC0 and public-domain sources need none.
 - **Photographer:** [Michelle Spencer](https://unsplash.com/@michellespencer77) (via Wikimedia Commons Unsplash CC0 archive)
 - **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
 - **Files:** `pre-edit/twirl_vortex.jpg` → `post-edit/twirl_vortex.png` (preset `twirl_vortex`)
+
+## `codex_chalk_sepia`
+
+- **Photograph:** [A boy standing in a field of yellow flowers. (Unsplash)](https://commons.wikimedia.org/wiki/File:A_boy_standing_in_a_field_of_yellow_flowers._(Unsplash).jpg)
+- **Photographer:** [Rachael Crowe](https://unsplash.com/@_rachaelcrowe) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/codex_chalk_sepia.jpg` → `post-edit/codex_chalk_sepia.png` (preset `codex_chalk_sepia`)
+
+## `codex_blueprint`
+
+- **Photograph:** [Accursed (Unsplash)](https://commons.wikimedia.org/wiki/File:Accursed_(Unsplash).jpg)
+- **Photographer:** [Mohammad Metri](https://unsplash.com/@mohammad_leo) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/codex_blueprint.jpg` → `post-edit/codex_blueprint.png` (preset `codex_blueprint`)
+
+## `vitruvian_study`
+
+- **Photograph:** [On the pier's edge (Unsplash)](https://commons.wikimedia.org/wiki/File:On_the_pier%27s_edge_(Unsplash).jpg)
+- **Photographer:** [Nathan Boadle](https://unsplash.com/@nathanb) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/vitruvian_study.jpg` → `post-edit/vitruvian_study.png` (preset `vitruvian_study`)
+
+## `inventors_notebook`
+
+- **Photograph:** [Magadan girl in field (Unsplash)](https://commons.wikimedia.org/wiki/File:Magadan_girl_in_field_(Unsplash).jpg)
+- **Photographer:** [Artem Kovalev](https://unsplash.com/@artemkovalev) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/inventors_notebook.jpg` → `post-edit/inventors_notebook.png` (preset `inventors_notebook`)
+
+## `da_vinci_wings`
+
+- **Photograph:** [Woman in a field (Unsplash)](https://commons.wikimedia.org/wiki/File:Woman_in_a_field_(Unsplash).jpg)
+- **Photographer:** [Brooke Cagle](https://unsplash.com/@brookecagle) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/da_vinci_wings.jpg` → `post-edit/da_vinci_wings.png` (preset `da_vinci_wings`)

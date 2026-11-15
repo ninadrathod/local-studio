@@ -1,0 +1,109 @@
+{
+  "name": "da_vinci_wings",
+  "label": "Da Vinci wings",
+  "description": "Feathered flight-study wings drawn behind the subject at the shoulders on a muted parchment background, with mirror-written notes.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "color",
+      "on": "background",
+      "amount": 0.25
+    },
+    {
+      "filter": "paper_texture",
+      "on": "background",
+      "color": [
+        236,
+        216,
+        178
+      ],
+      "tint": 0.6,
+      "grain": 0.1,
+      "stains": 0.3,
+      "seed": 24
+    },
+    {
+      "filter": "codex_doodle",
+      "on": "background",
+      "around": "subject",
+      "stroke": 0.0045,
+      "opacity": 0.95,
+      "kind": "bird_wing",
+      "anchor": "subject",
+      "subject_fit": 0.95,
+      "offset_x": 0.47,
+      "offset_y": -0.06,
+      "seed": 25,
+      "max_size": 0.62,
+      "subject_y": 0.24,
+      "paper": [
+        238,
+        224,
+        194
+      ]
+    },
+    {
+      "filter": "codex_doodle",
+      "on": "background",
+      "around": "subject",
+      "stroke": 0.0045,
+      "opacity": 0.95,
+      "kind": "bird_wing",
+      "anchor": "subject",
+      "subject_fit": 0.95,
+      "offset_x": -0.47,
+      "offset_y": -0.06,
+      "flip": true,
+      "seed": 25,
+      "max_size": 0.62,
+      "subject_y": 0.24,
+      "paper": [
+        238,
+        224,
+        194
+      ]
+    },
+    {
+      "filter": "codex_doodle",
+      "on": "background",
+      "around": "subject",
+      "stroke": 0.0045,
+      "opacity": 0.9,
+      "kind": "notes",
+      "anchor": "bottom_left",
+      "avoid_subject": true,
+      "size": 0.28,
+      "lines": 6,
+      "seed": 26
+    },
+    {
+      "filter": "codex_doodle",
+      "on": "background",
+      "around": "subject",
+      "stroke": 0.0045,
+      "opacity": 0.9,
+      "kind": "notes",
+      "anchor": "bottom_right",
+      "avoid_subject": true,
+      "size": 0.24,
+      "lines": 5,
+      "seed": 27
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    }
+  ]
+}

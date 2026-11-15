@@ -1,0 +1,225 @@
+{
+  "name": "codex_chalk_sepia",
+  "label": "Codex chalk sepia",
+  "description": "Leonardo-style notebook page: the photo turned warm sepia parchment with white-chalk aerial screw, pulley and mirror-written notes around the subject.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "grayscale",
+      "on": "background"
+    },
+    {
+      "filter": "tone_curve",
+      "on": "background",
+      "red": [
+        [
+          0,
+          48
+        ],
+        [
+          128,
+          152
+        ],
+        [
+          255,
+          246
+        ]
+      ],
+      "green": [
+        [
+          0,
+          32
+        ],
+        [
+          128,
+          128
+        ],
+        [
+          255,
+          232
+        ]
+      ],
+      "blue": [
+        [
+          0,
+          20
+        ],
+        [
+          128,
+          96
+        ],
+        [
+          255,
+          196
+        ]
+      ]
+    },
+    {
+      "filter": "paper_texture",
+      "on": "background",
+      "tint": 0.4,
+      "grain": 0.1,
+      "stains": 0.25,
+      "seed": 3,
+      "color": [
+        234,
+        214,
+        178
+      ]
+    },
+    {
+      "filter": "codex_doodle",
+      "on": "background",
+      "around": "subject",
+      "avoid_subject": true,
+      "stroke": 0.005,
+      "opacity": 0.95,
+      "kind": "notes",
+      "anchor": "top_left",
+      "size": 0.3,
+      "lines": 7,
+      "seed": 1,
+      "color": [
+        248,
+        240,
+        222
+      ]
+    },
+    {
+      "filter": "codex_doodle",
+      "on": "background",
+      "around": "subject",
+      "avoid_subject": true,
+      "stroke": 0.005,
+      "opacity": 0.95,
+      "kind": "aerial_screw",
+      "anchor": "top_right",
+      "size": 0.26,
+      "seed": 2,
+      "color": [
+        248,
+        240,
+        222
+      ]
+    },
+    {
+      "filter": "codex_doodle",
+      "on": "background",
+      "around": "subject",
+      "avoid_subject": true,
+      "stroke": 0.005,
+      "opacity": 0.95,
+      "kind": "pulley",
+      "anchor": "bottom_left",
+      "size": 0.28,
+      "seed": 3,
+      "color": [
+        248,
+        240,
+        222
+      ]
+    },
+    {
+      "filter": "codex_doodle",
+      "on": "background",
+      "around": "subject",
+      "avoid_subject": true,
+      "stroke": 0.005,
+      "opacity": 0.95,
+      "kind": "notes",
+      "anchor": "left",
+      "size": 0.24,
+      "lines": 5,
+      "seed": 4,
+      "color": [
+        248,
+        240,
+        222
+      ]
+    },
+    {
+      "filter": "grayscale",
+      "on": "subject"
+    },
+    {
+      "filter": "tone_curve",
+      "on": "subject",
+      "red": [
+        [
+          0,
+          48
+        ],
+        [
+          128,
+          152
+        ],
+        [
+          255,
+          246
+        ]
+      ],
+      "green": [
+        [
+          0,
+          32
+        ],
+        [
+          128,
+          128
+        ],
+        [
+          255,
+          232
+        ]
+      ],
+      "blue": [
+        [
+          0,
+          20
+        ],
+        [
+          128,
+          96
+        ],
+        [
+          255,
+          196
+        ]
+      ]
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "tint": 0.15,
+      "grain": 0.06,
+      "stains": 0.15,
+      "seed": 8
+    },
+    {
+      "filter": "vignette",
+      "on": "image",
+      "amount": 0.35,
+      "color": [
+        70,
+        40,
+        15
+      ]
+    }
+  ]
+}

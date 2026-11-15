@@ -343,6 +343,7 @@ FILTERS: dict[str, FilterHandler] = {
     "denoise": _run_simple(F.denoise),
     "ai_upscale": _run_simple(F.ai_upscale),
     "doodle": _run_around(F.doodle),
+    "codex_doodle": _run_around(F.codex_doodle),
     "circle_backdrop": _run_around(F.circle_backdrop),
     "blend": _run_blend,
     "clip_to": _run_around(F.clip_to),

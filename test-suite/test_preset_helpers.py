@@ -2436,3 +2436,140 @@ def test_graffiti_preset_files(name: str, default: str) -> None:
         assert "font_path" not in step
         if step["filter"] == "draw_text":
             assert step.get("font_style") in F._DISPLAY_FONT_CANDIDATES
+
+
+# --- codex (Leonardo notebook) doodles ----------------------------------------
+
+
+def _paper(w: int = 300, h: int = 240) -> Image.Image:
+    return Image.new("RGB", (w, h), (236, 222, 190))
+
+
+@pytest.mark.parametrize("kind", F.CODEX_KINDS)
+def test_codex_doodle_every_kind_draws_and_is_seeded(kind: str) -> None:
+    base = _paper()
+    out = F.codex_doodle(base, kind=kind, x=0.5, y=0.5, size=0.6, seed=4)
+    assert out.size == base.size and out.mode == "RGB"
+    assert out.tobytes() != base.tobytes()
+    assert F.codex_doodle(base, kind=kind, x=0.5, y=0.5, size=0.6, seed=4).tobytes() == out.tobytes()
+
+
+def test_codex_doodle_validates_params() -> None:
+    base = _paper()
+    with pytest.raises(ValueError, match="kind"):
+        F.codex_doodle(base, kind="dragon")
+    with pytest.raises(ValueError, match="lines"):
+        F.codex_doodle(base, kind="notes", lines=0)
+    with pytest.raises(ValueError, match="size"):
+        F.codex_doodle(base, kind="gears", size=0)
+    with pytest.raises(ValueError, match="max_size"):
+        F.codex_doodle(base, kind="gears", max_size=-1)
+
+
+def test_codex_notes_mirror_and_flip_change_the_drawing() -> None:
+    base = _paper()
+    mirrored = F.codex_doodle(base, kind="notes", x=0.5, y=0.5, size=0.7, seed=2)
+    plain = F.codex_doodle(base, kind="notes", x=0.5, y=0.5, size=0.7, seed=2, mirror=False)
+    assert mirrored.tobytes() != plain.tobytes()
+    wing = F.codex_doodle(base, kind="bird_wing", x=0.5, y=0.5, size=0.6)
+    flipped = F.codex_doodle(base, kind="bird_wing", x=0.5, y=0.5, size=0.6, flip=True)
+    assert flipped.transpose(Image.Transpose.FLIP_LEFT_RIGHT).tobytes() != flipped.tobytes()
+    # Flipping about the frame centre mirrors the element (up to a pixel of rounding).
+    from PIL import ImageChops as IC
+
+    import numpy as np
+
+    diff = np.asarray(IC.difference(wing.transpose(Image.Transpose.FLIP_LEFT_RIGHT), flipped).convert("L"))
+    assert int((diff > 40).sum()) < 0.01 * base.width * base.height
+
+
+def _subject(box: tuple[int, int, int, int], size: tuple[int, int] = (300, 240)) -> Image.Image:
+    layer = Image.new("RGBA", size, (0, 0, 0, 0))
+    layer.paste((200, 50, 50, 255), box)
+    return layer
+
+
+def test_codex_doodle_avoid_subject_moves_off_the_subject() -> None:
+    base = _paper()
+    subject = _subject((0, 0, 140, 120))  # covers the top-left corner
+    out = F.codex_doodle(base, kind="gears", anchor="top_left", size=0.3, around=subject, avoid_subject=True)
+    changed = ImageChops.difference(out, base).convert("L").getbbox()
+    assert changed is not None and changed[0] > 140  # moved to a mirror corner
+
+
+def test_codex_doodle_subject_placement_options() -> None:
+    base = _paper()
+    subject = _subject((120, 40, 180, 220))
+    # Empty subject layer → nothing drawn for a subject-sized element.
+    empty = Image.new("RGBA", base.size, (0, 0, 0, 0))
+    assert F.codex_doodle(base, kind="vitruvian", anchor="subject", subject_fit=1.0, around=empty).tobytes() == base.tobytes()
+    # subject_y pins the centre to that height in the subject bbox; max_size caps the size.
+    out = F.codex_doodle(base, kind="gears", anchor="subject", subject_fit=2.0, max_size=0.2,
+                         subject_y=0.1, around=subject, labels=False)
+    box = ImageChops.difference(out, base).convert("L").getbbox()
+    assert box is not None
+    assert box[3] - box[1] <= 0.2 * 240 * 1.6  # capped by max_size, not 2 × subject height
+    assert abs((box[1] + box[3]) / 2 - (40 + 0.1 * 180)) < 0.2 * 240  # centred near subject_y
+
+
+def test_codex_bird_wing_paper_fills_feathers() -> None:
+    base = Image.new("RGB", (300, 240), (20, 20, 20))
+    filled = F.codex_doodle(base, kind="bird_wing", x=0.5, y=0.5, size=0.8, paper=[240, 230, 200], opacity=1.0)
+    outline = F.codex_doodle(base, kind="bird_wing", x=0.5, y=0.5, size=0.8, opacity=1.0)
+    import numpy as np
+
+    def paperish(im: Image.Image) -> int:
+        px = np.asarray(im)
+        return int(((px[..., 0] > 200) & (px[..., 1] > 190)).sum())
+
+    assert paperish(filled) > paperish(outline) + 500
+
+
+CODEX_PRESETS = ("codex_chalk_sepia", "codex_blueprint", "vitruvian_study", "inventors_notebook", "da_vinci_wings")
+
+
+@pytest.mark.parametrize("name", CODEX_PRESETS)
+def test_codex_preset_files(name: str) -> None:
+    data = load_preset(PRESETS / f"{name}.json")
+    assert data["name"] == name and data["ar"] == "non-square"
+    assert data["text_input"] == "no" and data["default_text"] == "" and data["text_character_limit"] == 0
+    steps = data["steps"]
+    assert all(s["filter"] in FILTERS for s in steps)
+    kinds = [s["kind"] for s in steps if s["filter"] == "codex_doodle"]
+    assert "notes" in kinds and len(kinds) >= 3
+    assert all(k in F.CODEX_KINDS for k in kinds)
+
+
+def test_codex_avoid_subject_spreads_elements_instead_of_stacking() -> None:
+    base = _paper(900, 600)
+    subject = _subject((300, 0, 900, 380), (900, 600))  # blocks the top-right corner
+    out = base
+    for seed in range(3):
+        out = F.codex_doodle(out, kind="notes", anchor="top_left", size=0.35, around=subject, avoid_subject=True, seed=seed)
+    boxes = out.info[F.CODEX_BOXES_KEY]
+    assert len(boxes) == 3
+    for i in range(3):
+        for j in range(i + 1, 3):
+            assert F._box_overlap(tuple(boxes[i]), tuple(boxes[j])) <= 0.3
+
+
+def test_codex_element_size_is_capped_and_huge_buffers_draw_scaled(monkeypatch: pytest.MonkeyPatch) -> None:
+    base = _paper(400, 300)
+    capped = F.codex_doodle(base, kind="geometry", x=0.5, y=0.5, size=5.0, labels=False)
+    box = capped.info[F.CODEX_BOXES_KEY][-1]
+    assert box[2] - box[0] <= F.CODEX_MAX_SPAN * 300 * 1.1 + 1
+    monkeypatch.setattr(F, "_DOODLE_SUPERSAMPLE_MAX_PIXELS", 100)
+    monkeypatch.setattr(F, "_CODEX_MAX_BUFFER_PIXELS", 200 * 200)
+    scaled = F.codex_doodle(base, kind="geometry", x=0.5, y=0.5, size=0.8, labels=False)
+    assert scaled.size == base.size and scaled.tobytes() != base.tobytes()
+
+
+def test_codex_unknown_font_style_is_rejected() -> None:
+    with pytest.raises(ValueError, match="font_style"):
+        F.codex_doodle(_paper(), kind="notes", font_style="papyrus")
+    assert F.codex_doodle(_paper(), kind="notes", font_style="flow").size == (300, 240)
+
+
+def test_inventors_notebook_page_is_square_for_square_photos() -> None:
+    out = apply_preset(_gradient(200, 200), PRESETS / "inventors_notebook.json")
+    assert out.size[0] == out.size[1]
