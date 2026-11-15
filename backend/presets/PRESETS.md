@@ -618,6 +618,40 @@ Five street-graffiti looks inspired by Indian hip-hop street posters (original a
 - **File:** `backend/presets/graffiti_outline_tower.json`
 
 
+### Leonardo codex doodles
+
+Five notebook-page looks inspired by Leonardo da Vinci's codices: rough mirror-written notes (Italian-flavoured filler words, no quotations) and hand-inked diagrams from `codex_doodle`, each on its own paper tone. All extract the subject (`single_subject: true`) so diagrams sit behind it, use `avoid_subject` to keep notes clear of the subject, are `ar: non-square`, `text_input: no`, no HD, and are seeded via `seed_default_presets()` / setup.
+
+#### `codex_chalk_sepia` — Codex chalk sepia
+
+- **Idea:** Whole photo turned warm sepia parchment; white-chalk aerial screw, pulley and two blocks of notes.
+- **Steps:** `extract_subject` → `grayscale` + sepia `tone_curve` + `paper_texture` on background → `codex_doodle` (white chalk [248, 240, 222]) `notes` top-left, `aerial_screw` top-right, `pulley` bottom-left, `notes` left → sepia subject → `composite` → light `paper_texture` → brown `vignette`
+- **File:** `backend/presets/codex_chalk_sepia.json`
+
+#### `codex_blueprint` — Codex blueprint
+
+- **Idea:** Subject in full colour over blue-grey prepared paper; white-chalk parachute and optics (eye + lens) studies, notes.
+- **Steps:** `extract_subject` → `grayscale` + blue-grey duotone `tone_curve` + `paper_texture` [204, 212, 218] on background → `codex_doodle` (white chalk) `parachute`, `optics`, two `notes` → `composite`
+- **File:** `backend/presets/codex_blueprint.json`
+
+#### `vitruvian_study` — Vitruvian study
+
+- **Idea:** Rose (red-chalk) paper background with a blue-black Vitruvian circle-and-square sized to the subject, a proportion scale and notes.
+- **Steps:** `extract_subject` → `grayscale` + rose duotone `tone_curve` + `paper_texture` [232, 196, 180] on background → `codex_doodle` (ink [26, 34, 68]) `vitruvian` (`anchor: subject`, `subject_fit` 1.12, `max_size` 1.0), `proportion` right, `notes` top-left → `composite`
+- **File:** `backend/presets/vitruvian_study.json`
+
+#### `inventors_notebook` — Inventor's notebook
+
+- **Idea:** The photo pasted onto a sage-green notebook page with sepia margin notes and gear, geometry and wing sketches. No cutout.
+- **Steps:** light `paper_texture` → `place_on_canvas` (margins [0.06, 0.06, 0.42, 0.42] — a square photo gives a square page, [206, 212, 182]) → `paper_texture` → `codex_doodle` (sepia) `notes` + `gears` + `geometry` in the right margin, `notes` + `wing` along the bottom (explicit `x` / `y`)
+- **File:** `backend/presets/inventors_notebook.json`
+
+#### `da_vinci_wings` — Da Vinci wings
+
+- **Idea:** Feathered flight-study wings drawn behind the subject at shoulder height (a mirrored pair), on a muted parchment background, with notes.
+- **Steps:** `extract_subject` → `color` 0.25 + `paper_texture` on background → two `codex_doodle` `bird_wing` (`anchor: subject`, `subject_fit` 0.95, `max_size` 0.62, `subject_y` 0.24, `offset_x` ±0.47, second `flip: true`, feathers filled with `paper` [238, 224, 194]) → two `notes` → `composite`
+- **File:** `backend/presets/da_vinci_wings.json`
+
 ## Built-in filters
 
 | Filter | What it does | Common params |
@@ -646,6 +680,7 @@ Five street-graffiti looks inspired by Indian hip-hop street posters (original a
 | `ai_upscale` | Local Real-ESRGAN 4× super-resolution, then Lanczos to target (keeps aspect + alpha; never shrinks; with `LIGHTWEIGHT=1` the model is skipped and it is a plain Lanczos `upscale` to the same target) | `on`, `long_edge` (default 1920), `max_scale` (4), `denoise` (0 keep grain – 1 smoothest; 0.5), `max_input_pixels` (1 000 000), `tile` (256) |
 | `doodle` | One hand-drawn white (or tinted) doodle; sizes are fractions of the short side so it scales with resolution; seeded wobble is deterministic; draws only its own region (2× supersampled up to 4 MP regions, 1× above) |  `on`, `style` (`xo`/`rings`/`wiggles`/`stars`/`hearts`/`arrow`/`sun`/`cloud`/`zigzag`/`dots`/`flower`/`spiral`/`bolt`/`crown`; `count` = marks, rays or petals, `angle` rotates wiggles/zigzag/arrow), `anchor` (`top_right`/`top_left`/`bottom_left`/`bottom_right`/`top`/`bottom`/`left`/`right`/`center`/`subject`), `around` (layer whose alpha bbox centres `anchor: subject`), `x`/`y` (0–1, override anchor), `size`, `stroke`, `count` (1–12), `angle` (wiggles), `color`/`rgb` (`[r, g, b]`, or `color: "auto"` = dark ink when the region's mean luma > 150, else white), `avoid_subject` (with `around`: a corner/edge anchor the subject covers > 8% of moves to its first clear mirror — x-flip, y-flip, then both), `avoid_busy` (also skip mirrors whose background is cluttered — mean edge strength > 8 on a blurred ≤128 px copy, so fine texture doesn't count; works without `around`), `opacity`, `jitter`, `seed` |
 | `doodle_frame` | Hand-drawn border just inside the edges (marker wobble); drawn into a 1-channel mask and painted onto one copy, so memory stays ≈ one image copy (2× supersampled up to 4 MP, 1× above) | `on`, `style` (`line`/`double`/`dashes`/`dots`/`zigzag`/`waves`/`corners`), `color`/`rgb` or `"auto"` (dark ink on light borders, white on dark), `inset`, `stroke` (fractions of the short side), `jitter`, `opacity`, `seed` |
+| `codex_doodle` | One Leonardo-notebook element in thin ink (sepia by default), seeded and drawn only in its region (2× supersampled up to 4 MP). `kind`: `notes` (rough mirror-written handwriting, `lines` lines, `size` wide), `geometry`, `vitruvian`, `gears`, `wing`, `vortex`, `proportion`, `aerial_screw`, `parachute`, `pulley`, `optics`, `bird_wing` (shingled feathers; `paper` fills them), `bat_wing`. Placement like `doodle` (`anchor` / `x`, `y` / `avoid_subject`); with `anchor: subject`, `subject_fit` sizes from the subject bbox, `max_size` caps it, `subject_y` (0 top…1 bottom) sets the height within the subject; `offset_x` / `offset_y` shift by a fraction of the size; `flip` mirrors (wing pairs). Each element is capped at 1.2 × the short side (huge ones draw at reduced scale, buffer ≤ 16 MP) and records its box in `image.info["codex_boxes"]`, so a later `avoid_subject` element avoids earlier ones too (mirror corners, then edge centres). Unknown `font_style` raises | `on`, `around`, `kind`, `color`/`rgb`, `anchor`, `x`, `y`, `size`, `stroke`, `angle`, `opacity`, `lines`, `mirror`, `font_style` (`scribble`), `labels`, `subject_fit`, `max_size`, `subject_y`, `paper`, `flip`, `offset_x`, `offset_y`, `jitter`, `seed`, `avoid_subject` |
 | `posterize` | Flatten each RGB channel to N levels (comic colour bands); optional median smooth first | `on`, `levels` (2–32), `smooth` (0 or odd ≥ 3) |
 | `ink_edges` | Comic ink outlines via difference of Gaussians on luminance; scales with resolution; RGBA is flattened on white first so hidden pixels don't create edges | `on`, `detail` (blur, fraction of short side), `threshold` (lower = more lines), `thickness` (fraction of short side), `color`/`rgb`, `opacity` |
 | `halftone` | Printed dot screen: `mono` (one ink at `angle`) or `cmyk` (process inks at 15/75/0/45° with grey-component replacement); dot area ≈ ink coverage; processed at ≤ 2400 px long edge then resized back; pitch auto-enlarges if a screen would need > 160k dots; transparent pixels print as paper | `on`, `mode`, `cell` (dot pitch, 0.002–0.1 of short side), `angle`, `paper`, `ink`, `mix` (blend back over original), `gcr` (0–1, share of grey on black plate) |

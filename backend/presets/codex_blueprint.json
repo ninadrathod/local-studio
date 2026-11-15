@@ -1,0 +1,157 @@
+{
+  "name": "codex_blueprint",
+  "label": "Codex blueprint",
+  "description": "Subject in full colour over blue-grey prepared paper, with white-chalk parachute and optics studies and mirror-written notes.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "grayscale",
+      "on": "background"
+    },
+    {
+      "filter": "tone_curve",
+      "on": "background",
+      "red": [
+        [
+          0,
+          34
+        ],
+        [
+          128,
+          124
+        ],
+        [
+          255,
+          214
+        ]
+      ],
+      "green": [
+        [
+          0,
+          40
+        ],
+        [
+          128,
+          132
+        ],
+        [
+          255,
+          222
+        ]
+      ],
+      "blue": [
+        [
+          0,
+          54
+        ],
+        [
+          128,
+          148
+        ],
+        [
+          255,
+          230
+        ]
+      ]
+    },
+    {
+      "filter": "paper_texture",
+      "on": "background",
+      "tint": 0.4,
+      "grain": 0.1,
+      "stains": 0.25,
+      "seed": 3,
+      "color": [
+        204,
+        212,
+        218
+      ]
+    },
+    {
+      "filter": "codex_doodle",
+      "on": "background",
+      "around": "subject",
+      "avoid_subject": true,
+      "stroke": 0.005,
+      "opacity": 0.95,
+      "kind": "parachute",
+      "anchor": "top_left",
+      "size": 0.3,
+      "seed": 5,
+      "color": [
+        248,
+        240,
+        222
+      ]
+    },
+    {
+      "filter": "codex_doodle",
+      "on": "background",
+      "around": "subject",
+      "avoid_subject": true,
+      "stroke": 0.005,
+      "opacity": 0.95,
+      "kind": "optics",
+      "anchor": "top_right",
+      "size": 0.28,
+      "seed": 6,
+      "color": [
+        248,
+        240,
+        222
+      ]
+    },
+    {
+      "filter": "codex_doodle",
+      "on": "background",
+      "around": "subject",
+      "avoid_subject": true,
+      "stroke": 0.005,
+      "opacity": 0.95,
+      "kind": "notes",
+      "anchor": "bottom_left",
+      "size": 0.3,
+      "lines": 6,
+      "seed": 7,
+      "color": [
+        248,
+        240,
+        222
+      ]
+    },
+    {
+      "filter": "codex_doodle",
+      "on": "background",
+      "around": "subject",
+      "avoid_subject": true,
+      "stroke": 0.005,
+      "opacity": 0.95,
+      "kind": "notes",
+      "anchor": "left",
+      "size": 0.24,
+      "lines": 5,
+      "seed": 8,
+      "color": [
+        248,
+        240,
+        222
+      ]
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    }
+  ]
+}

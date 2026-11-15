@@ -1,0 +1,140 @@
+{
+  "name": "vitruvian_study",
+  "label": "Vitruvian study",
+  "description": "A blue-black Vitruvian circle-and-square construction drawn behind the subject on rose paper, with a proportion scale and mirror-written notes.",
+  "ar": "non-square",
+  "text_input": "no",
+  "default_text": "",
+  "text_character_limit": 0,
+  "steps": [
+    {
+      "filter": "extract_subject",
+      "on": "image",
+      "as": "subject",
+      "bg_as": "background",
+      "single_subject": true
+    },
+    {
+      "filter": "grayscale",
+      "on": "background"
+    },
+    {
+      "filter": "tone_curve",
+      "on": "background",
+      "red": [
+        [
+          0,
+          66
+        ],
+        [
+          128,
+          170
+        ],
+        [
+          255,
+          242
+        ]
+      ],
+      "green": [
+        [
+          0,
+          32
+        ],
+        [
+          128,
+          112
+        ],
+        [
+          255,
+          206
+        ]
+      ],
+      "blue": [
+        [
+          0,
+          30
+        ],
+        [
+          128,
+          102
+        ],
+        [
+          255,
+          192
+        ]
+      ]
+    },
+    {
+      "filter": "paper_texture",
+      "on": "background",
+      "tint": 0.45,
+      "grain": 0.1,
+      "stains": 0.25,
+      "seed": 3,
+      "color": [
+        232,
+        196,
+        180
+      ]
+    },
+    {
+      "filter": "codex_doodle",
+      "on": "background",
+      "around": "subject",
+      "avoid_subject": false,
+      "stroke": 0.005,
+      "opacity": 0.9,
+      "kind": "vitruvian",
+      "anchor": "subject",
+      "subject_fit": 1.12,
+      "seed": 9,
+      "color": [
+        26,
+        34,
+        68
+      ],
+      "max_size": 1.0
+    },
+    {
+      "filter": "codex_doodle",
+      "on": "background",
+      "around": "subject",
+      "avoid_subject": true,
+      "stroke": 0.0045,
+      "opacity": 0.9,
+      "kind": "proportion",
+      "anchor": "right",
+      "size": 0.55,
+      "seed": 10,
+      "color": [
+        26,
+        34,
+        68
+      ]
+    },
+    {
+      "filter": "codex_doodle",
+      "on": "background",
+      "around": "subject",
+      "avoid_subject": true,
+      "stroke": 0.0045,
+      "opacity": 0.9,
+      "kind": "notes",
+      "anchor": "top_left",
+      "size": 0.26,
+      "lines": 6,
+      "seed": 11,
+      "color": [
+        26,
+        34,
+        68
+      ]
+    },
+    {
+      "filter": "composite",
+      "base": "background",
+      "overlay": "subject",
+      "as": "image"
+    }
+  ]
+}

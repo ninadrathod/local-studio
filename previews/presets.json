@@ -1,5 +1,50 @@
 [
   {
+    "preset_name": "da_vinci_wings",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/da_vinci_wings.jpg",
+    "post_edit_image": "previews/post-edit/da_vinci_wings.png"
+  },
+  {
+    "preset_name": "inventors_notebook",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/inventors_notebook.jpg",
+    "post_edit_image": "previews/post-edit/inventors_notebook.png"
+  },
+  {
+    "preset_name": "vitruvian_study",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/vitruvian_study.jpg",
+    "post_edit_image": "previews/post-edit/vitruvian_study.png"
+  },
+  {
+    "preset_name": "codex_blueprint",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/codex_blueprint.jpg",
+    "post_edit_image": "previews/post-edit/codex_blueprint.png"
+  },
+  {
+    "preset_name": "codex_chalk_sepia",
+    "ar": "non-square",
+    "text_input": "no",
+    "default_text": "",
+    "text_character_limit": 0,
+    "pre_edit_image": "previews/pre-edit/codex_chalk_sepia.jpg",
+    "post_edit_image": "previews/post-edit/codex_chalk_sepia.png"
+  },
+  {
     "preset_name": "twirl_vortex",
     "ar": "non-square",
     "text_input": "no",
