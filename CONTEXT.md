@@ -24,6 +24,7 @@ Repo: https://github.com/ninadrathod/local-studio
 | `docs/` | GitHub Pages pitch site (`docs/index.html` + local css/icons) |
 | `backend/` | FastAPI app |
 | `backend/helpers/` | CLI helpers: subject extraction, local AI upscale model, JSON preset runner |
+| `model/` | Real-ESRGAN `.pth` weights (`realesrgan/`, BSD-3-Clause) shipped with the repo |
 | `backend/presets/` | JSON image presets (ordered filter steps); see `PRESETS.md` |
 | `backend/database/` | SQLite preset metadata (local, gitignored `presets.local.db` + `db_ops.py` + `prepare_db.py`; committed `presets.db` is a frozen legacy copy) |
 | `backend/fonts/` | Bundled open-licensed display fonts (OFL / Apache) for `draw_text` `font_style` |
