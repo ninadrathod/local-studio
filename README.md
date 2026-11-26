@@ -34,7 +34,7 @@ cp .env.example .env
 ./scripts/run.sh
 ```
 
-5. Open [http://localhost:5500](http://localhost:5500), pick a preset, upload an image, and click **Generate edit**.
+5. Open [http://localhost:5500](http://localhost:5500), click **Enter the studio** (or go straight to [/studio.html](http://localhost:5500/studio.html)), pick a preset, upload an image, and click **Generate edit**.
 
 The servers run in the background (they keep running after you close the terminal); logs are in `logs/api.log` and `logs/frontend.log`. Stop both with:
 

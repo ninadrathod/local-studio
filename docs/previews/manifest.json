@@ -1,0 +1,77 @@
+{
+  "count": 100,
+  "presets": [
+    {
+      "preset_name": "instax_monochrome",
+      "post_edit_image": "previews/post/instax_monochrome.jpg"
+    },
+    {
+      "preset_name": "digicam_flash",
+      "post_edit_image": "previews/post/digicam_flash.jpg"
+    },
+    {
+      "preset_name": "mint_pastel_film",
+      "post_edit_image": "previews/post/mint_pastel_film.jpg"
+    },
+    {
+      "preset_name": "vintage_comic",
+      "post_edit_image": "previews/post/vintage_comic.jpg"
+    },
+    {
+      "preset_name": "bright_airy",
+      "post_edit_image": "previews/post/bright_airy.jpg"
+    },
+    {
+      "preset_name": "cinematic_teal_orange",
+      "post_edit_image": "previews/post/cinematic_teal_orange.jpg"
+    },
+    {
+      "preset_name": "red_halo_spotlight",
+      "post_edit_image": "previews/post/red_halo_spotlight.jpg"
+    },
+    {
+      "preset_name": "comic_pop",
+      "post_edit_image": "previews/post/comic_pop.jpg"
+    },
+    {
+      "preset_name": "lavender_dusk",
+      "post_edit_image": "previews/post/lavender_dusk.jpg"
+    },
+    {
+      "preset_name": "sky_gel_amber",
+      "post_edit_image": "previews/post/sky_gel_amber.jpg"
+    },
+    {
+      "preset_name": "brush_script_poster",
+      "post_edit_image": "previews/post/brush_script_poster.jpg"
+    },
+    {
+      "preset_name": "poster_title_yellow_pop",
+      "post_edit_image": "previews/post/poster_title_yellow_pop.jpg"
+    },
+    {
+      "preset_name": "film_halation",
+      "post_edit_image": "previews/post/film_halation.jpg"
+    },
+    {
+      "preset_name": "blue_hour_noir",
+      "post_edit_image": "previews/post/blue_hour_noir.jpg"
+    },
+    {
+      "preset_name": "codex_chalk_sepia",
+      "post_edit_image": "previews/post/codex_chalk_sepia.jpg"
+    },
+    {
+      "preset_name": "neon_frame_sign",
+      "post_edit_image": "previews/post/neon_frame_sign.jpg"
+    },
+    {
+      "preset_name": "miami_neon",
+      "post_edit_image": "previews/post/miami_neon.jpg"
+    },
+    {
+      "preset_name": "synthwave_sun",
+      "post_edit_image": "previews/post/synthwave_sun.jpg"
+    }
+  ]
+}

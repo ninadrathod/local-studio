@@ -18,10 +18,11 @@ Repo: https://github.com/ninadrathod/local-studio
 
 | Path | Role |
 |------|------|
-| `index.html`, `script.js`, `js/`, `css/`, `icons/` | Frontend UI |
+| `index.html`, `css/landing.css`, `js/landing.js` | Landing page (marketing; four full-screen scenes, links into the studio) |
+| `studio.html`, `script.js`, `js/`, `css/styles.css`, `icons/` | Studio UI (preset gallery + upload + generate) |
 | `previews/` | Preset gallery assets: `pre-edit/` + `post-edit/` (before/after per DB preset) + `presets.json` |
 | `previews/_candidates/` | Gitignored create-preset comparison HTML (POC edits, fonts, gallery picks) — not shipped |
-| `docs/` | GitHub Pages pitch site (`docs/index.html` + local css/icons) |
+| `docs/` | GitHub Pages site (custom domain in `docs/CNAME`): the same four-scene landing as `index.html`, self-contained — `docs/css/styles.css` and `docs/js/landing.js` are **copies** of `css/landing.css` / `js/landing.js` (re-copy after editing those), `docs/previews/` holds downscaled JPEG previews + `manifest.json` (`{ count, presets }`) + `CREDITS.md`; every CTA goes to the GitHub repo / fork, never to a hosted app |
 | `backend/` | FastAPI app |
 | `backend/helpers/` | CLI helpers: subject extraction, local AI upscale model, JSON preset runner |
 | `model/` | Real-ESRGAN `.pth` weights (`realesrgan/`, BSD-3-Clause) shipped with the repo |
@@ -45,7 +46,8 @@ Repo: https://github.com/ninadrathod/local-studio
 ## Key conventions
 
 - Keep code **modular and easy to read** (small modules, clear names).
-- Frontend styling: **Tailwind** (CDN) + custom CSS in `css/styles.css` — **Pop Poster** theme (cream paper, coral/sky/lemon accents, thick ink outlines; **Lilita One** brand wordmark, **Fredoka** UI display + **Nunito** body).
+- Landing page (`index.html`): plain CSS in `css/landing.css` — dark **Orbital** theme (Unbounded / Instrument Sans / JetBrains Mono, brand coral/sky/lemon as neon). No page scroll: `js/landing.js` swaps four scenes (Origin → Protocol → Fusion → Archive) on wheel / swipe / keys with depth transitions; scenes only scroll internally when their content is taller than the viewport. Static only — reads `previews/presets.json`, never the API.
+- Studio styling (`studio.html`): plain CSS in `css/styles.css` (no Tailwind) — same **Orbital** theme as the landing page (dark void, glass panels, neon coral/sky/lemon, Unbounded / Instrument Sans / JetBrains Mono). Progress (tracker + step states) is pure CSS `:has()` on page state, so `script.js` stays theme-agnostic; keep every element ID and the `hidden` class that `script.js` uses.
 - Backend image work lives in `backend/app/services/`; routes stay thin.
 - Service-function tests live in `test-suite/` (pytest); keep them in sync when service behavior changes.
 - Do **not** put architecture detail in `README.md`.
@@ -69,12 +71,14 @@ Repo: https://github.com/ninadrathod/local-studio
 
 ## Current scope
 
-- Preset gallery (left, ~65% width on desktop): "Presets" heading with a count pill (total, or `shown / total` while filtered) + page-drawn lemon-pill scroller (same on desktop, mobile and Firefox; native scrollbar hidden) + search + **Input square?** yes/no switch + **Popular** mode (off by default) + refresh control beside search + post-edit thumbnails from `previews/presets.json` (shuffled into a fresh random order on every page load); hover/focus (or press-and-hold on touch) reveals pre-edit original; click/tap to select
+- Preset gallery (left "Choose a look" console, ~62% width on desktop): heading with a count pill (total, or `shown / total` while filtered) + page-drawn neon-pill scroller (same on desktop, mobile and Firefox; native scrollbar hidden) + search + **Square photo?** yes/no switch + **Popular** mode (off by default) + refresh control beside search + post-edit thumbnails from `previews/presets.json` (shuffled into a fresh random order on every page load); hover/focus (or press-and-hold on touch) reveals pre-edit original; click/tap to select
 - Search filters the gallery in place via realtime `GET /api/presets/search?q=…` (DB `preset_name` + `keywords`)
-- **Input square?** **Yes** shows all presets; **No** hides `ar=square` presets
+- **Square photo?** **Yes** shows all presets; **No** hides `ar=square` presets
 - Gallery default order is a fresh random shuffle on every page load (`previews/presets.json` is stored newest first; `script.js` shuffles it once per load). Search shows only the matches, kept in that same shuffled order. The 5 newest presets (top of the manifest) carry a **New** badge so they stay easy to spot. **Popular** selects popular-sort mode. The search-row refresh reloads the visible gallery from `GET /api/presets/popular` (`used_count` descending). Unclicking **Popular** restores that visit's shuffled order. Download does not reorder the grid.
 - Image upload (right, ~35% width on desktop): locked until a preset is selected; clearing the preset clears the upload; then client-side type check + preview
-- Studio UI uses the full browser viewport (no page scroll); the preset gallery scrolls internally when needed
+- `/` is the landing page; the studio lives at `/studio.html` (landing CTAs, the HUD "Open studio" link and the final "Explore the presets" CTA all go there; the studio logo / About link go back to the landing)
+- Studio layout: HUD header with a 01 Look → 02 Photo → 03 Result tracker; left "Choose a look" console (search, square filter, Popular, gallery); right pipeline of three step cards (selected look + optional text, photo drop zone, result) with Generate / Download between photo and result. Tablet/desktop fit one viewport (gallery scrolls internally); phones (< 768 px) scroll the page — gallery first, then the pipeline
+- Preset cards compare by a labelled wipe: hover (or keyboard focus, or press-and-hold on touch) sweeps the original photo in behind a scanning beam and flips the corner tag from **After** to **Before**; a looping mini demo in the gallery header explains it ("Hover" / "Press & hold" by input type) and the first card plays the wipe twice on load
 - Generate edit when both preset + file are set → `POST /api/apply-preset` → result + download
 - Download click increments `popular.used_count` for the selected preset (`POST /api/presets/use`) without reordering the gallery
 - Applying a `ar=square` preset to a non-square image fails with HTTP **400**

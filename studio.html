@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Studio · The Local Studio</title>
+    <meta name="theme-color" content="#06060b" />
+    <link rel="icon" href="icons/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <!-- ?v=3: one-time break from copies cached before the Orbital redesign.
+         scripts/serve_frontend.py sends Cache-Control: no-cache, so no further bumps are needed. -->
+    <link rel="stylesheet" href="css/styles.css?v=3" />
+  </head>
+  <body class="studio-page">
+    <!-- Ambient background, shared look with the landing page (decorative only) -->
+    <div class="orb-aurora" aria-hidden="true">
+      <span class="orb-aurora__blob orb-aurora__blob--a"></span>
+      <span class="orb-aurora__blob orb-aurora__blob--b"></span>
+      <span class="orb-aurora__blob orb-aurora__blob--c"></span>
+    </div>
+    <div class="orb-stars" aria-hidden="true"></div>
+    <div class="orb-grain" aria-hidden="true"></div>
+
+    <div class="studio-shell">
+      <!-- HUD header -->
+      <header class="hud">
+        <a class="hud__brand" href="index.html" aria-label="The Local Studio — back to the home page">
+          <span class="orb-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="hud__word">The&nbsp;Local&nbsp;Studio</span>
+        </a>
+
+        <!-- Progress tracker: lit by CSS :has() from the page state, no script needed -->
+        <ol class="tracker" aria-label="Progress">
+          <li class="tracker__step tracker__step--look"><span class="tracker__no">01</span><span class="tracker__name">Look</span></li>
+          <li class="tracker__line" aria-hidden="true"></li>
+          <li class="tracker__step tracker__step--photo"><span class="tracker__no">02</span><span class="tracker__name">Photo</span></li>
+          <li class="tracker__line" aria-hidden="true"></li>
+          <li class="tracker__step tracker__step--result"><span class="tracker__no">03</span><span class="tracker__name">Result</span></li>
+        </ol>
+
+        <nav class="hud__nav" aria-label="Site">
+          <a class="hud__link" href="index.html">Home</a>
+        </nav>
+      </header>
+
+      <main class="studio" aria-label="Studio workspace">
+        <!-- ───────── Left: preset archive ───────── -->
+        <section class="console studio-columns__left" aria-labelledby="preset-title">
+          <div class="console__head">
+            <div class="console__titles">
+              <p class="eyebrow"><span class="eyebrow__dot"></span> 01 · Preset archive</p>
+              <h1 class="console__title" id="preset-title">
+                Choose a look
+                <span id="preset-count" class="preset-count" aria-hidden="true" hidden></span>
+              </h1>
+              <span id="preset-count-sr" class="sr-only" aria-live="polite"></span>
+            </div>
+
+            <!-- Self-explaining compare hint: a looping mini demo of the card wipe -->
+            <div class="peek-hint" aria-hidden="true">
+              <span class="peek-hint__demo">
+                <span class="peek-hint__after"></span>
+                <span class="peek-hint__before"></span>
+                <span class="peek-hint__beam"></span>
+                <span class="peek-hint__cursor"></span>
+              </span>
+              <span class="peek-hint__text">
+                <strong class="peek-hint__verb peek-hint__verb--hover">Hover</strong>
+                <strong class="peek-hint__verb peek-hint__verb--touch">Press &amp; hold</strong>
+                a look to see the original photo
+              </span>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <div class="toolbar__search">
+              <label class="sr-only" for="preset-search">Search presets by name or keyword</label>
+              <span class="toolbar__search-icon" aria-hidden="true"></span>
+              <input
+                id="preset-search"
+                type="search"
+                autocomplete="off"
+                spellcheck="false"
+                maxlength="64"
+                placeholder="Search looks — neon, film, doodle…"
+                class="preset-search-input"
+              />
+              <button
+                type="button"
+                id="preset-reset"
+                class="preset-reset-btn"
+                aria-label="Clear selected preset"
+                title="Clear selected preset"
+                disabled
+              >
+                <img src="icons/reset.svg" alt="" class="preset-reset-btn__icon" />
+              </button>
+            </div>
+
+            <fieldset class="square-filter" id="square-filter">
+              <legend class="sr-only">Is the input image square?</legend>
+              <span class="square-filter__label" aria-hidden="true">Square photo?</span>
+              <div class="square-filter__switch" role="radiogroup" aria-label="Is the input image square?">
+                <label class="square-filter__opt">
+                  <input type="radio" name="input-square" id="input-square-yes" value="yes" checked />
+                  <span>Yes</span>
+                </label>
+                <label class="square-filter__opt">
+                  <input type="radio" name="input-square" id="input-square-no" value="no" />
+                  <span>No</span>
+                </label>
+              </div>
+              <button
+                type="button"
+                id="popular-sort-btn"
+                class="popular-sort-btn"
+                aria-pressed="false"
+                aria-label="Sort presets by popularity"
+              >
+                <span>Popular</span>
+              </button>
+            </fieldset>
+          </div>
+          <p id="search-error" class="msg-error hidden" role="alert"></p>
+
+          <!-- Grid + page-drawn scroller must stay siblings: script.js positions the
+               scroller from the grid's offsetTop / offsetLeft inside this viewport. -->
+          <div class="gallery">
+            <div id="preset-grid" class="preset-grid" role="listbox" aria-label="Available presets">
+              <p id="preset-loading" class="preset-grid__msg">Loading presets…</p>
+            </div>
+            <div
+              id="preset-scroller"
+              class="preset-scroller"
+              role="scrollbar"
+              aria-controls="preset-grid"
+              aria-orientation="vertical"
+              aria-label="Preset gallery scroll position"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="0"
+              aria-valuetext="Scrolled 0% through presets"
+              hidden
+            >
+              <div class="preset-scroller__thumb"></div>
+            </div>
+          </div>
+          <p id="preset-error" class="msg-error hidden" role="alert"></p>
+        </section>
+
+        <!-- ───────── Right: pipeline ───────── -->
+        <section class="pipeline studio-columns__right" aria-label="Edit your photo">
+          <!-- 01 · selected look (+ optional preset text) -->
+          <div class="step step--look">
+            <div class="step__head">
+              <span class="step__no">01</span>
+              <h2 class="step__title">Look</h2>
+              <span class="step__state" aria-hidden="true"></span>
+            </div>
+            <p id="selected-preset-label" class="step__value">No preset selected</p>
+
+            <div id="preset-text-wrap" class="preset-text-wrap hidden" hidden>
+              <label for="preset-text" class="preset-text-label">Text for this look</label>
+              <div class="preset-text-row">
+                <input
+                  id="preset-text"
+                  type="text"
+                  autocomplete="off"
+                  spellcheck="true"
+                  class="preset-text-input"
+                  aria-hidden="true"
+                />
+                <span id="preset-text-count" class="preset-text-count" aria-live="polite"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 02 · photo -->
+          <div class="step step--photo step--stage">
+            <div class="step__head">
+              <span class="step__no">02</span>
+              <h2 class="step__title">Your photo</h2>
+              <p id="file-meta" class="step__meta hidden"></p>
+              <span class="step__state" aria-hidden="true"></span>
+            </div>
+
+            <label
+              id="drop-zone"
+              for="image-input"
+              class="drop-zone drop-zone--locked stage"
+              aria-disabled="true"
+            >
+              <input id="image-input" type="file" accept="image/*,.heic,.heif" class="sr-only" disabled />
+              <img id="preview-original" alt="Uploaded preview" class="preview-img hidden" />
+              <div id="upload-prompt" class="upload-prompt">
+                <span class="upload-icon-wrap" aria-hidden="true">
+                  <img src="icons/upload.svg" alt="" />
+                </span>
+                <p id="upload-prompt-title" class="upload-prompt__title">Select a preset first</p>
+                <p id="upload-prompt-sub" class="upload-prompt__sub">Then drop an image, or browse</p>
+              </div>
+            </label>
+            <p id="file-error" class="msg-error hidden" role="alert"></p>
+          </div>
+
+          <!-- Actions -->
+          <div class="actions-bar">
+            <p id="api-error" class="msg-error hidden" role="alert"></p>
+            <div class="actions-bar__buttons">
+              <a id="download-btn" href="#" download="edited-image.png" class="btn btn-ghost hidden">
+                Download
+              </a>
+              <button id="generate-btn" type="button" disabled class="btn btn-primary">
+                <span>Generate edit</span>
+                <span class="btn-primary__arrow" aria-hidden="true">→</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 03 · result -->
+          <div class="step step--result step--stage">
+            <div class="step__head">
+              <span class="step__no">03</span>
+              <h2 class="step__title">Result</h2>
+              <span class="step__state" aria-hidden="true"></span>
+            </div>
+
+            <div class="stage stage--result">
+              <p id="result-placeholder" class="stage__placeholder">Your edit will materialise here</p>
+              <img id="preview-edited" alt="Edited result" class="preview-img hidden" />
+              <div id="loading" class="loading hidden">
+                <div class="spinner" aria-hidden="true"></div>
+                <span>Generating edit…</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="script.js?v=2"></script>
+  </body>
+</html>
