@@ -51,26 +51,28 @@
 
     <div class="lp-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
 
+    <!-- Section navigator: labelled rail on the right (desktop) / bottom bar (phones) -->
     <nav class="lp-rail" aria-label="Sections">
       <ol>
-        <li><button type="button" data-go="0" aria-label="Section 1: Origin"><span class="lp-rail__no">01</span><span class="lp-rail__name">Origin</span></button></li>
-        <li><button type="button" data-go="1" aria-label="Section 2: How it works"><span class="lp-rail__no">02</span><span class="lp-rail__name">Protocol</span></button></li>
-        <li><button type="button" data-go="2" aria-label="Section 3: Fusion"><span class="lp-rail__no">03</span><span class="lp-rail__name">Fusion</span></button></li>
-        <li><button type="button" data-go="3" aria-label="Section 4: Presets"><span class="lp-rail__no">04</span><span class="lp-rail__name">Archive</span></button></li>
+        <li><button type="button" data-go="0" aria-label="Section 1: Intro"><span class="lp-rail__no">01</span><span class="lp-rail__name">Intro</span></button></li>
+        <li><button type="button" data-go="1" aria-label="Section 2: How it works"><span class="lp-rail__no">02</span><span class="lp-rail__name">How it works</span></button></li>
+        <li><button type="button" data-go="2" aria-label="Section 3: Inside a preset"><span class="lp-rail__no">03</span><span class="lp-rail__name">Inside a preset</span></button></li>
+        <li><button type="button" data-go="3" aria-label="Section 4: Presets"><span class="lp-rail__no">04</span><span class="lp-rail__name">Presets</span></button></li>
       </ol>
       <span class="lp-rail__track" aria-hidden="true"><span class="lp-rail__fill"></span></span>
     </nav>
 
-    <div class="lp-readout" aria-hidden="true">
-      <span class="lp-readout__idx" id="lp-readout-idx">01</span>
-      <span class="lp-readout__sep">/</span>
-      <span>04</span>
-      <span class="lp-readout__name" id="lp-readout-name">Origin</span>
-    </div>
-
-    <button type="button" class="lp-hint" data-next aria-label="Next section">
-      <span class="lp-hint__label">Scroll</span>
-      <span class="lp-hint__wheel" aria-hidden="true"><i></i></span>
+    <!-- Next-section button: says where it goes and how to get there (js/landing.js keeps it current) -->
+    <button type="button" class="lp-next" data-next aria-label="Next section: How it works">
+      <span class="lp-next__text">
+        <span class="lp-next__kicker">
+          <span class="lp-next__how lp-next__how--pointer">Scroll or click</span>
+          <span class="lp-next__how lp-next__how--touch">Swipe up or tap</span>
+          <span class="lp-next__how lp-next__how--end">Last section</span>
+        </span>
+        <span class="lp-next__name" id="lp-next-name">How it works</span>
+      </span>
+      <span class="lp-next__arrow" aria-hidden="true"><i></i></span>
     </button>
 
     <p class="sr-only" id="lp-live" aria-live="polite"></p>
@@ -78,7 +80,7 @@
     <!-- Scenes: one viewport each, swapped with depth transitions (no page scroll) -->
     <main class="lp-stage" id="lp-stage">
       <!-- 01 · ORIGIN -->
-      <section class="scene scene--origin is-active" id="origin" aria-labelledby="origin-title" data-name="Origin">
+      <section class="scene scene--origin is-active" id="origin" aria-labelledby="origin-title" data-name="Intro">
         <div class="scene__inner origin">
           <div class="origin__copy">
             <p class="eyebrow r" style="--i: 0">
@@ -134,7 +136,7 @@
               <div class="orbit__ring" id="orbit-ring">
                 <article class="fcard" style="--k: 0">
                   <div class="fcard__body">
-                    <img src="previews/post/miami_neon.jpg" alt="" loading="eager" decoding="async" />
+                    <span class="fcard__icon" style="--accent: var(--coral)" aria-hidden="true"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"><rect x="4" y="5" width="16" height="10.5" rx="1.6"/><path d="M2.5 19h19"/><rect x="9.6" y="9.4" width="4.8" height="3.6" rx="0.8"/><path d="M10.6 9.4V8.3a1.4 1.4 0 0 1 2.8 0v1.1"/></svg></span>
                     <p class="fcard__tag">F/01 · Private</p>
                     <h2 class="fcard__title">On-device</h2>
                     <p class="fcard__text">Runs on a laptop or a Raspberry Pi. Your photos stay put.</p>
@@ -142,7 +144,7 @@
                 </article>
                 <article class="fcard" style="--k: 1">
                   <div class="fcard__body">
-                    <img src="previews/post/retrowave_neon_title.jpg" alt="" decoding="async" />
+                    <span class="fcard__icon" style="--accent: var(--lemon)" aria-hidden="true"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6" fill="currentColor" fill-opacity="0.35"/></svg></span>
                     <p class="fcard__tag">F/02 · Library</p>
                     <h2 class="fcard__title"><span data-preset-count>100</span> presets</h2>
                     <p class="fcard__text">Film stocks, neon, comics, graffiti, sketchbooks.</p>
@@ -150,7 +152,7 @@
                 </article>
                 <article class="fcard" style="--k: 2">
                   <div class="fcard__body">
-                    <img src="previews/post/prism_glow.jpg" alt="" decoding="async" />
+                    <span class="fcard__icon" style="--accent: var(--sky)" aria-hidden="true"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M14 4h6v6"/><path d="M20 4l-6.5 6.5"/><path d="M10 20H4v-6"/><path d="M4 20l6.5-6.5"/><path d="M6.5 4.5v3M5 6h3"/><path d="M17.5 16.5v3M16 18h3"/></svg></span>
                     <p class="fcard__tag">F/03 · Neural</p>
                     <h2 class="fcard__title">AI upscale</h2>
                     <p class="fcard__text">Real-ESRGAN lifts photos to Full HD or 4K, locally.</p>
@@ -158,7 +160,7 @@
                 </article>
                 <article class="fcard" style="--k: 3">
                   <div class="fcard__body">
-                    <img src="previews/post/bw_bg_glowing_subject.jpg" alt="" decoding="async" />
+                    <span class="fcard__icon" style="--accent: var(--violet)" aria-hidden="true"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"><rect x="3" y="3" width="18" height="18" rx="2.5" stroke-dasharray="2.6 2.4"/><circle cx="12" cy="9.5" r="2.8"/><path d="M6.8 18.2a5.4 5.4 0 0 1 10.4 0"/></svg></span>
                     <p class="fcard__tag">F/04 · Neural</p>
                     <h2 class="fcard__title">Subject cut-out</h2>
                     <p class="fcard__text">U²-Net finds the person so effects wrap around them.</p>
@@ -166,7 +168,7 @@
                 </article>
                 <article class="fcard" style="--k: 4">
                   <div class="fcard__body">
-                    <img src="previews/post/synthwave_sun.jpg" alt="" decoding="async" />
+                    <span class="fcard__icon" style="--accent: var(--coral)" aria-hidden="true"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M5 7V5h14v2"/><path d="M12 5v14"/><path d="M9 19h6"/></svg></span>
                     <p class="fcard__tag">F/05 · Type</p>
                     <h2 class="fcard__title">Titles &amp; stamps</h2>
                     <p class="fcard__text">Add your own words in bundled display fonts.</p>
@@ -174,15 +176,15 @@
                 </article>
                 <article class="fcard" style="--k: 5">
                   <div class="fcard__body">
-                    <img src="previews/post/graffiti_outline_mural.jpg" alt="" decoding="async" />
-                    <p class="fcard__tag">F/06 · Illustration</p>
+                    <span class="fcard__icon" style="--accent: var(--lemon)" aria-hidden="true"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M15.5 4.5l4 4L9 19H5v-4z"/><path d="M13.5 6.5l4 4"/><path d="M3 21.5c2-1.6 3.6-1.6 5 0s3 1.6 5 0"/></svg></span>
+                    <p class="fcard__tag">F/06 · Art</p>
                     <h2 class="fcard__title">Drawn layers</h2>
                     <p class="fcard__text">Doodles, frames and murals drawn around the subject.</p>
                   </div>
                 </article>
                 <article class="fcard" style="--k: 6">
                   <div class="fcard__body">
-                    <img src="previews/post/codex_blueprint.jpg" alt="" decoding="async" />
+                    <span class="fcard__icon" style="--accent: var(--sky)" aria-hidden="true"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M8 3.5h7l4 4V17a1.5 1.5 0 0 1-1.5 1.5h-9.5A1.5 1.5 0 0 1 6.5 17V5A1.5 1.5 0 0 1 8 3.5z"/><path d="M15 3.5v4h4"/><path d="M3.5 7v12A1.5 1.5 0 0 0 5 20.5h9"/><path d="M9.5 14l2-2.2 1.6 1.6 1.4-1.4 1.5 2"/></svg></span>
                     <p class="fcard__tag">F/07 · Input</p>
                     <h2 class="fcard__title">Any format</h2>
                     <p class="fcard__text">JPEG, PNG, WEBP, TIFF, HEIC — full-frame resolution.</p>
@@ -196,7 +198,7 @@
       </section>
 
       <!-- 02 · PROTOCOL (how to use) -->
-      <section class="scene scene--protocol is-future" id="protocol" aria-labelledby="protocol-title" data-name="Protocol" inert>
+      <section class="scene scene--protocol is-future" id="protocol" aria-labelledby="protocol-title" data-name="How it works" inert>
         <div class="scene__inner protocol">
           <header class="protocol__head">
             <p class="eyebrow r" style="--i: 0"><span class="eyebrow__dot"></span> 02 · How it works</p>
@@ -231,11 +233,11 @@
 
           <figure class="scanner r" style="--i: 3">
             <div class="scanner__frame fl par" style="--fd: -1.6s; --d: -14">
-              <img class="scanner__img" src="previews/pre/retrowave_neon_title.jpg" alt="Original photo of a person on a rainy street" decoding="async" />
-              <img class="scanner__img scanner__img--after" src="previews/post/retrowave_neon_title.jpg" alt="The same photo after the Retrowave neon title preset" decoding="async" />
+              <img class="scanner__img" src="previews/pre/poster_title_yellow_pop.jpg" alt="Original photo of a smiling woman in a flower crown against a yellow wall" decoding="async" />
+              <img class="scanner__img scanner__img--after" src="previews/post/poster_title_yellow_pop.jpg" alt="The same photo after the Poster title: yellow pop preset, with a tall red GOLDEN title behind her" decoding="async" />
               <span class="scanner__beam" aria-hidden="true"></span>
               <span class="scanner__chip scanner__chip--l" aria-hidden="true">RAW</span>
-              <span class="scanner__chip scanner__chip--r" aria-hidden="true">retrowave_neon_title</span>
+              <span class="scanner__chip scanner__chip--r" aria-hidden="true">poster_title_yellow_pop</span>
             </div>
             <figcaption class="sr-only">Before and after one preset</figcaption>
           </figure>
@@ -253,7 +255,7 @@
       </section>
 
       <!-- 03 · FUSION (image processing × illustration × AI) -->
-      <section class="scene scene--fusion is-future" id="fusion" aria-labelledby="fusion-title" data-name="Fusion" inert>
+      <section class="scene scene--fusion is-future" id="fusion" aria-labelledby="fusion-title" data-name="Inside a preset" inert>
         <div class="scene__inner fusion">
           <div class="fusion__copy">
             <p class="eyebrow r" style="--i: 0"><span class="eyebrow__dot"></span> 03 · Inside a preset</p>
@@ -342,7 +344,7 @@
       </section>
 
       <!-- 04 · ARCHIVE (presets) -->
-      <section class="scene scene--archive is-future" id="archive" aria-labelledby="archive-title" data-name="Archive" inert>
+      <section class="scene scene--archive is-future" id="archive" aria-labelledby="archive-title" data-name="Presets" inert>
         <div class="scene__bg" aria-hidden="true">
           <div class="archive__wall">
             <div class="archive__plane" id="archive-plane">

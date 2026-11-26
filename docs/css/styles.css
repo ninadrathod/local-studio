@@ -45,9 +45,9 @@
   --t-scene: 1.15s;
 
   --hud-h: 4.25rem;
-  --foot-h: 4.25rem;
+  --foot-h: 5rem;
   --gutter: clamp(1rem, 4vw, 3.25rem);
-  --rail-w: 7.5rem;
+  --rail-w: 12rem; /* stops + the current section's name beside them */
 
   --mx: 0;
   --my: 0;
@@ -378,147 +378,234 @@ body[data-scene="3"] .lp-aurora__blob--c {
 .lp-corners i:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 1px; border-left-width: 1px; }
 .lp-corners i:nth-child(4) { bottom: 0; right: 0; border-bottom-width: 1px; border-right-width: 1px; }
 
-/* Section rail */
+/* Section rail: numbered stops on a progress line. The current stop always shows
+   its name; the others reveal theirs on hover / focus. */
 .lp-rail {
+  --stop: 2.25rem;
   position: fixed;
   right: var(--gutter);
   top: 50%;
   z-index: 40;
   translate: 0 -50%;
-  display: flex;
-  align-items: stretch;
-  gap: 0.8rem;
 }
 
 .lp-rail ol {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  align-items: flex-end;
+  gap: 1.1rem;
 }
 
 .lp-rail button {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.35rem 0.2rem;
-  border: 0;
-  background: none;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--stop);
+  height: var(--stop);
+  padding: 0;
+  border: 1px solid var(--line-2);
+  border-radius: 50%;
+  background: rgba(5, 6, 11, 0.75);
   cursor: pointer;
-  font: 600 0.66rem/1 var(--f-mono);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--dim);
-  transition: color 0.35s;
+  color: var(--mute);
+  transition: color 0.3s, border-color 0.3s, background-color 0.3s, box-shadow 0.3s, transform 0.3s var(--ease-out);
+}
+
+.lp-rail__no {
+  font: 600 0.74rem/1 var(--f-mono);
+  letter-spacing: 0.02em;
 }
 
 .lp-rail__name {
-  opacity: 0;
-  translate: 6px 0;
-  transition: opacity 0.35s, translate 0.35s var(--ease-out);
-}
-
-.lp-rail button:hover,
-.lp-rail button[aria-current="step"] {
+  position: absolute;
+  right: calc(100% + 0.7rem);
+  top: 50%;
+  translate: 6px -50%;
+  padding: 0.42rem 0.7rem;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: rgba(5, 6, 11, 0.8);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  font: 600 0.7rem/1 var(--f-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
   color: var(--text);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s, translate 0.3s var(--ease-out);
 }
 
-.lp-rail button:hover .lp-rail__name,
+.lp-rail button:focus-visible {
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+@media (hover: hover) {
+  .lp-rail button:hover {
+    color: var(--text);
+    border-color: rgba(255, 255, 255, 0.45);
+    transform: scale(1.06);
+  }
+}
+
+.lp-rail button:focus-visible .lp-rail__name,
 .lp-rail button[aria-current="step"] .lp-rail__name {
   opacity: 1;
-  translate: 0 0;
+  translate: 0 -50%;
 }
 
+@media (hover: hover) {
+  .lp-rail button:hover .lp-rail__name {
+    opacity: 1;
+    translate: 0 -50%;
+  }
+}
+
+.lp-rail button[aria-current="step"] {
+  color: var(--void);
+  border-color: var(--lemon);
+  background: var(--lemon);
+  box-shadow: 0 0 0 5px rgba(255, 229, 102, 0.14), 0 0 22px rgba(255, 229, 102, 0.55);
+}
+
+.lp-rail button[aria-current="step"] .lp-rail__name {
+  border-color: rgba(255, 229, 102, 0.45);
+  color: var(--lemon);
+}
+
+/* Progress line behind the stops */
 .lp-rail__track {
-  position: relative;
+  position: absolute;
+  left: 50%;
+  top: calc(var(--stop) / 2);
+  bottom: calc(var(--stop) / 2);
   width: 1px;
+  translate: -50% 0;
   background: var(--line-2);
 }
 
 .lp-rail__fill {
   position: absolute;
   inset: 0 0 auto 0;
-  height: calc((var(--scene-i, 0) + 1) * 25%);
-  background: linear-gradient(var(--sky), var(--lemon), var(--coral));
+  height: calc(var(--scene-i, 0) / 3 * 100%);
+  background: linear-gradient(var(--sky), var(--lemon));
   box-shadow: 0 0 10px var(--sky);
   transition: height var(--t-scene) var(--ease-warp);
 }
 
-.lp-readout {
-  position: fixed;
-  left: var(--gutter);
-  bottom: calc(1.6rem + env(safe-area-inset-bottom));
-  z-index: 40;
-  display: flex;
-  gap: 0.45rem;
-  align-items: baseline;
-  font: 600 0.68rem/1 var(--f-mono);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--dim);
-  pointer-events: none;
-}
-
-.lp-readout__idx {
-  color: var(--text);
-  font-size: 0.9rem;
-}
-
-.lp-readout__name {
-  margin-left: 0.6rem;
-  color: var(--mute);
-}
-
-.lp-hint {
+/* Next-section button */
+.lp-next {
   position: fixed;
   left: 50%;
-  bottom: calc(1.1rem + env(safe-area-inset-bottom));
+  bottom: calc(1rem + env(safe-area-inset-bottom));
   z-index: 40;
   translate: -50% 0;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.5rem 0.8rem;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  font: 600 0.64rem/1 var(--f-mono);
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--mute);
-  transition: opacity 0.5s, translate 0.5s var(--ease-out);
-}
-
-body[data-scene="3"] .lp-hint {
-  opacity: 0;
-  translate: -50% 10px;
-  pointer-events: none;
-}
-
-.lp-hint__wheel {
-  position: relative;
-  width: 16px;
-  height: 24px;
+  gap: 0.9rem;
+  padding: 0.4rem 0.4rem 0.4rem 1.2rem;
   border: 1px solid var(--line-2);
-  border-radius: 9px;
+  border-radius: 999px;
+  background: rgba(5, 6, 11, 0.72);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 18px 40px -20px rgba(0, 0, 0, 0.9);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.3s, box-shadow 0.3s, translate 0.4s var(--ease-out);
 }
 
-.lp-hint__wheel i {
-  position: absolute;
-  left: 50%;
-  top: 5px;
-  width: 2px;
-  height: 5px;
-  border-radius: 2px;
+@media (hover: hover) {
+  .lp-next:hover {
+    border-color: rgba(255, 229, 102, 0.55);
+    box-shadow: 0 0 30px -8px rgba(255, 229, 102, 0.45), 0 18px 40px -20px rgba(0, 0, 0, 0.9);
+    translate: -50% -2px;
+  }
+}
+
+.lp-next__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.lp-next__kicker {
+  font: 600 0.6rem/1 var(--f-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.lp-next__how--touch,
+.lp-next__how--end,
+.lp-next.is-end .lp-next__how--pointer,
+.lp-next.is-end .lp-next__how--touch {
+  display: none;
+}
+
+.lp-next.is-end .lp-next__how--end {
+  display: inline;
+}
+
+@media (hover: none) {
+  .lp-next__how--pointer { display: none; }
+  .lp-next:not(.is-end) .lp-next__how--touch { display: inline; }
+}
+
+.lp-next__name {
+  font: 700 0.86rem/1.1 var(--f-display);
+  letter-spacing: -0.01em;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lp-next__name::before {
+  content: "Next: ";
+  color: var(--mute);
+  font-weight: 500;
+}
+
+.lp-next.is-end .lp-next__name::before {
+  content: "";
+}
+
+.lp-next__arrow {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
   background: var(--lemon);
-  translate: -50% 0;
-  animation: wheel 1.8s var(--ease-out) infinite;
+  box-shadow: 0 0 20px rgba(255, 229, 102, 0.5);
 }
 
-@keyframes wheel {
-  0% { opacity: 0; transform: translateY(-2px); }
-  30% { opacity: 1; }
-  100% { opacity: 0; transform: translateY(9px); }
+/* Chevron that nudges in the direction of travel */
+.lp-next__arrow i {
+  width: 0.62rem;
+  height: 0.62rem;
+  margin-top: -0.25rem;
+  border-right: 2px solid var(--void);
+  border-bottom: 2px solid var(--void);
+  rotate: 45deg;
+  animation: nudge 1.6s var(--ease-out) infinite;
+}
+
+.lp-next.is-end .lp-next__arrow i {
+  margin-top: 0.25rem;
+  rotate: -135deg;
+}
+
+@keyframes nudge {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 3px 3px; }
 }
 
 /* ───────── Stage & scene transitions ───────── */
@@ -752,6 +839,7 @@ body[data-scene="3"] .lp-hint {
 }
 
 .origin__copy {
+  container-type: inline-size; /* title size follows this column (cqi below) */
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -759,7 +847,9 @@ body[data-scene="3"] .lp-hint {
 }
 
 .origin__title {
+  margin-block: clamp(0.4rem, 2.2vh, 1.4rem) clamp(0.6rem, 2.8vh, 1.8rem);
   font: 800 clamp(2.8rem, 7vw, 6.4rem) / 0.9 var(--f-display);
+  font-size: clamp(2.4rem, 15.5cqi, 6.4rem); /* "The Local" always fits one line */
   letter-spacing: -0.05em;
 }
 
@@ -995,6 +1085,9 @@ body[data-scene="3"] .lp-hint {
 
 .fcard {
   --face: 1;
+  /* Size reference for the card's contents (cqi units below), including the
+     body's own padding, which can't measure against itself */
+  container-type: inline-size;
   position: absolute;
   inset: 0;
   transform: rotateY(calc(var(--k) * 360deg / var(--n))) translateZ(var(--r));
@@ -1002,17 +1095,23 @@ body[data-scene="3"] .lp-hint {
   transform-style: preserve-3d;
 }
 
+/* Card contents scale with the card's own width (container query units), so they
+   fit the fixed card shape whether the ring is 94 px cards on a small phone or
+   ~200 px on desktop. Values before each cqi line are fallbacks. */
 .fcard__body {
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 0.32rem;
-  padding: 9px 9px 12px;
+  gap: 0.3rem;
+  gap: clamp(0.15rem, 3.5cqi, 0.45rem);
+  padding: 10px 10px 12px;
+  padding: 8cqi 8cqi 9cqi;
+  overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 18px;
   background:
     linear-gradient(155deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02) 55%),
-    rgba(10, 12, 22, 0.82);
+    rgba(10, 12, 22, 0.86);
   box-shadow:
     0 30px 60px -30px rgba(0, 0, 0, 0.9),
     0 0 0 1px rgba(0, 0, 0, 0.4),
@@ -1021,32 +1120,66 @@ body[data-scene="3"] .lp-hint {
   animation-delay: calc(var(--k) * -0.93s);
 }
 
-.fcard img {
-  width: 100%;
-  aspect-ratio: 1.18;
-  object-fit: cover;
-  border-radius: 11px;
+/* Glowing icon tile in the card's accent colour */
+.fcard__icon {
+  --accent: var(--sky);
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  width: 34cqi;
+  aspect-ratio: 1;
   margin-bottom: 0.2rem;
-  pointer-events: none;
-  -webkit-user-drag: none;
+  margin-bottom: 3cqi;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 28%;
+  background:
+    radial-gradient(circle at 30% 25%, color-mix(in srgb, var(--accent) 38%, transparent), transparent 70%),
+    rgba(255, 255, 255, 0.03);
+  box-shadow:
+    0 0 24px -6px color-mix(in srgb, var(--accent) 70%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  color: var(--accent);
+}
+
+.fcard__icon svg {
+  width: 56%;
+  height: 56%;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 80%, transparent));
 }
 
 .fcard__tag {
-  font: 600 0.55rem/1 var(--f-mono);
-  letter-spacing: 0.14em;
+  font: 600 0.55rem/1.2 var(--f-mono);
+  font-size: clamp(0.42rem, 6.2cqi, 0.62rem);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--sky);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .fcard__title {
-  font: 700 clamp(0.8rem, 1vw, 0.98rem) / 1.1 var(--f-display);
+  font: 700 0.9rem/1.12 var(--f-display);
+  font-size: clamp(0.62rem, 11cqi, 1.1rem);
   letter-spacing: -0.02em;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 
 .fcard__text {
-  font-size: clamp(0.66rem, 0.78vw, 0.76rem);
-  line-height: 1.38;
+  font-size: 0.72rem;
+  font-size: clamp(0.5rem, 8cqi, 0.8rem);
+  line-height: 1.36;
   color: var(--mute);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
 }
 
 .orbit__caption {
@@ -1679,15 +1812,16 @@ body[data-scene="3"] .lp-hint {
     --rail-w: 4.5rem;
   }
 
-  .lp-rail__name {
-    display: none;
+  /* No room for a permanent label here: the Next button names the sections */
+  .lp-rail button[aria-current="step"]:not(:hover):not(:focus-visible) .lp-rail__name {
+    opacity: 0;
   }
 }
 
 @media (max-width: 900px) {
   :root {
     --hud-h: 3.6rem;
-    --foot-h: 4.6rem;
+    --foot-h: 5rem;
     --rail-w: 0rem;
   }
 
@@ -1696,35 +1830,70 @@ body[data-scene="3"] .lp-hint {
     padding-top: calc(var(--hud-h) + env(safe-area-inset-top) + 0.5rem);
   }
 
-  /* Rail becomes a bottom dot bar */
+  /* Bottom bar: numbered stops on the left, the Next button on the right */
   .lp-rail {
     top: auto;
     right: auto;
-    left: 50%;
-    bottom: calc(0.9rem + env(safe-area-inset-bottom));
-    translate: -50% 0;
+    left: var(--gutter);
+    bottom: calc(1rem + env(safe-area-inset-bottom));
+    translate: none;
   }
 
   .lp-rail ol {
     flex-direction: row;
-    gap: 0.2rem;
+    gap: 0.55rem;
   }
 
-  .lp-rail button {
-    padding: 0.55rem 0.45rem;
+  .lp-rail {
+    --stop: 2.5rem;
+  }
+
+  /* Names live on the Next button here; keep the stops compact */
+  .lp-rail__name {
+    display: none;
   }
 
   .lp-rail__track {
-    display: none;
+    top: 50%;
+    bottom: auto;
+    left: calc(var(--stop) / 2);
+    right: calc(var(--stop) / 2);
+    width: auto;
+    height: 1px;
+    translate: 0 -50%;
   }
 
-  .lp-rail button[aria-current="step"] .lp-rail__no {
-    color: var(--lemon);
+  .lp-rail__fill {
+    inset: 0 auto 0 0;
+    width: calc(var(--scene-i, 0) / 3 * 100%);
+    height: auto;
+    transition: width var(--t-scene) var(--ease-warp);
   }
 
-  .lp-hint,
-  .lp-readout {
-    display: none;
+  .lp-next {
+    left: auto;
+    right: var(--gutter);
+    translate: none;
+    max-width: calc(100vw - 2 * var(--gutter) - 4 * 2.5rem - 3 * 0.55rem - 0.75rem);
+    gap: 0.6rem;
+    padding: 0.3rem 0.3rem 0.3rem 0.9rem;
+  }
+
+  .lp-next:hover {
+    translate: none !important;
+  }
+
+  .lp-next__name {
+    font-size: 0.78rem;
+  }
+
+  .lp-next__name::before {
+    content: "";
+  }
+
+  .lp-next__arrow {
+    width: 2.25rem;
+    height: 2.25rem;
   }
 
   .origin {
@@ -1828,9 +1997,6 @@ body[data-scene="3"] .lp-hint {
     display: none;
   }
 
-  .lp-readout {
-    display: none;
-  }
 
   .lp-corners {
     inset: 0.5rem;
@@ -1895,9 +2061,55 @@ body[data-scene="3"] .lp-hint {
   }
 }
 
+/* Phones: the numbered stops take the width, so the button just says Next / To start */
+@media (max-width: 600px) {
+  .lp-next__name {
+    display: none;
+  }
+
+  .lp-next__text::after {
+    content: "Next";
+    font: 700 0.86rem/1.1 var(--f-display);
+    letter-spacing: -0.01em;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  .lp-next.is-end .lp-next__text::after {
+    content: "To start";
+  }
+
+  .lp-next__kicker {
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 400px) {
+  .lp-rail ol {
+    gap: 0.4rem;
+  }
+
+  .lp-rail {
+    --stop: 2.25rem;
+  }
+
+  .lp-next {
+    max-width: calc(100vw - 2 * var(--gutter) - 4 * 2.25rem - 3 * 0.4rem - 0.6rem);
+  }
+}
+
 @media (max-width: 360px) {
   .lp-brand__word {
     display: none;
+  }
+
+  .lp-next__kicker {
+    display: none;
+  }
+
+  .lp-next.is-end .lp-next__text::after {
+    content: "Top";
   }
 
   /* Cards get too narrow for the one-line blurb; tag + title still read */
@@ -1949,7 +2161,7 @@ body[data-scene="3"] .lp-hint {
   .origin__stats { order: 6; }
 
   .origin__title {
-    margin-top: -0.6rem;
+    margin-block: 0.5rem 0.6rem;
     font-size: clamp(2.6rem, 12vw, 4.6rem);
   }
 
@@ -2059,7 +2271,7 @@ body[data-scene="3"] .lp-hint {
 @media (max-height: 820px) and (min-width: 901px) {
   :root {
     --hud-h: 3.75rem;
-    --foot-h: 3.5rem;
+    --foot-h: 4.6rem;
   }
 
   .scene-title {
@@ -2135,11 +2347,11 @@ body[data-scene="3"] .lp-hint {
 @media (max-height: 640px) and (min-width: 901px) {
   :root {
     --hud-h: 3.4rem;
-    --foot-h: 3.2rem;
+    --foot-h: 4.4rem;
   }
 
   .origin__title {
-    font-size: clamp(2.2rem, 11dvh, 4.6rem);
+    font-size: clamp(2.2rem, min(11dvh, 15.5cqi), 4.6rem);
   }
 
   .origin__copy {
@@ -2152,7 +2364,7 @@ body[data-scene="3"] .lp-hint {
 
   .orbit {
     --cw: clamp(110px, 24dvh, 170px);
-    height: 82dvh;
+    height: calc(100dvh - var(--hud-h) - var(--foot-h) - 1.5rem);
     min-height: 0;
   }
 
@@ -2190,7 +2402,10 @@ body[data-scene="3"] .lp-hint {
   .pillar__glyph--px,
   .lp-brand__mark i::after,
   .stack__rig,
-  .archive__row {
+  .archive__row,
+  .lp-next__arrow i,
+  .origin__cursor,
+  .eyebrow__dot {
     animation: none !important;
   }
 
