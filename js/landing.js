@@ -354,10 +354,18 @@ const orbit = (() => {
   const idleSpeed = reduceMotion ? 0 : 0.11; // deg per frame
 
   function layout() {
-    const width = ring.offsetWidth || 180;
-    const radius = Math.round(width / 2 / Math.tan(Math.PI / n) + width * 0.22);
+    host.style.removeProperty("--cw"); // measure the stylesheet's card width first
+    let width = ring.offsetWidth || 180;
+    const spread = 0.5 / Math.tan(Math.PI / n) + 0.22; // ring radius per px of card width
+    // The whole ring (radius + half a card seen side-on) must fit across the model's
+    // box with a small margin; on narrow phones shrink the cards (and radius) to fit.
+    const fit = (host.clientWidth / 2 - 12) / Math.hypot(spread, 0.5);
+    if (fit > 0 && width > fit) {
+      width = Math.floor(fit);
+      host.style.setProperty("--cw", `${width}px`);
+    }
     host.style.setProperty("--n", String(n));
-    host.style.setProperty("--r", `${radius}px`);
+    host.style.setProperty("--r", `${Math.round(width * spread)}px`);
   }
 
   function paint() {

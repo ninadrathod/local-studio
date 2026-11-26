@@ -1655,8 +1655,11 @@ body[data-scene="3"] .lp-hint {
 /* Set by js/landing.js only when the scene's real content (not decoration) is too tall */
 .scene.is-tall {
   overflow-y: auto;
-  -webkit-mask-image: linear-gradient(transparent 0, #000 var(--hud-h), #000 calc(100% - var(--foot-h)), transparent);
-  mask-image: linear-gradient(transparent 0, #000 var(--hud-h), #000 calc(100% - var(--foot-h)), transparent);
+  /* Fully hidden under the HUD and the bottom dot bar, then a short fade */
+  --fade-top: calc(var(--hud-h) + env(safe-area-inset-top));
+  --fade-bottom: calc(var(--foot-h) * 0.7 + env(safe-area-inset-bottom));
+  -webkit-mask-image: linear-gradient(transparent var(--fade-top), #000 calc(var(--fade-top) + 1rem), #000 calc(100% - var(--fade-bottom) - 1.5rem), transparent calc(100% - var(--fade-bottom)));
+  mask-image: linear-gradient(transparent var(--fade-top), #000 calc(var(--fade-top) + 1rem), #000 calc(100% - var(--fade-bottom) - 1.5rem), transparent calc(100% - var(--fade-bottom)));
 }
 
 .orbit {
@@ -1833,13 +1836,9 @@ body[data-scene="3"] .lp-hint {
     inset: 0.5rem;
   }
 
-  /* Phones: keep the 3D model in the first screen — stats live on its cards */
-  .origin__stats {
-    display: none;
-  }
-
-  .origin__lead {
-    font-size: 0.93rem;
+  .origin__stats .stat {
+    flex: 1 1 0;
+    min-width: 0;
   }
 
   .origin__ctas {
@@ -1901,8 +1900,158 @@ body[data-scene="3"] .lp-hint {
     display: none;
   }
 
+  /* Cards get too narrow for the one-line blurb; tag + title still read */
+  .fcard__text {
+    display: none;
+  }
+
   .origin__ctas {
     flex-wrap: wrap;
+  }
+}
+
+/* ───────── Phones & portrait tablets: roomier layout ─────────
+   Scenes may be taller than the screen here (they scroll inside, see is-tall),
+   so spacing and type are sized for reading, not for squeezing into one view. */
+@media (max-width: 900px) {
+  :root {
+    --gutter: 1.25rem;
+  }
+
+  .scene {
+    padding-top: calc(var(--hud-h) + env(safe-area-inset-top) + 1.25rem);
+  }
+
+  .eyebrow {
+    font-size: 0.72rem;
+  }
+
+  .scene-title {
+    font-size: clamp(2rem, 9vw, 3.2rem);
+    line-height: 1.06;
+  }
+
+  /* Origin: title → 3D model → pitch → CTAs → stats, so the title and the
+     whole model are the first thing on screen */
+  .origin {
+    gap: 1.4rem;
+  }
+
+  .origin__copy {
+    display: contents;
+  }
+
+  .origin__copy > .eyebrow { order: 1; }
+  .origin__title { order: 2; }
+  .orbit { order: 3; }
+  .origin__lead { order: 4; }
+  .origin__ctas { order: 5; }
+  .origin__stats { order: 6; }
+
+  .origin__title {
+    margin-top: -0.6rem;
+    font-size: clamp(2.6rem, 12vw, 4.6rem);
+  }
+
+  .origin__lead {
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+
+  .orbit {
+    --cw: clamp(100px, 29vw, 160px);
+    width: 100%;
+    /* Box follows the card size (js/landing.js may shrink --cw to fit the width),
+       so there's no dead space between the title and the ring */
+    height: calc(var(--cw) * 2.3);
+    margin-block: -0.4rem -0.6rem;
+  }
+
+  .orbit__floor {
+    max-width: 100%;
+  }
+
+  /* Protocol */
+  .protocol {
+    row-gap: 1.6rem;
+  }
+
+  .protocol__head {
+    gap: 0.9rem;
+  }
+
+  .scanner {
+    width: min(100%, 22rem, 46dvh);
+  }
+
+  .steps {
+    gap: 0.9rem;
+  }
+
+  .step__card {
+    padding-block: 1.1rem;
+  }
+
+  .step h3 {
+    font-size: 1.05rem;
+  }
+
+  .step p {
+    margin-top: 0.4rem;
+    font-size: 0.94rem;
+    line-height: 1.6;
+  }
+
+  /* Fusion */
+  .fusion {
+    row-gap: 1.6rem;
+  }
+
+  .fusion__copy {
+    gap: 1.1rem;
+  }
+
+  .fusion__lead {
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+
+  .legend {
+    width: 100%;
+    gap: 0.35rem;
+  }
+
+  .legend li {
+    padding-block: 0.5rem;
+    font-size: 0.74rem;
+  }
+
+  .pillars {
+    gap: 0.85rem;
+  }
+
+  .pillar__card {
+    padding: 1.1rem 1.15rem 1.2rem;
+  }
+
+  .pillar h3 {
+    font-size: 1rem;
+  }
+
+  .pillar p {
+    font-size: 0.92rem;
+    line-height: 1.55;
+  }
+
+  /* Archive */
+  .archive__glass {
+    gap: 1.1rem;
+    padding: 2rem 1.4rem;
+  }
+
+  .archive__lead {
+    font-size: 1rem;
+    line-height: 1.65;
   }
 }
 
