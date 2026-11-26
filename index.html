@@ -2,324 +2,381 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>The Local Studio</title>
+    <meta
+      name="description"
+      content="The Local Studio — a photo studio that runs entirely on your machine. 100 presets that fuse image processing, on-device AI models and digital illustration."
+    />
+    <meta name="theme-color" content="#06060b" />
     <link rel="icon" href="icons/favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Lilita+One&family=Nunito:wght@400;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;500;700;800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap"
       rel="stylesheet"
     />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              display: ["Fredoka", "system-ui", "sans-serif"],
-              brand: ["Lilita One", "Fredoka", "system-ui", "sans-serif"],
-              sans: ["Nunito", "system-ui", "sans-serif"],
-            },
-            colors: {
-              ink: "#1a1a1a",
-              mute: "#5c5652",
-              paper: "#fff8e7",
-              chalk: "#fffef8",
-              line: "#1a1a1a",
-              coral: {
-                DEFAULT: "#ff6b4a",
-                deep: "#e85535",
-              },
-              sky: "#4ec5f1",
-              lemon: "#ffe566",
-              rose: "#e85535",
-            },
-            maxWidth: {
-              stage: "84rem",
-            },
-          },
-        },
-      };
-    </script>
-    <!-- ?v=2 is a one-time break from copies cached before scripts/serve_frontend.py sent
-         Cache-Control: no-cache. Browsers now revalidate on every load, so no further bumps are needed. -->
-    <link rel="stylesheet" href="css/styles.css?v=2" />
+    <link rel="stylesheet" href="css/landing.css" />
   </head>
-  <body class="font-sans text-ink bg-paper antialiased studio-page">
-    <div class="page-shell studio-shell flex flex-col">
-      <header class="site-header shrink-0">
-        <div
-          class="studio-header-inner mx-auto w-full px-4 sm:px-6 lg:px-8 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:gap-3"
-        >
-          <div aria-hidden="true"></div>
-          <a
-            href="index.html"
-            class="flex items-center justify-center gap-2 sm:gap-2.5 min-w-0 max-w-full"
-          >
-            <img src="icons/logo.svg" alt="" class="studio-header-logo shrink-0" />
-            <span class="site-brand font-brand tracking-wide truncate">
-              The Local Studio
-            </span>
-          </a>
-          <nav class="justify-self-end flex items-center shrink-0">
-            <a
-              href="docs/"
-              class="px-2 sm:px-3 py-1.5 text-sm font-bold text-ink/70 hover:text-ink transition-colors"
-            >
-              About
-            </a>
-          </nav>
+  <body class="lp" data-scene="0">
+    <a class="lp-skip" href="studio.html">Skip to the studio</a>
+
+    <!-- Ambient field: particles (canvas) + aurora washes + film grain -->
+    <canvas class="lp-field" id="lp-field" aria-hidden="true"></canvas>
+    <div class="lp-aurora" aria-hidden="true">
+      <span class="lp-aurora__blob lp-aurora__blob--a"></span>
+      <span class="lp-aurora__blob lp-aurora__blob--b"></span>
+      <span class="lp-aurora__blob lp-aurora__blob--c"></span>
+    </div>
+    <div class="lp-grain" aria-hidden="true"></div>
+
+    <!-- HUD frame -->
+    <header class="lp-hud">
+      <a class="lp-brand" href="index.html" aria-label="The Local Studio — home">
+        <span class="lp-brand__mark" aria-hidden="true">
+          <i></i><i></i><i></i>
+        </span>
+        <span class="lp-brand__word">The&nbsp;Local&nbsp;Studio</span>
+      </a>
+      <nav class="lp-hud__links" aria-label="Primary">
+        <a class="lp-hud__link" href="https://github.com/ninadrathod/local-studio" rel="noopener" target="_blank">
+          GitHub
+        </a>
+        <a class="lp-hud__link lp-hud__link--cta" href="studio.html">
+          Open studio <span aria-hidden="true">↗</span>
+        </a>
+      </nav>
+    </header>
+
+    <div class="lp-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+    <nav class="lp-rail" aria-label="Sections">
+      <ol>
+        <li><button type="button" data-go="0" aria-label="Section 1: Origin"><span class="lp-rail__no">01</span><span class="lp-rail__name">Origin</span></button></li>
+        <li><button type="button" data-go="1" aria-label="Section 2: How it works"><span class="lp-rail__no">02</span><span class="lp-rail__name">Protocol</span></button></li>
+        <li><button type="button" data-go="2" aria-label="Section 3: Fusion"><span class="lp-rail__no">03</span><span class="lp-rail__name">Fusion</span></button></li>
+        <li><button type="button" data-go="3" aria-label="Section 4: Presets"><span class="lp-rail__no">04</span><span class="lp-rail__name">Archive</span></button></li>
+      </ol>
+      <span class="lp-rail__track" aria-hidden="true"><span class="lp-rail__fill"></span></span>
+    </nav>
+
+    <div class="lp-readout" aria-hidden="true">
+      <span class="lp-readout__idx" id="lp-readout-idx">01</span>
+      <span class="lp-readout__sep">/</span>
+      <span>04</span>
+      <span class="lp-readout__name" id="lp-readout-name">Origin</span>
+    </div>
+
+    <button type="button" class="lp-hint" data-next aria-label="Next section">
+      <span class="lp-hint__label">Scroll</span>
+      <span class="lp-hint__wheel" aria-hidden="true"><i></i></span>
+    </button>
+
+    <p class="sr-only" id="lp-live" aria-live="polite"></p>
+
+    <!-- Scenes: one viewport each, swapped with depth transitions (no page scroll) -->
+    <main class="lp-stage" id="lp-stage">
+      <!-- 01 · ORIGIN -->
+      <section class="scene scene--origin is-active" id="origin" aria-labelledby="origin-title" data-name="Origin">
+        <div class="scene__inner origin">
+          <div class="origin__copy">
+            <p class="eyebrow r" style="--i: 0">
+              <span class="eyebrow__dot"></span> Offline image lab · runs on your machine
+            </p>
+            <h1 class="origin__title r" id="origin-title" style="--i: 1">
+              <span class="fl" style="--fd: 0s">
+                <span class="origin__line">The Local</span>
+                <span class="origin__line origin__line--glow">Studio<span class="origin__cursor" aria-hidden="true"></span></span>
+              </span>
+            </h1>
+            <p class="origin__lead r" style="--i: 2">
+              A photo studio that never leaves your computer. Pick a look, drop a photo, and get back
+              a finished edit — film grades, neon titles, doodled frames, AI&nbsp;upscales.
+              <strong>No cloud. No accounts. No uploads.</strong>
+            </p>
+            <div class="origin__ctas r" style="--i: 3">
+              <a class="btn-plasma" href="studio.html">
+                <span class="btn-plasma__label">Enter the studio</span>
+                <span class="btn-plasma__arrow" aria-hidden="true">→</span>
+              </a>
+              <button type="button" class="btn-ghost" data-go="1">How it works</button>
+            </div>
+            <dl class="origin__stats r" style="--i: 4">
+              <div class="stat fl" style="--fd: -1.2s">
+                <dt>Presets</dt>
+                <dd><span data-preset-count>100</span></dd>
+              </div>
+              <div class="stat fl" style="--fd: -2.6s">
+                <dt>Cloud calls</dt>
+                <dd>0</dd>
+              </div>
+              <div class="stat fl" style="--fd: -0.4s">
+                <dt>AI upscale</dt>
+                <dd>4K</dd>
+              </div>
+            </dl>
+          </div>
+
+          <!-- Rotating 3D feature model -->
+          <div class="orbit r" style="--i: 2" aria-label="Feature highlights" role="group">
+            <div class="orbit__halo" aria-hidden="true"></div>
+            <div class="orbit__core par" style="--d: 6" aria-hidden="true">
+              <span class="core-ring core-ring--1"></span>
+              <span class="core-ring core-ring--2"></span>
+              <span class="core-ring core-ring--3"></span>
+              <span class="core-lens">
+                <i></i><i></i><i></i>
+              </span>
+            </div>
+            <div class="orbit__floor" aria-hidden="true"></div>
+            <div class="orbit__scene" id="orbit-scene">
+              <div class="orbit__ring" id="orbit-ring">
+                <article class="fcard" style="--k: 0">
+                  <div class="fcard__body">
+                    <img src="previews/post-edit/miami_neon.png" alt="" loading="eager" decoding="async" />
+                    <p class="fcard__tag">F/01 · Private</p>
+                    <h2 class="fcard__title">On-device</h2>
+                    <p class="fcard__text">Runs on a laptop or a Raspberry Pi. Your photos stay put.</p>
+                  </div>
+                </article>
+                <article class="fcard" style="--k: 1">
+                  <div class="fcard__body">
+                    <img src="previews/post-edit/retrowave_neon_title.png" alt="" decoding="async" />
+                    <p class="fcard__tag">F/02 · Library</p>
+                    <h2 class="fcard__title"><span data-preset-count>100</span> presets</h2>
+                    <p class="fcard__text">Film stocks, neon, comics, graffiti, sketchbooks.</p>
+                  </div>
+                </article>
+                <article class="fcard" style="--k: 2">
+                  <div class="fcard__body">
+                    <img src="previews/post-edit/prism_glow.png" alt="" decoding="async" />
+                    <p class="fcard__tag">F/03 · Neural</p>
+                    <h2 class="fcard__title">AI upscale</h2>
+                    <p class="fcard__text">Real-ESRGAN lifts photos to Full HD or 4K, locally.</p>
+                  </div>
+                </article>
+                <article class="fcard" style="--k: 3">
+                  <div class="fcard__body">
+                    <img src="previews/post-edit/bw_bg_glowing_subject.png" alt="" decoding="async" />
+                    <p class="fcard__tag">F/04 · Neural</p>
+                    <h2 class="fcard__title">Subject cut-out</h2>
+                    <p class="fcard__text">U²-Net finds the person so effects wrap around them.</p>
+                  </div>
+                </article>
+                <article class="fcard" style="--k: 4">
+                  <div class="fcard__body">
+                    <img src="previews/post-edit/synthwave_sun.png" alt="" decoding="async" />
+                    <p class="fcard__tag">F/05 · Type</p>
+                    <h2 class="fcard__title">Titles &amp; stamps</h2>
+                    <p class="fcard__text">Add your own words in bundled display fonts.</p>
+                  </div>
+                </article>
+                <article class="fcard" style="--k: 5">
+                  <div class="fcard__body">
+                    <img src="previews/post-edit/graffiti_outline_mural.png" alt="" decoding="async" />
+                    <p class="fcard__tag">F/06 · Illustration</p>
+                    <h2 class="fcard__title">Drawn layers</h2>
+                    <p class="fcard__text">Doodles, frames and murals drawn around the subject.</p>
+                  </div>
+                </article>
+                <article class="fcard" style="--k: 6">
+                  <div class="fcard__body">
+                    <img src="previews/post-edit/codex_blueprint.png" alt="" decoding="async" />
+                    <p class="fcard__tag">F/07 · Input</p>
+                    <h2 class="fcard__title">Any format</h2>
+                    <p class="fcard__text">JPEG, PNG, WEBP, TIFF, HEIC — full-frame resolution.</p>
+                  </div>
+                </article>
+              </div>
+            </div>
+            <p class="orbit__caption" aria-hidden="true">Drag to spin</p>
+          </div>
         </div>
-      </header>
+      </section>
 
-      <main class="studio-main flex-1 min-h-0 mx-auto w-full px-3 sm:px-5 lg:px-6">
-        <section aria-label="Studio workspace" class="workspace studio-layout h-full min-h-0">
-          <div class="studio-columns h-full min-h-0">
-            <!-- Left: intro + search + preset gallery -->
-            <aside class="studio-columns__left flex flex-col gap-2 min-w-0 min-h-0 order-1">
-              <div class="studio-section-head shrink-0">
-                <h2 class="preset-heading font-display font-semibold text-ink shrink-0">
-                  Presets
-                  <span id="preset-count" class="preset-count" aria-hidden="true" hidden></span>
-                  <span id="preset-count-sr" class="sr-only" aria-live="polite"></span>
-                </h2>
-                <p class="preset-touch-hint" aria-hidden="true">Hold to compare</p>
-              </div>
-              <div class="preset-filter-row shrink-0">
-                <fieldset class="square-filter shrink-0" id="square-filter">
-                  <legend class="sr-only">Is the input image square?</legend>
-                  <span class="square-filter__label" aria-hidden="true">Input square?</span>
-                  <div class="preset-filter-row__controls">
-                    <div class="square-filter__switch" role="radiogroup" aria-label="Is the input image square?">
-                      <label class="square-filter__opt">
-                        <input
-                          type="radio"
-                          name="input-square"
-                          id="input-square-yes"
-                          value="yes"
-                          checked
-                        />
-                        <span>Yes</span>
-                      </label>
-                      <label class="square-filter__opt">
-                        <input
-                          type="radio"
-                          name="input-square"
-                          id="input-square-no"
-                          value="no"
-                        />
-                        <span>No</span>
-                      </label>
-                    </div>
-                    <button
-                      type="button"
-                      id="popular-sort-btn"
-                      class="popular-sort-btn"
-                      aria-pressed="false"
-                      aria-label="Sort presets by popularity"
-                    >
-                      <span>Popular</span>
-                    </button>
-                  </div>
-                </fieldset>
-              </div>
+      <!-- 02 · PROTOCOL (how to use) -->
+      <section class="scene scene--protocol is-future" id="protocol" aria-labelledby="protocol-title" data-name="Protocol" inert>
+        <div class="scene__inner protocol">
+          <header class="protocol__head">
+            <p class="eyebrow r" style="--i: 0"><span class="eyebrow__dot"></span> 02 · How it works</p>
+            <h2 class="scene-title r" id="protocol-title" style="--i: 1">
+              Three moves.<br /><span class="txt-grad">Zero learning curve.</span>
+            </h2>
+          </header>
 
-              <label class="sr-only" for="preset-search">Search presets by name or keyword</label>
-              <div class="preset-search-row preset-cols shrink-0">
-                <input
-                  id="preset-search"
-                  type="search"
-                  autocomplete="off"
-                  spellcheck="false"
-                  maxlength="64"
-                  placeholder="Search by name or keyword…"
-                  class="preset-search-input"
-                />
-                <button
-                  type="button"
-                  id="preset-reset"
-                  class="preset-reset-btn"
-                  aria-label="Clear selected preset"
-                  title="Clear selected preset"
-                  disabled
-                >
-                  <img src="icons/reset.svg" alt="" class="preset-reset-btn__icon" />
-                </button>
+          <ol class="steps">
+            <li class="step r" style="--i: 2">
+              <div class="step__card fl par" style="--fd: -0.8s; --d: 10">
+                <span class="step__no">01</span>
+                <h3>Choose a look</h3>
+                <p>Browse the gallery and hover — or press and hold — to see the photo before the edit. Search by name or mood.</p>
               </div>
-              <p id="search-error" class="hidden text-sm text-rose font-bold px-0.5 shrink-0" role="alert"></p>
+            </li>
+            <li class="step r" style="--i: 3">
+              <div class="step__card fl par" style="--fd: -2.1s; --d: 16">
+                <span class="step__no">02</span>
+                <h3>Drop your photo</h3>
+                <p>Upload unlocks once a preset is picked. Some looks ask for a line of text: a title, a name, a date.</p>
+              </div>
+            </li>
+            <li class="step r" style="--i: 4">
+              <div class="step__card fl par" style="--fd: -3.4s; --d: 22">
+                <span class="step__no">03</span>
+                <h3>Generate &amp; keep</h3>
+                <p>Your machine runs the recipe and returns a full-resolution file. Download it, and popular looks rise to the top.</p>
+              </div>
+            </li>
+          </ol>
 
-              <div
-                id="preset-grid"
-                class="preset-grid preset-cols min-h-0"
-                role="listbox"
-                aria-label="Available presets"
-              >
-                <p id="preset-loading" class="col-span-full text-sm text-mute font-semibold py-6 text-center">
-                  Loading presets…
-                </p>
-              </div>
-              <!-- Page-drawn scroller for #preset-grid (script.js initPresetScroller). Exposed as an
-                   ARIA scrollbar so assistive tech still gets the scroll position; not a tab stop,
-                   like a native scrollbar (keyboard users scroll by tabbing through the cards). -->
-              <div
-                id="preset-scroller"
-                class="preset-scroller"
-                role="scrollbar"
-                aria-controls="preset-grid"
-                aria-orientation="vertical"
-                aria-label="Preset gallery scroll position"
-                aria-valuemin="0"
-                aria-valuemax="100"
-                aria-valuenow="0"
-                aria-valuetext="Scrolled 0% through presets"
-                hidden
-              >
-                <div class="preset-scroller__thumb"></div>
-              </div>
-              <p id="preset-error" class="hidden text-sm text-rose font-bold px-0.5 shrink-0" role="alert"></p>
-            </aside>
+          <figure class="scanner r" style="--i: 3">
+            <div class="scanner__frame fl par" style="--fd: -1.6s; --d: -14">
+              <img class="scanner__img" src="previews/pre-edit/retrowave_neon_title.jpg" alt="Original photo of a person on a rainy street" decoding="async" />
+              <img class="scanner__img scanner__img--after" src="previews/post-edit/retrowave_neon_title.png" alt="The same photo after the Retrowave neon title preset" decoding="async" />
+              <span class="scanner__beam" aria-hidden="true"></span>
+              <span class="scanner__chip scanner__chip--l" aria-hidden="true">RAW</span>
+              <span class="scanner__chip scanner__chip--r" aria-hidden="true">retrowave_neon_title</span>
+            </div>
+            <figcaption class="sr-only">Before and after one preset</figcaption>
+          </figure>
 
-            <!-- Right: upload + generate -->
-            <div class="studio-columns__right flex flex-col gap-2 sm:gap-2.5 min-w-0 min-h-0 order-2">
-              <!-- Upload -->
-              <div class="studio-panel flex flex-col gap-1.5 min-h-0">
-                <div class="studio-section-head shrink-0">
-                  <h2 class="font-display font-semibold text-ink shrink-0">
-                    Your image
-                  </h2>
-                  <p id="file-meta" class="section-meta text-xs text-mute font-semibold truncate hidden"></p>
+          <div class="term r" style="--i: 5">
+            <div class="term__win fl par" style="--fd: -2.8s; --d: 8">
+              <div class="term__bar" aria-hidden="true"><i></i><i></i><i></i><span>local-studio</span></div>
+              <pre class="term__body"><code><span class="term__p">$</span> ./scripts/setup.sh
+<span class="term__p">$</span> ./scripts/run.sh
+<span class="term__ok">✓</span> studio on <span class="term__url">localhost:5500</span></code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 03 · FUSION (image processing × illustration × AI) -->
+      <section class="scene scene--fusion is-future" id="fusion" aria-labelledby="fusion-title" data-name="Fusion" inert>
+        <div class="scene__inner fusion">
+          <div class="fusion__copy">
+            <p class="eyebrow r" style="--i: 0"><span class="eyebrow__dot"></span> 03 · Inside a preset</p>
+            <h2 class="scene-title r" id="fusion-title" style="--i: 1">
+              Image processing<br />
+              <span class="txt-grad">meets digital illustration.</span>
+            </h2>
+            <p class="fusion__lead r" style="--i: 2">
+              Every preset is a recipe. On-device neural models read the photo, classic filters shape
+              the light, and generated line-work is drawn on top — then it all collapses into one image.
+            </p>
+            <ol class="legend r" style="--i: 3" id="fusion-legend">
+              <li data-layer="0"><span class="legend__k">L1</span><span class="legend__v">Source</span><span class="legend__f">your photo</span></li>
+              <li data-layer="1"><span class="legend__k">L2</span><span class="legend__v">Neural</span><span class="legend__f">extract_subject · U²-Net</span></li>
+              <li data-layer="2"><span class="legend__k">L3</span><span class="legend__v">Process</span><span class="legend__f">color · paper_texture</span></li>
+              <li data-layer="3"><span class="legend__k">L4</span><span class="legend__v">Illustrate</span><span class="legend__f">codex_doodle ×4</span></li>
+              <li data-layer="4"><span class="legend__k">L5</span><span class="legend__v">Composite</span><span class="legend__f">da_vinci_wings</span></li>
+            </ol>
+          </div>
+
+          <div class="stack r" style="--i: 2" aria-hidden="true">
+            <div class="stack__float fl par" style="--fd: -1s; --d: -10">
+              <div class="stack__rig" id="stack-rig">
+                <div class="plane plane--src" style="--l: 0">
+                  <img data-src="previews/pre-edit/da_vinci_wings.jpg" alt="" />
                 </div>
-
-                <div id="preset-text-wrap" class="preset-text-wrap hidden" hidden>
-                  <label for="preset-text" class="preset-text-label">Text for this preset</label>
-                  <div class="preset-text-row">
-                    <input
-                      id="preset-text"
-                      type="text"
-                      autocomplete="off"
-                      spellcheck="true"
-                      class="preset-text-input"
-                      aria-hidden="true"
-                    />
-                    <span id="preset-text-count" class="preset-text-count" aria-live="polite"></span>
-                  </div>
+                <div class="plane plane--mask" style="--l: 1">
+                  <img data-src="previews/pre-edit/da_vinci_wings.jpg" alt="" />
+                  <span class="plane__grid"></span>
                 </div>
-
-                <label
-                  id="drop-zone"
-                  for="image-input"
-                  class="drop-zone drop-zone--locked stage stage--upload group relative flex flex-col items-center justify-center cursor-pointer outline-none focus-visible:shadow-[3px_3px_0_#ff6b4a] min-h-0"
-                  aria-disabled="true"
-                >
-                  <input
-                    id="image-input"
-                    type="file"
-                    accept="image/*,.heic,.heif"
-                    class="sr-only"
-                    disabled
-                  />
-                  <img
-                    id="preview-original"
-                    alt="Uploaded preview"
-                    class="preview-img hidden"
-                  />
-                  <div
-                    id="upload-prompt"
-                    class="flex flex-col items-center gap-2 px-3 sm:px-5 text-center pointer-events-none"
-                  >
-                    <span class="upload-icon-wrap" aria-hidden="true">
-                      <img src="icons/upload.svg" alt="" class="w-6 h-6 sm:w-7 sm:h-7" />
-                    </span>
-                    <div>
-                      <p id="upload-prompt-title" class="font-bold text-ink text-xs sm:text-sm">
-                        Select a preset first
-                      </p>
-                      <p id="upload-prompt-sub" class="mt-0.5 text-[0.65rem] sm:text-xs text-mute font-semibold">
-                        Then drop an image, or browse
-                      </p>
-                    </div>
-                  </div>
-                </label>
-                <p id="file-error" class="hidden text-sm text-rose font-bold px-0.5 shrink-0" role="alert"></p>
-              </div>
-
-              <!-- Actions between upload and result -->
-              <div
-                class="actions actions-bar flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end shrink-0"
-              >
-                <p
-                  id="api-error"
-                  class="hidden text-sm text-rose font-bold text-center sm:text-left sm:mr-auto break-words"
-                  role="alert"
-                ></p>
-                <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                  <a
-                    id="download-btn"
-                    href="#"
-                    download="edited-image.png"
-                    class="btn btn-ghost hidden w-full sm:w-auto text-center"
-                  >
-                    Download
-                  </a>
-                  <button
-                    id="generate-btn"
-                    type="button"
-                    disabled
-                    class="btn btn-primary font-display w-full sm:w-auto sm:min-w-[10rem]"
-                  >
-                    Generate edit
-                  </button>
+                <div class="plane plane--proc" style="--l: 2">
+                  <img data-src="previews/pre-edit/da_vinci_wings.jpg" alt="" />
                 </div>
-              </div>
-
-              <!-- Result -->
-              <div class="studio-panel flex flex-col gap-1.5 min-h-0">
-                <div class="studio-section-head shrink-0">
-                  <h2 class="font-display font-semibold text-ink shrink-0">
-                    Edited result
-                  </h2>
-                  <span id="selected-preset-label" class="section-meta text-xs text-mute font-semibold tracking-wide truncate">
-                    No preset selected
-                  </span>
+                <div class="plane plane--ink" style="--l: 3">
+                  <svg viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.1">
+                    <g class="ink-draw">
+                      <path d="M92 78 C70 52 40 40 10 44" />
+                      <path d="M92 78 C66 66 40 62 16 66" />
+                      <path d="M92 82 C70 80 46 82 22 90" />
+                      <path d="M92 86 C74 92 52 100 32 112" />
+                      <path d="M92 90 C78 102 62 116 48 132" />
+                      <path d="M30 46 C34 56 34 62 30 70 M48 44 C52 56 52 66 46 76 M64 52 C68 62 66 72 60 82" />
+                      <path d="M108 78 C130 52 160 40 190 44" />
+                      <path d="M108 78 C134 66 160 62 184 66" />
+                      <path d="M108 82 C130 80 154 82 178 90" />
+                      <path d="M108 86 C126 92 148 100 168 112" />
+                      <path d="M108 90 C122 102 138 116 152 132" />
+                      <path d="M170 46 C166 56 166 62 170 70 M152 44 C148 56 148 66 154 76 M136 52 C132 62 134 72 140 82" />
+                      <path d="M18 160 h34 M18 166 h26 M18 172 h30 M150 160 h32 M156 166 h26" stroke-width="0.7" />
+                      <circle cx="176" cy="22" r="9" stroke-width="0.8" />
+                      <path d="M176 10 v24 M164 22 h24" stroke-width="0.6" />
+                    </g>
+                  </svg>
                 </div>
-
-                <div class="stage stage--result relative overflow-hidden min-h-0">
-                  <p
-                    id="result-placeholder"
-                    class="absolute inset-0 flex items-center justify-center text-mute text-xs sm:text-sm font-semibold px-4 text-center"
-                  >
-                    Your edited image will appear here
-                  </p>
-                  <img
-                    id="preview-edited"
-                    alt="Edited result"
-                    class="preview-img hidden"
-                  />
-                  <div
-                    id="loading"
-                    class="hidden absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-chalk/90"
-                  >
-                    <div class="spinner" aria-hidden="true"></div>
-                    <span class="text-xs sm:text-sm font-bold text-ink">Generating edit…</span>
-                  </div>
+                <div class="plane plane--out" style="--l: 4">
+                  <img data-src="previews/post-edit/da_vinci_wings.png" alt="" />
                 </div>
               </div>
             </div>
           </div>
-        </section>
-      </main>
 
-      <footer class="site-footer studio-footer shrink-0">
-        <div
-          class="mx-auto w-full px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-1 text-mute font-semibold"
-        >
-          <span>The Local Studio</span>
-          <a href="docs/" class="hover:text-ink transition-colors font-bold">Project overview</a>
+          <ul class="pillars">
+            <li class="pillar r" style="--i: 4">
+              <div class="pillar__card fl" style="--fd: -0.6s">
+                <span class="pillar__glyph pillar__glyph--ai" aria-hidden="true"></span>
+                <h3>Neural models</h3>
+                <p>Real-ESRGAN upscaling and U²-Net segmentation, shipped with the repo and run on your CPU.</p>
+              </div>
+            </li>
+            <li class="pillar r" style="--i: 5">
+              <div class="pillar__card fl" style="--fd: -2s">
+                <span class="pillar__glyph pillar__glyph--px" aria-hidden="true"></span>
+                <h3>Image processing</h3>
+                <p>Colour grades, grain, halation, bloom, warps and blurs — chained step by step.</p>
+              </div>
+            </li>
+            <li class="pillar r" style="--i: 6">
+              <div class="pillar__card fl" style="--fd: -3.2s">
+                <span class="pillar__glyph pillar__glyph--ink" aria-hidden="true"></span>
+                <h3>Illustration</h3>
+                <p>Doodles, frames, titles and codex sketches drawn as vector layers around the subject.</p>
+              </div>
+            </li>
+          </ul>
         </div>
-      </footer>
-    </div>
+      </section>
 
-    <script type="module" src="script.js?v=2"></script>
+      <!-- 04 · ARCHIVE (presets) -->
+      <section class="scene scene--archive is-future" id="archive" aria-labelledby="archive-title" data-name="Archive" inert>
+        <div class="scene__bg" aria-hidden="true">
+          <div class="archive__wall">
+            <div class="archive__plane" id="archive-plane">
+              <div class="archive__row" data-row="0"></div>
+              <div class="archive__row archive__row--rev" data-row="1"></div>
+              <div class="archive__row" data-row="2"></div>
+            </div>
+          </div>
+        </div>
+        <div class="scene__inner archive">
+
+          <div class="archive__panel r" style="--i: 1">
+            <div class="archive__glass fl" style="--fd: -1.4s">
+              <p class="eyebrow"><span class="eyebrow__dot"></span> 04 · The archive</p>
+              <h2 class="scene-title" id="archive-title">
+                <span data-preset-count>100</span> looks,<br /><span class="txt-grad">waiting for your photo.</span>
+              </h2>
+              <p class="archive__lead">
+                Film stocks, neon signs, comic panels, graffiti walls, da Vinci sketchbooks. Open the gallery
+                and start with any of them.
+              </p>
+              <div class="archive__ctas">
+                <a class="btn-plasma btn-plasma--xl" href="studio.html">
+                  <span class="btn-plasma__label">Explore the presets</span>
+                  <span class="btn-plasma__arrow" aria-hidden="true">→</span>
+                </a>
+                <a class="btn-ghost" href="https://github.com/ninadrathod/local-studio" target="_blank" rel="noopener">
+                  Fork on GitHub
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="js/landing.js" defer></script>
   </body>
 </html>
