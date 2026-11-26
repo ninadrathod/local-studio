@@ -872,7 +872,7 @@ print(list_popular())
    - search open-licensed candidates that suit the preset
    - agent writes `previews/_candidates/gallery/index.html` (`render_candidates.py gallery`: square crop + **720×720** + `apply_preset.py`; `--crop ID=left|right|top|bottom` when center clips the subject; pass `--text` when `text_input=yes`)
    - pick the best preview from that page
-   - write `previews/pre-edit/<name>.*`, `previews/post-edit/<name>.png`, prepend the new object to `previews/presets.json` (newest first), and `previews/CREDITS.md`
+   - write `previews/pre-edit/<name>.webp`, `previews/post-edit/<name>.webp` (WebP, quality 85), prepend the new object to `previews/presets.json` (newest first), and `previews/CREDITS.md`
 
 ## Adding a new filter (when needed)
 

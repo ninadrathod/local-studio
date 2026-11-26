@@ -186,8 +186,8 @@ Understand what the shipped preset does, then pick photos where that effect actu
 2. **Download** into `previews/_candidates/gallery/src/` (do not overwrite shipped `pre-edit/` / `post-edit/` yet).
 3. **Render** with `render_candidates.py gallery` (square-crop → **720×720** → `apply_preset_file` on the shipped preset; pass `--text` when `text_input=yes`). Default crop is **center**. If the subject sits off-center, pass `--crop A=left` / `right` / `top` / `bottom` so the kept square still frames it. Open the HTML and **ask which letter is best**. Wait for the user to finalize one.
 4. **Once finalized**, write:
-   - `previews/pre-edit/<final_name>.*` — the chosen square 720×720 source
-   - `previews/post-edit/<final_name>.png` — same crop after the preset. If the preset has the HD pre-pass, Lanczos-downscale this file by the HD factor (e.g. 1920 → 720) so the gallery asset stays light and the same size it would be without HD
+   - `previews/pre-edit/<final_name>.webp` — the chosen square 720×720 source
+   - `previews/post-edit/<final_name>.webp` — same crop after the preset. Save both as **WebP, quality 85** (Pillow: `im.save(path, "WEBP", quality=85, method=6)`, keeping `icc_profile`), and use the `.webp` paths in `presets.json`. If the preset has the HD pre-pass, Lanczos-downscale this file by the HD factor (e.g. 1920 → 720) so the gallery asset stays light and the same size it would be without HD
    - prepend `{ "preset_name", "ar", "text_input", "default_text", "text_character_limit", "pre_edit_image", "post_edit_image" }` to `previews/presets.json` (newest first)
    - record source + photographer + license in `previews/CREDITS.md`
    - delete `previews/_candidates/`
