@@ -46,7 +46,7 @@ Repo: https://github.com/ninadrathod/local-studio
 ## Key conventions
 
 - Keep code **modular and easy to read** (small modules, clear names).
-- Landing page (`index.html`): plain CSS in `css/landing.css` — dark **Orbital** theme (Unbounded / Instrument Sans / JetBrains Mono, brand coral/sky/lemon as neon). No page scroll: `js/landing.js` swaps four scenes (Origin → Protocol → Fusion → Archive) on wheel / swipe / keys with depth transitions; scenes only scroll internally when their content is taller than the viewport. Static only — reads `previews/presets.json`, never the API.
+- Landing page (`index.html`): plain CSS in `css/landing.css` — dark **Orbital** theme (Unbounded / Instrument Sans / JetBrains Mono, brand coral/sky/lemon as neon). No page scroll: `js/landing.js` swaps four scenes (01 Intro → 02 How it works → 03 Inside a preset → 04 Presets; numbered rail + labelled Next button) on wheel / swipe / keys with depth transitions; scenes only scroll internally when their content is taller than the viewport. Static only — reads `previews/presets.json`, never the API.
 - Studio styling (`studio.html`): plain CSS in `css/styles.css` (no Tailwind) — same **Orbital** theme as the landing page (dark void, glass panels, neon coral/sky/lemon, Unbounded / Instrument Sans / JetBrains Mono). Progress (tracker + step states) is pure CSS `:has()` on page state, so `script.js` stays theme-agnostic; keep every element ID and the `hidden` class that `script.js` uses.
 - Backend image work lives in `backend/app/services/`; routes stay thin.
 - Service-function tests live in `test-suite/` (pytest); keep them in sync when service behavior changes.

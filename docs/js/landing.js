@@ -16,8 +16,8 @@ const SWIPE_THRESHOLD = 46;
 const body = document.body;
 const scenes = Array.from(document.querySelectorAll(".scene"));
 const railButtons = Array.from(document.querySelectorAll(".lp-rail [data-go]"));
-const readoutIdx = document.getElementById("lp-readout-idx");
-const readoutName = document.getElementById("lp-readout-name");
+const nextBtn = document.querySelector("[data-next]");
+const nextName = document.getElementById("lp-next-name");
 const live = document.getElementById("lp-live");
 
 let current = 0;
@@ -149,9 +149,14 @@ function applySceneState(index) {
   });
   body.dataset.scene = String(index);
   body.style.setProperty("--scene-i", String(index));
-  const name = scenes[index].dataset.name || "";
-  readoutIdx.textContent = String(index + 1).padStart(2, "0");
-  readoutName.textContent = name;
+  // The Next button names the section it leads to; on the last one it returns to the start.
+  const atEnd = index === scenes.length - 1;
+  const target = atEnd ? "Back to start" : scenes[index + 1].dataset.name || "Next";
+  if (nextBtn) {
+    nextBtn.classList.toggle("is-end", atEnd);
+    nextBtn.setAttribute("aria-label", atEnd ? "Back to the first section" : `Next section: ${target}`);
+  }
+  if (nextName) nextName.textContent = target;
   onSceneEnter(index);
 }
 
@@ -311,7 +316,9 @@ document.querySelectorAll("[data-go]").forEach((el) => {
   el.addEventListener("click", () => go(Number(el.dataset.go), { force: true }));
 });
 
-document.querySelector("[data-next]")?.addEventListener("click", () => go(current + 1, { force: true }));
+nextBtn?.addEventListener("click", () =>
+  go(current === scenes.length - 1 ? 0 : current + 1, { force: true }),
+);
 
 window.addEventListener("hashchange", () => {
   const i = scenes.findIndex((s) => `#${s.id}` === location.hash);
