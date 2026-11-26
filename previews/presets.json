@@ -5,8 +5,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/expired_film.jpg",
-    "post_edit_image": "previews/post-edit/expired_film.png"
+    "pre_edit_image": "previews/pre-edit/expired_film.webp",
+    "post_edit_image": "previews/post-edit/expired_film.webp"
   },
   {
     "preset_name": "classic_slide_64",
@@ -14,8 +14,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/classic_slide_64.jpg",
-    "post_edit_image": "previews/post-edit/classic_slide_64.png"
+    "pre_edit_image": "previews/pre-edit/classic_slide_64.webp",
+    "post_edit_image": "previews/post-edit/classic_slide_64.webp"
   },
   {
     "preset_name": "green_cast_film",
@@ -23,8 +23,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/green_cast_film.jpg",
-    "post_edit_image": "previews/post-edit/green_cast_film.png"
+    "pre_edit_image": "previews/pre-edit/green_cast_film.webp",
+    "post_edit_image": "previews/post-edit/green_cast_film.webp"
   },
   {
     "preset_name": "golden_consumer_film",
@@ -32,8 +32,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/golden_consumer_film.jpg",
-    "post_edit_image": "previews/post-edit/golden_consumer_film.png"
+    "pre_edit_image": "previews/pre-edit/golden_consumer_film.webp",
+    "post_edit_image": "previews/post-edit/golden_consumer_film.webp"
   },
   {
     "preset_name": "vista_red_film",
@@ -41,8 +41,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/vista_red_film.jpg",
-    "post_edit_image": "previews/post-edit/vista_red_film.png"
+    "pre_edit_image": "previews/pre-edit/vista_red_film.webp",
+    "post_edit_image": "previews/post-edit/vista_red_film.webp"
   },
   {
     "preset_name": "coral_gel_lagoon",
@@ -50,8 +50,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/coral_gel_lagoon.jpg",
-    "post_edit_image": "previews/post-edit/coral_gel_lagoon.png"
+    "pre_edit_image": "previews/pre-edit/coral_gel_lagoon.webp",
+    "post_edit_image": "previews/post-edit/coral_gel_lagoon.webp"
   },
   {
     "preset_name": "sky_gel_amber",
@@ -59,8 +59,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/sky_gel_amber.jpg",
-    "post_edit_image": "previews/post-edit/sky_gel_amber.png"
+    "pre_edit_image": "previews/pre-edit/sky_gel_amber.webp",
+    "post_edit_image": "previews/post-edit/sky_gel_amber.webp"
   },
   {
     "preset_name": "pistachio_gel_rose",
@@ -68,8 +68,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/pistachio_gel_rose.jpg",
-    "post_edit_image": "previews/post-edit/pistachio_gel_rose.png"
+    "pre_edit_image": "previews/pre-edit/pistachio_gel_rose.webp",
+    "post_edit_image": "previews/post-edit/pistachio_gel_rose.webp"
   },
   {
     "preset_name": "ice_gel_orange",
@@ -77,8 +77,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/ice_gel_orange.jpg",
-    "post_edit_image": "previews/post-edit/ice_gel_orange.png"
+    "pre_edit_image": "previews/pre-edit/ice_gel_orange.webp",
+    "post_edit_image": "previews/post-edit/ice_gel_orange.webp"
   },
   {
     "preset_name": "amber_teal_gel",
@@ -86,8 +86,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/amber_teal_gel.jpg",
-    "post_edit_image": "previews/post-edit/amber_teal_gel.png"
+    "pre_edit_image": "previews/pre-edit/amber_teal_gel.webp",
+    "post_edit_image": "previews/post-edit/amber_teal_gel.webp"
   },
   {
     "preset_name": "da_vinci_wings",
@@ -95,8 +95,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/da_vinci_wings.jpg",
-    "post_edit_image": "previews/post-edit/da_vinci_wings.png"
+    "pre_edit_image": "previews/pre-edit/da_vinci_wings.webp",
+    "post_edit_image": "previews/post-edit/da_vinci_wings.webp"
   },
   {
     "preset_name": "inventors_notebook",
@@ -104,8 +104,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/inventors_notebook.jpg",
-    "post_edit_image": "previews/post-edit/inventors_notebook.png"
+    "pre_edit_image": "previews/pre-edit/inventors_notebook.webp",
+    "post_edit_image": "previews/post-edit/inventors_notebook.webp"
   },
   {
     "preset_name": "vitruvian_study",
@@ -113,8 +113,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/vitruvian_study.jpg",
-    "post_edit_image": "previews/post-edit/vitruvian_study.png"
+    "pre_edit_image": "previews/pre-edit/vitruvian_study.webp",
+    "post_edit_image": "previews/post-edit/vitruvian_study.webp"
   },
   {
     "preset_name": "codex_blueprint",
@@ -122,8 +122,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/codex_blueprint.jpg",
-    "post_edit_image": "previews/post-edit/codex_blueprint.png"
+    "pre_edit_image": "previews/pre-edit/codex_blueprint.webp",
+    "post_edit_image": "previews/post-edit/codex_blueprint.webp"
   },
   {
     "preset_name": "codex_chalk_sepia",
@@ -131,8 +131,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/codex_chalk_sepia.jpg",
-    "post_edit_image": "previews/post-edit/codex_chalk_sepia.png"
+    "pre_edit_image": "previews/pre-edit/codex_chalk_sepia.webp",
+    "post_edit_image": "previews/post-edit/codex_chalk_sepia.webp"
   },
   {
     "preset_name": "twirl_vortex",
@@ -140,8 +140,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/twirl_vortex.jpg",
-    "post_edit_image": "previews/post-edit/twirl_vortex.png"
+    "pre_edit_image": "previews/pre-edit/twirl_vortex.webp",
+    "post_edit_image": "previews/post-edit/twirl_vortex.webp"
   },
   {
     "preset_name": "liquid_spill",
@@ -149,8 +149,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/liquid_spill.jpg",
-    "post_edit_image": "previews/post-edit/liquid_spill.png"
+    "pre_edit_image": "previews/pre-edit/liquid_spill.webp",
+    "post_edit_image": "previews/post-edit/liquid_spill.webp"
   },
   {
     "preset_name": "squiggle_wave",
@@ -158,8 +158,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/squiggle_wave.jpg",
-    "post_edit_image": "previews/post-edit/squiggle_wave.png"
+    "pre_edit_image": "previews/pre-edit/squiggle_wave.webp",
+    "post_edit_image": "previews/post-edit/squiggle_wave.webp"
   },
   {
     "preset_name": "water_ripple",
@@ -167,8 +167,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/water_ripple.jpg",
-    "post_edit_image": "previews/post-edit/water_ripple.png"
+    "pre_edit_image": "previews/pre-edit/water_ripple.webp",
+    "post_edit_image": "previews/post-edit/water_ripple.webp"
   },
   {
     "preset_name": "radial_swirl",
@@ -176,8 +176,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/radial_swirl.jpg",
-    "post_edit_image": "previews/post-edit/radial_swirl.png"
+    "pre_edit_image": "previews/pre-edit/radial_swirl.webp",
+    "post_edit_image": "previews/post-edit/radial_swirl.webp"
   },
   {
     "preset_name": "graffiti_outline_tower",
@@ -185,8 +185,8 @@
     "text_input": "yes",
     "default_text": "HUSTLE",
     "text_character_limit": 16,
-    "pre_edit_image": "previews/pre-edit/graffiti_outline_tower.jpg",
-    "post_edit_image": "previews/post-edit/graffiti_outline_tower.png"
+    "pre_edit_image": "previews/pre-edit/graffiti_outline_tower.webp",
+    "post_edit_image": "previews/post-edit/graffiti_outline_tower.webp"
   },
   {
     "preset_name": "graffiti_outline_mural",
@@ -194,8 +194,8 @@
     "text_input": "yes",
     "default_text": "DREAM BIG",
     "text_character_limit": 16,
-    "pre_edit_image": "previews/pre-edit/graffiti_outline_mural.jpg",
-    "post_edit_image": "previews/post-edit/graffiti_outline_mural.png"
+    "pre_edit_image": "previews/pre-edit/graffiti_outline_mural.webp",
+    "post_edit_image": "previews/post-edit/graffiti_outline_mural.webp"
   },
   {
     "preset_name": "graffiti_sticker_slap",
@@ -203,8 +203,8 @@
     "text_input": "yes",
     "default_text": "KEEP IT REAL",
     "text_character_limit": 16,
-    "pre_edit_image": "previews/pre-edit/graffiti_sticker_slap.jpg",
-    "post_edit_image": "previews/post-edit/graffiti_sticker_slap.png"
+    "pre_edit_image": "previews/pre-edit/graffiti_sticker_slap.webp",
+    "post_edit_image": "previews/post-edit/graffiti_sticker_slap.webp"
   },
   {
     "preset_name": "graffiti_throwup_masthead",
@@ -212,8 +212,8 @@
     "text_input": "yes",
     "default_text": "OUR BLOCK",
     "text_character_limit": 16,
-    "pre_edit_image": "previews/pre-edit/graffiti_throwup_masthead.jpg",
-    "post_edit_image": "previews/post-edit/graffiti_throwup_masthead.png"
+    "pre_edit_image": "previews/pre-edit/graffiti_throwup_masthead.webp",
+    "post_edit_image": "previews/post-edit/graffiti_throwup_masthead.webp"
   },
   {
     "preset_name": "graffiti_drip_column",
@@ -221,8 +221,8 @@
     "text_input": "yes",
     "default_text": "STAY REAL",
     "text_character_limit": 16,
-    "pre_edit_image": "previews/pre-edit/graffiti_drip_column.jpg",
-    "post_edit_image": "previews/post-edit/graffiti_drip_column.png"
+    "pre_edit_image": "previews/pre-edit/graffiti_drip_column.webp",
+    "post_edit_image": "previews/post-edit/graffiti_drip_column.webp"
   },
   {
     "preset_name": "pop_art_panel",
@@ -230,8 +230,8 @@
     "text_input": "yes",
     "default_text": "POW! WHAT NOW?",
     "text_character_limit": 20,
-    "pre_edit_image": "previews/pre-edit/pop_art_panel.jpg",
-    "post_edit_image": "previews/post-edit/pop_art_panel.png"
+    "pre_edit_image": "previews/pre-edit/pop_art_panel.webp",
+    "post_edit_image": "previews/post-edit/pop_art_panel.webp"
   },
   {
     "preset_name": "neon_frame_sign",
@@ -239,8 +239,8 @@
     "text_input": "yes",
     "default_text": "after dark",
     "text_character_limit": 16,
-    "pre_edit_image": "previews/pre-edit/neon_frame_sign.jpg",
-    "post_edit_image": "previews/post-edit/neon_frame_sign.png"
+    "pre_edit_image": "previews/pre-edit/neon_frame_sign.webp",
+    "post_edit_image": "previews/post-edit/neon_frame_sign.webp"
   },
   {
     "preset_name": "word_wall_poster",
@@ -248,8 +248,8 @@
     "text_input": "yes",
     "default_text": "GOOD VIBES",
     "text_character_limit": 16,
-    "pre_edit_image": "previews/pre-edit/word_wall_poster.jpg",
-    "post_edit_image": "previews/post-edit/word_wall_poster.png"
+    "pre_edit_image": "previews/pre-edit/word_wall_poster.webp",
+    "post_edit_image": "previews/post-edit/word_wall_poster.webp"
   },
   {
     "preset_name": "diamond_editorial",
@@ -257,8 +257,8 @@
     "text_input": "yes",
     "default_text": "EDITION",
     "text_character_limit": 14,
-    "pre_edit_image": "previews/pre-edit/diamond_editorial.jpg",
-    "post_edit_image": "previews/post-edit/diamond_editorial.png"
+    "pre_edit_image": "previews/pre-edit/diamond_editorial.webp",
+    "post_edit_image": "previews/post-edit/diamond_editorial.webp"
   },
   {
     "preset_name": "synthwave_sun",
@@ -266,8 +266,8 @@
     "text_input": "yes",
     "default_text": "MIDNIGHT",
     "text_character_limit": 14,
-    "pre_edit_image": "previews/pre-edit/synthwave_sun.jpg",
-    "post_edit_image": "previews/post-edit/synthwave_sun.png"
+    "pre_edit_image": "previews/pre-edit/synthwave_sun.webp",
+    "post_edit_image": "previews/post-edit/synthwave_sun.webp"
   },
   {
     "preset_name": "instax_sky_flash",
@@ -275,8 +275,8 @@
     "text_input": "yes",
     "default_text": "",
     "text_character_limit": 24,
-    "pre_edit_image": "previews/pre-edit/instax_sky_flash.jpg",
-    "post_edit_image": "previews/post-edit/instax_sky_flash.png"
+    "pre_edit_image": "previews/pre-edit/instax_sky_flash.webp",
+    "post_edit_image": "previews/post-edit/instax_sky_flash.webp"
   },
   {
     "preset_name": "instax_monochrome",
@@ -284,8 +284,8 @@
     "text_input": "yes",
     "default_text": "",
     "text_character_limit": 24,
-    "pre_edit_image": "previews/pre-edit/instax_monochrome.jpg",
-    "post_edit_image": "previews/post-edit/instax_monochrome.png"
+    "pre_edit_image": "previews/pre-edit/instax_monochrome.webp",
+    "post_edit_image": "previews/post-edit/instax_monochrome.webp"
   },
   {
     "preset_name": "instax_wide_cool",
@@ -293,8 +293,8 @@
     "text_input": "yes",
     "default_text": "",
     "text_character_limit": 24,
-    "pre_edit_image": "previews/pre-edit/instax_wide_cool.jpg",
-    "post_edit_image": "previews/post-edit/instax_wide_cool.png"
+    "pre_edit_image": "previews/pre-edit/instax_wide_cool.webp",
+    "post_edit_image": "previews/post-edit/instax_wide_cool.webp"
   },
   {
     "preset_name": "instax_square_sunny",
@@ -302,8 +302,8 @@
     "text_input": "yes",
     "default_text": "",
     "text_character_limit": 24,
-    "pre_edit_image": "previews/pre-edit/instax_square_sunny.jpg",
-    "post_edit_image": "previews/post-edit/instax_square_sunny.png"
+    "pre_edit_image": "previews/pre-edit/instax_square_sunny.webp",
+    "post_edit_image": "previews/post-edit/instax_square_sunny.webp"
   },
   {
     "preset_name": "instax_mini_classic",
@@ -311,8 +311,8 @@
     "text_input": "yes",
     "default_text": "",
     "text_character_limit": 24,
-    "pre_edit_image": "previews/pre-edit/instax_mini_classic.jpg",
-    "post_edit_image": "previews/post-edit/instax_mini_classic.png"
+    "pre_edit_image": "previews/pre-edit/instax_mini_classic.webp",
+    "post_edit_image": "previews/post-edit/instax_mini_classic.webp"
   },
   {
     "preset_name": "shape_window_portrait",
@@ -320,8 +320,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/shape_window_portrait.jpg",
-    "post_edit_image": "previews/post-edit/shape_window_portrait.png"
+    "pre_edit_image": "previews/pre-edit/shape_window_portrait.webp",
+    "post_edit_image": "previews/post-edit/shape_window_portrait.webp"
   },
   {
     "preset_name": "split_word_portrait",
@@ -329,8 +329,8 @@
     "text_input": "yes",
     "default_text": "DREAM",
     "text_character_limit": 20,
-    "pre_edit_image": "previews/pre-edit/split_word_portrait.jpg",
-    "post_edit_image": "previews/post-edit/split_word_portrait.png"
+    "pre_edit_image": "previews/pre-edit/split_word_portrait.webp",
+    "post_edit_image": "previews/post-edit/split_word_portrait.webp"
   },
   {
     "preset_name": "red_gel_portrait",
@@ -338,8 +338,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/red_gel_portrait.jpg",
-    "post_edit_image": "previews/post-edit/red_gel_portrait.png"
+    "pre_edit_image": "previews/pre-edit/red_gel_portrait.webp",
+    "post_edit_image": "previews/post-edit/red_gel_portrait.webp"
   },
   {
     "preset_name": "digicam_flash",
@@ -347,8 +347,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/digicam_flash.jpg",
-    "post_edit_image": "previews/post-edit/digicam_flash.png"
+    "pre_edit_image": "previews/pre-edit/digicam_flash.webp",
+    "post_edit_image": "previews/post-edit/digicam_flash.webp"
   },
   {
     "preset_name": "red_halo_spotlight",
@@ -356,8 +356,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/red_halo_spotlight.jpg",
-    "post_edit_image": "previews/post-edit/red_halo_spotlight.png"
+    "pre_edit_image": "previews/pre-edit/red_halo_spotlight.webp",
+    "post_edit_image": "previews/post-edit/red_halo_spotlight.webp"
   },
   {
     "preset_name": "print_film_2383",
@@ -365,8 +365,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/print_film_2383.jpg",
-    "post_edit_image": "previews/post-edit/print_film_2383.png"
+    "pre_edit_image": "previews/pre-edit/print_film_2383.webp",
+    "post_edit_image": "previews/post-edit/print_film_2383.webp"
   },
   {
     "preset_name": "cross_process",
@@ -374,8 +374,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/cross_process.jpg",
-    "post_edit_image": "previews/post-edit/cross_process.png"
+    "pre_edit_image": "previews/pre-edit/cross_process.webp",
+    "post_edit_image": "previews/post-edit/cross_process.webp"
   },
   {
     "preset_name": "hdr_clarity_pop",
@@ -383,8 +383,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/hdr_clarity_pop.jpg",
-    "post_edit_image": "previews/post-edit/hdr_clarity_pop.png"
+    "pre_edit_image": "previews/pre-edit/hdr_clarity_pop.webp",
+    "post_edit_image": "previews/post-edit/hdr_clarity_pop.webp"
   },
   {
     "preset_name": "bleach_bypass",
@@ -392,8 +392,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/bleach_bypass.jpg",
-    "post_edit_image": "previews/post-edit/bleach_bypass.png"
+    "pre_edit_image": "previews/pre-edit/bleach_bypass.webp",
+    "post_edit_image": "previews/post-edit/bleach_bypass.webp"
   },
   {
     "preset_name": "mocha_moody",
@@ -401,8 +401,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/mocha_moody.jpg",
-    "post_edit_image": "previews/post-edit/mocha_moody.png"
+    "pre_edit_image": "previews/pre-edit/mocha_moody.webp",
+    "post_edit_image": "previews/post-edit/mocha_moody.webp"
   },
   {
     "preset_name": "lavender_dusk",
@@ -410,8 +410,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/lavender_dusk.jpg",
-    "post_edit_image": "previews/post-edit/lavender_dusk.png"
+    "pre_edit_image": "previews/pre-edit/lavender_dusk.webp",
+    "post_edit_image": "previews/post-edit/lavender_dusk.webp"
   },
   {
     "preset_name": "hdr_noir_mono",
@@ -419,8 +419,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/hdr_noir_mono.jpg",
-    "post_edit_image": "previews/post-edit/hdr_noir_mono.png"
+    "pre_edit_image": "previews/pre-edit/hdr_noir_mono.webp",
+    "post_edit_image": "previews/post-edit/hdr_noir_mono.webp"
   },
   {
     "preset_name": "mint_pastel_film",
@@ -428,8 +428,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/mint_pastel_film.jpg",
-    "post_edit_image": "previews/post-edit/mint_pastel_film.png"
+    "pre_edit_image": "previews/pre-edit/mint_pastel_film.webp",
+    "post_edit_image": "previews/post-edit/mint_pastel_film.webp"
   },
   {
     "preset_name": "shutter_drag",
@@ -437,8 +437,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/shutter_drag.jpg",
-    "post_edit_image": "previews/post-edit/shutter_drag.png"
+    "pre_edit_image": "previews/pre-edit/shutter_drag.webp",
+    "post_edit_image": "previews/post-edit/shutter_drag.webp"
   },
   {
     "preset_name": "speed_pan",
@@ -446,8 +446,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/speed_pan.jpg",
-    "post_edit_image": "previews/post-edit/speed_pan.png"
+    "pre_edit_image": "previews/pre-edit/speed_pan.webp",
+    "post_edit_image": "previews/post-edit/speed_pan.webp"
   },
   {
     "preset_name": "confetti_pastel_doodle",
@@ -455,8 +455,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/confetti_pastel_doodle.jpg",
-    "post_edit_image": "previews/post-edit/confetti_pastel_doodle.png"
+    "pre_edit_image": "previews/pre-edit/confetti_pastel_doodle.webp",
+    "post_edit_image": "previews/post-edit/confetti_pastel_doodle.webp"
   },
   {
     "preset_name": "cyanotype_doodle",
@@ -464,8 +464,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/cyanotype_doodle.jpg",
-    "post_edit_image": "previews/post-edit/cyanotype_doodle.png"
+    "pre_edit_image": "previews/pre-edit/cyanotype_doodle.webp",
+    "post_edit_image": "previews/post-edit/cyanotype_doodle.webp"
   },
   {
     "preset_name": "scrapbook_doodle",
@@ -473,8 +473,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/scrapbook_doodle.jpg",
-    "post_edit_image": "previews/post-edit/scrapbook_doodle.png"
+    "pre_edit_image": "previews/pre-edit/scrapbook_doodle.webp",
+    "post_edit_image": "previews/post-edit/scrapbook_doodle.webp"
   },
   {
     "preset_name": "comic_pop_doodle",
@@ -482,8 +482,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/comic_pop_doodle.jpg",
-    "post_edit_image": "previews/post-edit/comic_pop_doodle.png"
+    "pre_edit_image": "previews/pre-edit/comic_pop_doodle.webp",
+    "post_edit_image": "previews/post-edit/comic_pop_doodle.webp"
   },
   {
     "preset_name": "retro_70s_doodle",
@@ -491,8 +491,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/retro_70s_doodle.jpg",
-    "post_edit_image": "previews/post-edit/retro_70s_doodle.png"
+    "pre_edit_image": "previews/pre-edit/retro_70s_doodle.webp",
+    "post_edit_image": "previews/post-edit/retro_70s_doodle.webp"
   },
   {
     "preset_name": "love_notes_doodle",
@@ -500,8 +500,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/love_notes_doodle.jpg",
-    "post_edit_image": "previews/post-edit/love_notes_doodle.png"
+    "pre_edit_image": "previews/pre-edit/love_notes_doodle.webp",
+    "post_edit_image": "previews/post-edit/love_notes_doodle.webp"
   },
   {
     "preset_name": "chalkboard_doodle",
@@ -509,8 +509,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/chalkboard_doodle.jpg",
-    "post_edit_image": "previews/post-edit/chalkboard_doodle.png"
+    "pre_edit_image": "previews/pre-edit/chalkboard_doodle.webp",
+    "post_edit_image": "previews/post-edit/chalkboard_doodle.webp"
   },
   {
     "preset_name": "neon_doodle_nights",
@@ -518,8 +518,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/neon_doodle_nights.jpg",
-    "post_edit_image": "previews/post-edit/neon_doodle_nights.png"
+    "pre_edit_image": "previews/pre-edit/neon_doodle_nights.webp",
+    "post_edit_image": "previews/post-edit/neon_doodle_nights.webp"
   },
   {
     "preset_name": "sunny_sketchbook_doodle",
@@ -527,8 +527,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/sunny_sketchbook_doodle.jpg",
-    "post_edit_image": "previews/post-edit/sunny_sketchbook_doodle.png"
+    "pre_edit_image": "previews/pre-edit/sunny_sketchbook_doodle.webp",
+    "post_edit_image": "previews/post-edit/sunny_sketchbook_doodle.webp"
   },
   {
     "preset_name": "marker_frame_doodle",
@@ -536,8 +536,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/marker_frame_doodle.jpg",
-    "post_edit_image": "previews/post-edit/marker_frame_doodle.png"
+    "pre_edit_image": "previews/pre-edit/marker_frame_doodle.webp",
+    "post_edit_image": "previews/post-edit/marker_frame_doodle.webp"
   },
   {
     "preset_name": "velvet_ticket_title",
@@ -545,8 +545,8 @@
     "text_input": "yes",
     "default_text": "TITLE",
     "text_character_limit": 16,
-    "pre_edit_image": "previews/pre-edit/velvet_ticket_title.jpg",
-    "post_edit_image": "previews/post-edit/velvet_ticket_title.png"
+    "pre_edit_image": "previews/pre-edit/velvet_ticket_title.webp",
+    "post_edit_image": "previews/post-edit/velvet_ticket_title.webp"
   },
   {
     "preset_name": "art_deco_marquee",
@@ -554,8 +554,8 @@
     "text_input": "yes",
     "default_text": "TITLE",
     "text_character_limit": 16,
-    "pre_edit_image": "previews/pre-edit/art_deco_marquee.jpg",
-    "post_edit_image": "previews/post-edit/art_deco_marquee.png"
+    "pre_edit_image": "previews/pre-edit/art_deco_marquee.webp",
+    "post_edit_image": "previews/post-edit/art_deco_marquee.webp"
   },
   {
     "preset_name": "retrowave_neon_title",
@@ -563,8 +563,8 @@
     "text_input": "yes",
     "default_text": "MIDNIGHT DRIVE",
     "text_character_limit": 16,
-    "pre_edit_image": "previews/pre-edit/retrowave_neon_title.jpg",
-    "post_edit_image": "previews/post-edit/retrowave_neon_title.png"
+    "pre_edit_image": "previews/pre-edit/retrowave_neon_title.webp",
+    "post_edit_image": "previews/post-edit/retrowave_neon_title.webp"
   },
   {
     "preset_name": "wanted_stencil_title",
@@ -572,8 +572,8 @@
     "text_input": "yes",
     "default_text": "TITLE",
     "text_character_limit": 16,
-    "pre_edit_image": "previews/pre-edit/wanted_stencil_title.jpg",
-    "post_edit_image": "previews/post-edit/wanted_stencil_title.png"
+    "pre_edit_image": "previews/pre-edit/wanted_stencil_title.webp",
+    "post_edit_image": "previews/post-edit/wanted_stencil_title.webp"
   },
   {
     "preset_name": "mission_passed_title",
@@ -581,8 +581,8 @@
     "text_input": "yes",
     "default_text": "LEVEL UP",
     "text_character_limit": 16,
-    "pre_edit_image": "previews/pre-edit/mission_passed_title.jpg",
-    "post_edit_image": "previews/post-edit/mission_passed_title.png"
+    "pre_edit_image": "previews/pre-edit/mission_passed_title.webp",
+    "post_edit_image": "previews/post-edit/mission_passed_title.webp"
   },
   {
     "preset_name": "neon_nights_script",
@@ -590,8 +590,8 @@
     "text_input": "yes",
     "default_text": "Neon Nights",
     "text_character_limit": 16,
-    "pre_edit_image": "previews/pre-edit/neon_nights_script.jpg",
-    "post_edit_image": "previews/post-edit/neon_nights_script.png"
+    "pre_edit_image": "previews/pre-edit/neon_nights_script.webp",
+    "post_edit_image": "previews/post-edit/neon_nights_script.webp"
   },
   {
     "preset_name": "brush_script_poster",
@@ -599,8 +599,8 @@
     "text_input": "yes",
     "default_text": "TITLE",
     "text_character_limit": 16,
-    "pre_edit_image": "previews/pre-edit/brush_script_poster.jpg",
-    "post_edit_image": "previews/post-edit/brush_script_poster.png"
+    "pre_edit_image": "previews/pre-edit/brush_script_poster.webp",
+    "post_edit_image": "previews/post-edit/brush_script_poster.webp"
   },
   {
     "preset_name": "retro_70s_poster",
@@ -608,8 +608,8 @@
     "text_input": "yes",
     "default_text": "TITLE",
     "text_character_limit": 16,
-    "pre_edit_image": "previews/pre-edit/retro_70s_poster.jpg",
-    "post_edit_image": "previews/post-edit/retro_70s_poster.png"
+    "pre_edit_image": "previews/pre-edit/retro_70s_poster.webp",
+    "post_edit_image": "previews/post-edit/retro_70s_poster.webp"
   },
   {
     "preset_name": "poster_title_blue_pop",
@@ -617,8 +617,8 @@
     "text_input": "yes",
     "default_text": "TITLE",
     "text_character_limit": 16,
-    "pre_edit_image": "previews/pre-edit/poster_title_blue_pop.jpg",
-    "post_edit_image": "previews/post-edit/poster_title_blue_pop.png"
+    "pre_edit_image": "previews/pre-edit/poster_title_blue_pop.webp",
+    "post_edit_image": "previews/post-edit/poster_title_blue_pop.webp"
   },
   {
     "preset_name": "poster_title_yellow_pop",
@@ -626,8 +626,8 @@
     "text_input": "yes",
     "default_text": "TITLE",
     "text_character_limit": 16,
-    "pre_edit_image": "previews/pre-edit/poster_title_yellow_pop.jpg",
-    "post_edit_image": "previews/post-edit/poster_title_yellow_pop.png"
+    "pre_edit_image": "previews/pre-edit/poster_title_yellow_pop.webp",
+    "post_edit_image": "previews/post-edit/poster_title_yellow_pop.webp"
   },
   {
     "preset_name": "studio_spotlight",
@@ -635,8 +635,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/studio_spotlight.jpg",
-    "post_edit_image": "previews/post-edit/studio_spotlight.png"
+    "pre_edit_image": "previews/pre-edit/studio_spotlight.webp",
+    "post_edit_image": "previews/post-edit/studio_spotlight.webp"
   },
   {
     "preset_name": "muted_chrome_film",
@@ -644,8 +644,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/muted_chrome_film.jpg",
-    "post_edit_image": "previews/post-edit/muted_chrome_film.png"
+    "pre_edit_image": "previews/pre-edit/muted_chrome_film.webp",
+    "post_edit_image": "previews/post-edit/muted_chrome_film.webp"
   },
   {
     "preset_name": "tungsten_night_film",
@@ -653,8 +653,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/tungsten_night_film.jpg",
-    "post_edit_image": "previews/post-edit/tungsten_night_film.png"
+    "pre_edit_image": "previews/pre-edit/tungsten_night_film.webp",
+    "post_edit_image": "previews/post-edit/tungsten_night_film.webp"
   },
   {
     "preset_name": "portrait_bokeh",
@@ -662,8 +662,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/portrait_bokeh.jpg",
-    "post_edit_image": "previews/post-edit/portrait_bokeh.png"
+    "pre_edit_image": "previews/pre-edit/portrait_bokeh.webp",
+    "post_edit_image": "previews/post-edit/portrait_bokeh.webp"
   },
   {
     "preset_name": "disposable_flash",
@@ -671,8 +671,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/disposable_flash.jpg",
-    "post_edit_image": "previews/post-edit/disposable_flash.png"
+    "pre_edit_image": "previews/pre-edit/disposable_flash.webp",
+    "post_edit_image": "previews/post-edit/disposable_flash.webp"
   },
   {
     "preset_name": "prism_glow",
@@ -680,8 +680,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/prism_glow.jpg",
-    "post_edit_image": "previews/post-edit/prism_glow.png"
+    "pre_edit_image": "previews/pre-edit/prism_glow.webp",
+    "post_edit_image": "previews/post-edit/prism_glow.webp"
   },
   {
     "preset_name": "miami_neon",
@@ -689,8 +689,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/miami_neon.jpg",
-    "post_edit_image": "previews/post-edit/miami_neon.png"
+    "pre_edit_image": "previews/pre-edit/miami_neon.webp",
+    "post_edit_image": "previews/post-edit/miami_neon.webp"
   },
   {
     "preset_name": "film_dust",
@@ -698,8 +698,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/film_dust.jpg",
-    "post_edit_image": "previews/post-edit/film_dust.png"
+    "pre_edit_image": "previews/pre-edit/film_dust.webp",
+    "post_edit_image": "previews/post-edit/film_dust.webp"
   },
   {
     "preset_name": "film_halation",
@@ -707,8 +707,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/film_halation.jpg",
-    "post_edit_image": "previews/post-edit/film_halation.png"
+    "pre_edit_image": "previews/pre-edit/film_halation.webp",
+    "post_edit_image": "previews/post-edit/film_halation.webp"
   },
   {
     "preset_name": "dreamy_glow",
@@ -716,8 +716,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/dreamy_glow.jpg",
-    "post_edit_image": "previews/post-edit/dreamy_glow.png"
+    "pre_edit_image": "previews/pre-edit/dreamy_glow.webp",
+    "post_edit_image": "previews/post-edit/dreamy_glow.webp"
   },
   {
     "preset_name": "blue_hour_noir",
@@ -725,8 +725,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/blue_hour_noir.jpg",
-    "post_edit_image": "previews/post-edit/blue_hour_noir.png"
+    "pre_edit_image": "previews/pre-edit/blue_hour_noir.webp",
+    "post_edit_image": "previews/post-edit/blue_hour_noir.webp"
   },
   {
     "preset_name": "blush_rose_pastel",
@@ -734,8 +734,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/blush_rose_pastel.jpg",
-    "post_edit_image": "previews/post-edit/blush_rose_pastel.png"
+    "pre_edit_image": "previews/pre-edit/blush_rose_pastel.webp",
+    "post_edit_image": "previews/post-edit/blush_rose_pastel.webp"
   },
   {
     "preset_name": "vintage_slide_punch",
@@ -743,8 +743,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/vintage_slide_punch.jpg",
-    "post_edit_image": "previews/post-edit/vintage_slide_punch.png"
+    "pre_edit_image": "previews/pre-edit/vintage_slide_punch.webp",
+    "post_edit_image": "previews/post-edit/vintage_slide_punch.webp"
   },
   {
     "preset_name": "bright_airy",
@@ -752,8 +752,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/bright_airy.jpg",
-    "post_edit_image": "previews/post-edit/bright_airy.png"
+    "pre_edit_image": "previews/pre-edit/bright_airy.webp",
+    "post_edit_image": "previews/post-edit/bright_airy.webp"
   },
   {
     "preset_name": "fine_art_mono",
@@ -761,8 +761,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/fine_art_mono.jpg",
-    "post_edit_image": "previews/post-edit/fine_art_mono.png"
+    "pre_edit_image": "previews/pre-edit/fine_art_mono.webp",
+    "post_edit_image": "previews/post-edit/fine_art_mono.webp"
   },
   {
     "preset_name": "emerald_moody",
@@ -770,8 +770,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/emerald_moody.jpg",
-    "post_edit_image": "previews/post-edit/emerald_moody.png"
+    "pre_edit_image": "previews/pre-edit/emerald_moody.webp",
+    "post_edit_image": "previews/post-edit/emerald_moody.webp"
   },
   {
     "preset_name": "golden_hour_glow",
@@ -779,8 +779,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/golden_hour_glow.jpg",
-    "post_edit_image": "previews/post-edit/golden_hour_glow.png"
+    "pre_edit_image": "previews/pre-edit/golden_hour_glow.webp",
+    "post_edit_image": "previews/post-edit/golden_hour_glow.webp"
   },
   {
     "preset_name": "nordic_cool_matte",
@@ -788,8 +788,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/nordic_cool_matte.jpg",
-    "post_edit_image": "previews/post-edit/nordic_cool_matte.png"
+    "pre_edit_image": "previews/pre-edit/nordic_cool_matte.webp",
+    "post_edit_image": "previews/post-edit/nordic_cool_matte.webp"
   },
   {
     "preset_name": "warm_portrait_film",
@@ -797,8 +797,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/warm_portrait_film.jpg",
-    "post_edit_image": "previews/post-edit/warm_portrait_film.png"
+    "pre_edit_image": "previews/pre-edit/warm_portrait_film.webp",
+    "post_edit_image": "previews/post-edit/warm_portrait_film.webp"
   },
   {
     "preset_name": "cinematic_teal_orange",
@@ -806,8 +806,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/cinematic_teal_orange.jpg",
-    "post_edit_image": "previews/post-edit/cinematic_teal_orange.png"
+    "pre_edit_image": "previews/pre-edit/cinematic_teal_orange.webp",
+    "post_edit_image": "previews/post-edit/cinematic_teal_orange.webp"
   },
   {
     "preset_name": "vintage_comic",
@@ -815,8 +815,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/vintage_comic.jpg",
-    "post_edit_image": "previews/post-edit/vintage_comic.png"
+    "pre_edit_image": "previews/pre-edit/vintage_comic.webp",
+    "post_edit_image": "previews/post-edit/vintage_comic.webp"
   },
   {
     "preset_name": "old_newspaper",
@@ -824,8 +824,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/old_newspaper.jpg",
-    "post_edit_image": "previews/post-edit/old_newspaper.png"
+    "pre_edit_image": "previews/pre-edit/old_newspaper.webp",
+    "post_edit_image": "previews/post-edit/old_newspaper.webp"
   },
   {
     "preset_name": "comic_pop",
@@ -833,8 +833,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/comic_pop.jpg",
-    "post_edit_image": "previews/post-edit/comic_pop.png"
+    "pre_edit_image": "previews/pre-edit/comic_pop.webp",
+    "post_edit_image": "previews/post-edit/comic_pop.webp"
   },
   {
     "preset_name": "doodle_halo_rings",
@@ -842,8 +842,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/doodle_halo_rings.jpg",
-    "post_edit_image": "previews/post-edit/doodle_halo_rings.png"
+    "pre_edit_image": "previews/pre-edit/doodle_halo_rings.webp",
+    "post_edit_image": "previews/post-edit/doodle_halo_rings.webp"
   },
   {
     "preset_name": "doodle_corner_xo",
@@ -851,8 +851,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/doodle_corner_xo.jpg",
-    "post_edit_image": "previews/post-edit/doodle_corner_xo.png"
+    "pre_edit_image": "previews/pre-edit/doodle_corner_xo.webp",
+    "post_edit_image": "previews/post-edit/doodle_corner_xo.webp"
   },
   {
     "preset_name": "4k_crisp",
@@ -860,8 +860,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/4k_crisp.jpg",
-    "post_edit_image": "previews/post-edit/4k_crisp.png"
+    "pre_edit_image": "previews/pre-edit/4k_crisp.webp",
+    "post_edit_image": "previews/post-edit/4k_crisp.webp"
   },
   {
     "preset_name": "full_hd",
@@ -869,8 +869,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/full_hd.jpg",
-    "post_edit_image": "previews/post-edit/full_hd.png"
+    "pre_edit_image": "previews/pre-edit/full_hd.webp",
+    "post_edit_image": "previews/post-edit/full_hd.webp"
   },
   {
     "preset_name": "warm_faded_print",
@@ -878,8 +878,8 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/warm_faded_print.jpg",
-    "post_edit_image": "previews/post-edit/warm_faded_print.png"
+    "pre_edit_image": "previews/pre-edit/warm_faded_print.webp",
+    "post_edit_image": "previews/post-edit/warm_faded_print.webp"
   },
   {
     "preset_name": "polaroid_memory",
@@ -887,8 +887,8 @@
     "text_input": "yes",
     "default_text": "instant memory",
     "text_character_limit": 24,
-    "pre_edit_image": "previews/pre-edit/polaroid_memory.jpg",
-    "post_edit_image": "previews/post-edit/polaroid_memory.png"
+    "pre_edit_image": "previews/pre-edit/polaroid_memory.webp",
+    "post_edit_image": "previews/post-edit/polaroid_memory.webp"
   },
   {
     "preset_name": "bw_bg_glowing_subject",
@@ -896,7 +896,7 @@
     "text_input": "no",
     "default_text": "",
     "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/bw_bg_glowing_subject.jpg",
-    "post_edit_image": "previews/post-edit/bw_bg_glowing_subject.png"
+    "pre_edit_image": "previews/pre-edit/bw_bg_glowing_subject.webp",
+    "post_edit_image": "previews/post-edit/bw_bg_glowing_subject.webp"
   }
 ]
