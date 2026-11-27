@@ -21,7 +21,7 @@ When you change product behavior, APIs, setup steps, UI flows, or project struct
 | `README.md` | Setup, run, or stop instructions change (keep **setup/run only** — no architecture) |
 | `backend/presets/PRESETS.md` | Helpers, filters, shipped presets, preset JSON shape, DB metadata, or "how to create a preset" guidance change |
 | `.claude/skills/create-preset/SKILL.md` | The gated create-preset workflow (POC → name → keywords → ship) changes |
-| `docs/index.html` | Public pitch, diagram, features, or GitHub fork CTA should reflect the new story |
+| `docs/index.html` | Public pitch, diagram, features, or the clone / setup CTA should reflect the new story |
 | `compose.yaml`, `docker/` | How the app is built or run changes (images, deps, models, ports, networks, volumes, env, health checks, the `dev` tooling service) |
 | `test-suite/` | Backend **service-function** behavior, contracts, or coverage expectations change (not HTTP/API tests) |
 
@@ -29,7 +29,7 @@ When you change product behavior, APIs, setup steps, UI flows, or project struct
 
 - Prefer accurate, concise updates over rewriting unchanged sections.
 - `README.md` must remain **instructions only** (clone, install/run, stop). No architecture essays.
-- `docs/index.html` stays advertise-level (short, visual); CTAs should send users to **fork the GitHub repo** and run locally — do not link to a hosted app. Keep pitch assets under `docs/` so GitHub Pages (`/docs` source) stays self-contained.
+- `docs/index.html` stays advertise-level (short, visual); CTAs should send users to **clone the GitHub repo** (the README setup section) and run it locally with Docker — do not link to a hosted app or ask them to fork. Only the owner pushes; users get updates with `git pull` + `docker compose up -d --build`. Keep pitch assets under `docs/` so GitHub Pages (`/docs` source) stays self-contained.
 - Keep `compose.yaml` / `docker/` aligned with `README.md` so `docker compose up -d --build` stays the one-command setup/run. There is no host Python environment: run tests with `docker compose run --rm dev`.
 - When you change `backend/app/services/` (or add a new service module), update or add matching tests under `test-suite/` in the same change set — **only where necessary**.
 - When you change `backend/helpers/` filters, `backend/helpers/apply_preset.py`, `backend/presets/`, or `backend/database/` preset metadata, update `backend/presets/PRESETS.md` (and `CONTEXT.md` / `ARCHITECTURE.md` if layout or contracts changed) in the same change set.

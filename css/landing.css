@@ -1392,8 +1392,8 @@ body[data-scene="3"] .lp-aurora__blob--c {
   padding: 0.8rem 0.95rem 0.9rem;
   font: 400 0.74rem/1.75 var(--f-mono);
   color: var(--text);
-  white-space: pre;
-  overflow-x: auto;
+  white-space: pre-wrap; /* the clone URL is long: wrap instead of scrolling sideways */
+  overflow-wrap: anywhere;
 }
 
 .term__p { color: var(--dim); }

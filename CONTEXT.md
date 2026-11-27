@@ -22,7 +22,7 @@ Repo: https://github.com/ninadrathod/local-studio
 | `studio.html`, `script.js`, `js/`, `css/styles.css`, `icons/` | Studio UI (preset gallery + upload + generate) |
 | `previews/` | Preset gallery assets: `pre-edit/` + `post-edit/` (before/after per DB preset, 720×720 **WebP**, quality 85) + `presets.json` |
 | `previews/_candidates/` | Gitignored create-preset comparison HTML (POC edits, fonts, gallery picks) — not shipped |
-| `docs/` | GitHub Pages site (custom domain in `docs/CNAME`): the same four-scene landing as `index.html`, self-contained — `docs/css/styles.css` and `docs/js/landing.js` are **copies** of `css/landing.css` / `js/landing.js` (re-copy after editing those), `docs/previews/` holds downscaled JPEG previews + `manifest.json` (`{ count, presets }`) + `CREDITS.md`; every CTA goes to the GitHub repo / fork, never to a hosted app |
+| `docs/` | GitHub Pages site (custom domain in `docs/CNAME`): the same four-scene landing as `index.html`, self-contained — `docs/css/styles.css` and `docs/js/landing.js` are **copies** of `css/landing.css` / `js/landing.js` (re-copy after editing those), `docs/previews/` holds downscaled JPEG previews + `manifest.json` (`{ count, presets }`) + `CREDITS.md`; every CTA goes to the GitHub repo (README setup section) for users to **clone** — never to a fork page or a hosted app; only the owner pushes, users update with `git pull` |
 | `backend/` | FastAPI app |
 | `backend/helpers/` | CLI helpers: subject extraction, local AI upscale model, JSON preset runner |
 | `model/` | Real-ESRGAN `.pth` weights (`realesrgan/`, BSD-3-Clause) shipped with the repo |
