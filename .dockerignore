@@ -1,0 +1,27 @@
+# Build context for docker/backend and docker/frontend (repo root). Keep it small.
+.git
+.github
+.claude
+.cursor
+**/.DS_Store
+**/__pycache__
+**/*.py[cod]
+**/*.ses
+.pytest_cache
+**/.venv
+venv
+logs
+.env
+
+# Not part of either image
+docs
+test-suite
+!test-suite/requirements.txt
+previews/_candidates
+README.md
+CONTEXT.md
+ARCHITECTURE.md
+
+# Per-install database (the container keeps its own on the /data volume)
+backend/database/presets.local.db
+backend/database/presets.local.db-journal

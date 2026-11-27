@@ -4,7 +4,7 @@
 
 /**
  * POST an image to /api/blur and return the blurred image as a Blob.
- * @param {string} baseUrl - API origin, e.g. http://localhost:8000
+ * @param {string} baseUrl - API origin; "" = same origin (the nginx proxy)
  * @param {File} file - Image file selected by the user
  * @returns {Promise<Blob>}
  */
@@ -20,7 +20,7 @@ export async function blurImage(baseUrl, file) {
     });
   } catch {
     throw new Error(
-      `Could not reach the API at ${baseUrl}. Is the backend running (./scripts/run.sh)?`,
+      "Could not reach the studio server. Is the app running (docker compose up -d)?",
     );
   }
 
@@ -41,7 +41,7 @@ export async function blurImage(baseUrl, file) {
 /**
  * POST an image to /api/preview and return a small JPEG/PNG preview Blob —
  * for uploads the browser can't render itself (HEIC outside Safari, TIFF).
- * @param {string} baseUrl - API origin, e.g. http://localhost:8000
+ * @param {string} baseUrl - API origin; "" = same origin (the nginx proxy)
  * @param {File} file - Image file selected by the user
  * @returns {Promise<Blob>}
  */
@@ -57,7 +57,7 @@ export async function previewImage(baseUrl, file) {
     });
   } catch {
     throw new Error(
-      `Could not reach the API at ${baseUrl}. Is the backend running (./scripts/run.sh)?`,
+      "Could not reach the studio server. Is the app running (docker compose up -d)?",
     );
   }
 
@@ -81,7 +81,7 @@ export async function previewImage(baseUrl, file) {
 /**
  * GET presets whose name or keywords match `query` (case-insensitive substring).
  * Results are newest `preset_id` first.
- * @param {string} baseUrl - API origin, e.g. http://localhost:8000
+ * @param {string} baseUrl - API origin; "" = same origin (the nginx proxy)
  * @param {string} query - Search text
  * @returns {Promise<Array<{ preset_name: string, keywords: string[], ar?: string, text_input?: string, default_text?: string, text_character_limit?: number }>>}
  */
@@ -95,7 +95,7 @@ export async function searchPresets(baseUrl, query) {
     response = await fetch(url);
   } catch {
     throw new Error(
-      `Could not reach the API at ${baseUrl}. Is the backend running (./scripts/run.sh)?`,
+      "Could not reach the studio server. Is the app running (docker compose up -d)?",
     );
   }
 
@@ -116,7 +116,7 @@ export async function searchPresets(baseUrl, query) {
 
 /**
  * GET popular presets ordered by used_count descending.
- * @param {string} baseUrl - API origin, e.g. http://localhost:8000
+ * @param {string} baseUrl - API origin; "" = same origin (the nginx proxy)
  * @returns {Promise<Array<{ preset_id: number, preset_name: string, used_count: number }>>}
  */
 export async function listPopularPresets(baseUrl) {
@@ -125,7 +125,7 @@ export async function listPopularPresets(baseUrl) {
     response = await fetch(`${baseUrl}/api/presets/popular`);
   } catch {
     throw new Error(
-      `Could not reach the API at ${baseUrl}. Is the backend running (./scripts/run.sh)?`,
+      "Could not reach the studio server. Is the app running (docker compose up -d)?",
     );
   }
 
@@ -146,7 +146,7 @@ export async function listPopularPresets(baseUrl) {
 
 /**
  * POST a download/use event to /api/presets/use (increments popular.used_count).
- * @param {string} baseUrl - API origin, e.g. http://localhost:8000
+ * @param {string} baseUrl - API origin; "" = same origin (the nginx proxy)
  * @param {string} presetName - DB preset_name
  * @returns {Promise<{ preset_id: number, used_count: number }>}
  */
@@ -161,15 +161,15 @@ export async function recordPresetUse(baseUrl, presetName) {
 
   let response;
   try {
-    // urlencoded body is a "simple" CORS request (no preflight). Do not use
-    // keepalive: browsers can drop cross-origin keepalive POSTs.
+    // Plain form POST to the same-origin proxy. Do not use keepalive: some
+    // browsers drop keepalive POSTs.
     response = await fetch(`${baseUrl}/api/presets/use`, {
       method: "POST",
       body: form,
     });
   } catch {
     throw new Error(
-      `Could not reach the API at ${baseUrl}. Is the backend running (./scripts/run.sh)?`,
+      "Could not reach the studio server. Is the app running (docker compose up -d)?",
     );
   }
 
@@ -189,7 +189,7 @@ export async function recordPresetUse(baseUrl, presetName) {
 
 /**
  * POST preset name + image (+ optional text) to /api/apply-preset and return the result as a Blob.
- * @param {string} baseUrl - API origin, e.g. http://localhost:8000
+ * @param {string} baseUrl - API origin; "" = same origin (the nginx proxy)
  * @param {string} presetName - DB preset_name
  * @param {File} file - Image file selected by the user
  * @param {string} [text] - User text for presets with text_input=yes
@@ -213,7 +213,7 @@ export async function applyPreset(baseUrl, presetName, file, text) {
     });
   } catch {
     throw new Error(
-      `Could not reach the API at ${baseUrl}. Is the backend running (./scripts/run.sh)?`,
+      "Could not reach the studio server. Is the app running (docker compose up -d)?",
     );
   }
 

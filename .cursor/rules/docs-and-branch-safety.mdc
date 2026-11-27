@@ -25,8 +25,7 @@ When you change product behavior, APIs, setup steps, UI flows, or project struct
 | `backend/presets/PRESETS.md` | Helpers, filters, shipped presets, preset JSON shape, DB metadata, or “how to create a preset” guidance change |
 | `.cursor/skills/create-preset/SKILL.md` | The gated create-preset workflow (POC → name → keywords → ship) changes |
 | `docs/index.html` | Public pitch, diagram, features, or GitHub fork CTA should reflect the new story |
-| `scripts/setup.sh` | Install/bootstrap steps change (deps, venv, env files, DB init) |
-| `scripts/run.sh` | How the app is started changes (ports, processes, commands, health checks) |
+| `compose.yaml`, `docker/` | How the app is built or run changes (images, deps, models, ports, networks, volumes, env, health checks, the `dev` tooling service) |
 | `test-suite/` | Backend **service-function** behavior, contracts, or coverage expectations change (not HTTP/API tests) |
 
 ### Rules of thumb
@@ -34,10 +33,10 @@ When you change product behavior, APIs, setup steps, UI flows, or project struct
 - Prefer accurate, concise updates over rewriting unchanged sections.
 - `README.md` must remain **instructions only** (clone, install/run, stop). No architecture essays.
 - `docs/index.html` stays advertise-level (short, visual); CTAs should send users to **fork the GitHub repo** and run locally — do not link to a hosted app. Keep pitch assets under `docs/` so GitHub Pages (`/docs` source) stays self-contained.
-- Keep `scripts/setup.sh` and `scripts/run.sh` aligned with `README.md` so one-command setup/run stays correct.
+- Keep `compose.yaml` / `docker/` aligned with `README.md` so `docker compose up -d --build` stays the one-command setup/run. There is no host Python environment: run tests with `docker compose run --rm dev`.
 - When you change `backend/app/services/` (or add a new service module), update or add matching tests under `test-suite/` in the same change set — **only where necessary**.
 - When you change `backend/helpers/` filters, `backend/helpers/apply_preset.py`, `backend/presets/`, or `backend/database/` preset metadata, update `backend/presets/PRESETS.md` (and `CONTEXT.md` / `ARCHITECTURE.md` if layout or contracts changed) in the same change set.
-- If a change is purely internal with zero user/setup/API/preset impact, skip doc/script updates — but when in doubt, update `CONTEXT.md`, `ARCHITECTURE.md`, `PRESETS.md` when presets/helpers are involved, and the scripts if startup changed.
+- If a change is purely internal with zero user/setup/API/preset impact, skip doc/script updates — but when in doubt, update `CONTEXT.md`, `ARCHITECTURE.md`, `PRESETS.md` when presets/helpers are involved, and `compose.yaml` / `docker/` if startup changed.
 
 ## After all changes are finished — bug, security & UI review
 

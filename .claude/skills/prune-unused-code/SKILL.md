@@ -54,9 +54,9 @@ Map the live surfaces before hunting “dead” code:
 | `index.html`, `script.js`, `js/`, `css/` | Primary studio UI |
 | `docs/` | Pitch site for GitHub Pages (keep unless user asks to change marketing) |
 | `backend/app/routes/`, `services/` | HTTP API |
-| `backend/helpers/` | CLI + preset pipeline (used by API and local scripts) |
+| `backend/helpers/` | CLI + preset pipeline (used by the API and the `dev` container) |
 | `backend/presets/`, `backend/database/`, `previews/` | Shipped presets + gallery |
-| `scripts/setup.sh`, `scripts/run.sh` | Bootstrap / run |
+| `compose.yaml`, `docker/` | Build / run (frontend, backend, `dev` tooling) |
 | `test-suite/` | Service-function tests |
 | `.claude/skills/`, `.claude/rules/` | Agent workflows — not product dead code |
 
@@ -85,7 +85,7 @@ Use ripgrep / codebase search from multiple angles (symbol name, filename, route
 
 - Frontend imports (`script.js`, `js/*`)
 - Backend routers registered in `backend/app/main.py`
-- Helpers invoked from `apply_preset.py`, filters, `scripts/*.sh`, README
+- Helpers invoked from `apply_preset.py`, filters, `docker/`, README
 - `test-suite/` imports
 - Docs: `CONTEXT.md`, `ARCHITECTURE.md`, `README.md`, `PRESETS.md`
 
@@ -94,9 +94,9 @@ Use ripgrep / codebase search from multiple angles (symbol name, filename, route
 These often look “unused by the main UI” but are **in scope** for the product:
 
 - `POST /api/blur` and `js/api.js` → `blurImage` (documented secondary API; UI may not call it)
-- `backend/helpers/extract_subject.py`, `download_model.py`, and filter `extract_subject` (preset pipeline + CLI; setup scripts reference them)
+- `backend/helpers/extract_subject.py`, `download_model.py`, and filter `extract_subject` (preset pipeline + CLI; the backend Dockerfile references them)
 - Shipped presets, `previews/**`, DB seed paths
-- `scripts/setup.sh` / `scripts/run.sh` behavior
+- `compose.yaml` / `docker/` build and run behavior
 - Health endpoint and apply-preset / search APIs
 - Skills and rules (`.claude/skills/`, `.claude/rules/`, `.cursor/skills/`, `.cursor/rules/`)
 - Comments or thin wrappers that exist for clarity/security boundaries
@@ -145,7 +145,7 @@ After edits:
 
 ```bash
 # Prefer project venv
-backend/.venv/bin/python -m pytest test-suite/ -q
+docker compose run --rm dev
 ```
 
 Smoke-check mentally (or with a running app if already up):

@@ -20,11 +20,9 @@ previews/_candidates/
 **/*.onnx
 backend/helpers/models/
 
-# run.sh server logs
-logs/
-
-# Local preset DB (created/seeded by setup.sh and run.sh; holds per-install popular counts).
-# backend/database/presets.db stays committed but frozen (legacy seed for old clones).
+# Live preset DB if prepare_db.py is ever run outside Docker (Docker keeps it on the
+# studio-data volume). backend/database/presets.db stays committed but frozen: it seeds
+# the counts the first time a database is created.
 backend/database/presets.local.db
 backend/database/presets.local.db-journal
 

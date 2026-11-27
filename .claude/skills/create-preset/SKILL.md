@@ -60,7 +60,7 @@ Text-only gates (preset names, keywords, `ar`, `text_input` / `default_text` / l
 
 - Root: `previews/_candidates/<round>/` with `index.html` + the images for that round. Rounds: `poc`, `fonts`, `gallery`, or another short slug (`poc-2`, `glow-color`).
 - Use [scripts/render_candidates.py](scripts/render_candidates.py). It calls existing helpers — `apply_preset.apply_preset_file` and `filters.draw_text`. Do **not** reimplement apply, text drawing, or a one-off HTML file.
-- Run with `backend/.venv/bin/python` from the repo root. Pass `--open` so the page launches.
+- Run it in the `dev` container from the repo root: `docker compose run --rm dev python …` (the repo is mounted at `/repo`, so every path stays repo-relative). The container has no browser and no network, so leave out `--open` and open the page on the host afterwards: `open previews/_candidates/<round>/index.html`.
 - Tell the user the path (`previews/_candidates/<round>/index.html`) and wait for a letter (`A` / `B` / …).
 - This directory is gitignored scratch. Never copy it into `backend/presets/` or shipped `previews/pre-edit/` / `previews/post-edit/` until the user finalizes. After gallery ships, delete `previews/_candidates/`.
 
@@ -68,27 +68,30 @@ Text-only gates (preset names, keywords, `ar`, `text_input` / `default_text` / l
 
 ```bash
 # POC drafts (apply_preset.py per JSON)
-backend/.venv/bin/python .claude/skills/create-preset/scripts/render_candidates.py poc \
-  --input SAMPLE.jpg --outdir previews/_candidates/poc --text "Sample" --open \
+docker compose run --rm dev python .claude/skills/create-preset/scripts/render_candidates.py poc \
+  --input SAMPLE.jpg --outdir previews/_candidates/poc --text "Sample" \
   A=previews/_candidates/poc/draft_a.json B=previews/_candidates/poc/draft_b.json
 
 # Fonts (filters.draw_text). Prefer font_style values the preset can ship (`sans`, `flow`).
-backend/.venv/bin/python .claude/skills/create-preset/scripts/render_candidates.py fonts \
+docker compose run --rm dev python .claude/skills/create-preset/scripts/render_candidates.py fonts \
   --text "instant memory" --image previews/_candidates/poc/A.png \
-  --align bottom --outdir previews/_candidates/fonts --open \
+  --align bottom --outdir previews/_candidates/fonts \
   A=sans B=flow
 
 # Gallery before/after (square crop → 720 → apply_preset.py)
-backend/.venv/bin/python .claude/skills/create-preset/scripts/render_candidates.py gallery \
-  --preset FINAL_NAME --outdir previews/_candidates/gallery --text "caption" --open \
+docker compose run --rm dev python .claude/skills/create-preset/scripts/render_candidates.py gallery \
+  --preset FINAL_NAME --outdir previews/_candidates/gallery --text "caption" \
   --note A="CC0, Photographer, Wikimedia" \
   --crop A=left --crop B=top \
   A=previews/_candidates/gallery/src/a.jpg B=previews/_candidates/gallery/src/b.jpg
 
 # Already-rendered variants
-backend/.venv/bin/python .claude/skills/create-preset/scripts/render_candidates.py html \
-  --title "Glow color" --outdir previews/_candidates/glow-color --open \
+docker compose run --rm dev python .claude/skills/create-preset/scripts/render_candidates.py html \
+  --title "Glow color" --outdir previews/_candidates/glow-color \
   --original SAMPLE.jpg A=red.png B=cyan.png
+
+# Then open the round's page on the host (the container can't launch a browser):
+open previews/_candidates/<round>/index.html
 ```
 
 ## Step details
@@ -147,7 +150,7 @@ backend/.venv/bin/python .claude/skills/create-preset/scripts/render_candidates.
     ```json
     { "filter": "ai_upscale", "on": "image", "long_edge": 1920, "denoise": 0.5 }
     ```
-    `ai_upscale` (`backend/helpers/filters.py`, model code in `upscale_model.py`) is local Real-ESRGAN general-x4v3 (BSD-3-Clause, ONNX in `~/.local-studio/models/`). Offer `long_edge` 1920 (Full HD, default) or 3840 (4K), and `denoise` 0.5 (default) or lower (0.2–0.3) to keep grain. Never shrinks images already at/above `long_edge`.
+    `ai_upscale` (`backend/helpers/filters.py`, model code in `upscale_model.py`) is local Real-ESRGAN general-x4v3 (BSD-3-Clause, ONNX built into the backend image). Offer `long_edge` 1920 (Full HD, default) or 3840 (4K), and `denoise` 0.5 (default) or lower (0.2–0.3) to keep grain. Never shrinks images already at/above `long_edge`.
   - Ship sizes as ratios of the short side (`draw_text` `font_size_ratio` / `margin_ratio` / `stroke_ratio`, glow `width_ratio` / `blur_ratio`, `sticker_outline` `width_ratio`, doodle `size` / `stroke`) — these need no change after upscale and keep the look identical on DSLR-size uploads. Only px params left over (`font_size`, `margin`, `stroke_width`, glow `width` / `blur`) need scaling by roughly `long_edge / POC sample long edge` (e.g. 720 → 1920 ≈ ×2.7); prefer converting them to ratios (px / sample short side).
   - Re-render the recipe with step 0 on the same sample via `render_candidates.py poc` into `previews/_candidates/poc-hd/` (`A` = without HD, `B` = with HD and scaled params) and confirm the look still matches the chosen POC. Wait for the user to confirm `B` (or adjust and re-render).
   - Do the fonts round (6b) on the HD output so text sizes are judged at final resolution.
@@ -164,13 +167,13 @@ backend/.venv/bin/python .claude/skills/create-preset/scripts/render_candidates.
 
 1. Add any new filter ops under `backend/helpers/filters.py` and register them in `backend/helpers/apply_preset.py` `FILTERS` (use `_run_simple` for single-layer ops). Keep helpers modular. Do not add per-filter if/else in the API or the step runner.
 2. Write `backend/presets/<final_name>.json` with `name`, `label`, `description`, `ar` (`square` or `non-square`), `text_input` (`yes` or `no`), `default_text`, `text_character_limit`, and `steps`. Each step’s `"filter"` is the helper function name; remaining keys are that helper’s parameters. Use `"$text"` in a param when the step should receive the user string. If 6a was **yes**, `steps[0]` is the finalized `ai_upscale` step and later pixel-sized params are the HD-scaled values.
-3. Register the DB row. The live DB (`presets.local.db`) is local and gitignored, and the committed `presets.db` is a frozen legacy copy (never edit it), so the **seed list is the source of truth**: append an entry to `defaults` in `seed_default_presets()` (`backend/database/db_ops.py`) with `preset_name`, `preset_path` (`backend/presets/<final_name>.json`), the finalized `keywords`, `ar`, `text_input`, `default_text`, and `text_character_limit`. Then add it to your local DB (every other install picks it up on its next `setup.sh` / `run.sh`):
+3. Register the DB row. The live DB (`presets.local.db`) sits on the backend's Docker volume and the committed `presets.db` is a frozen legacy copy (never edit it), so the **seed list is the source of truth**: append an entry to `defaults` in `seed_default_presets()` (`backend/database/db_ops.py`) with `preset_name`, `preset_path` (`backend/presets/<final_name>.json`), the finalized `keywords`, `ar`, `text_input`, `default_text`, and `text_character_limit`. Then rebuild — the backend runs `prepare_db.py` on start, which adds it to the live DB (every other install picks it up on its next rebuild):
 
 ```bash
-backend/.venv/bin/python backend/database/prepare_db.py
+docker compose up -d --build
 ```
 
-Update the expected names/counts in `test-suite/test_database.py` (seed tests) to include the new preset.
+Update the expected names/counts in `test-suite/test_database.py` (seed tests) to include the new preset, and run the suite with `docker compose run --rm dev`.
 
 4. Update `backend/presets/PRESETS.md`, `CONTEXT.md`, and `ARCHITECTURE.md` for the new preset/filter.
 5. Add/adjust `test-suite/` coverage when new filter behavior needs it.
@@ -194,7 +197,7 @@ Understand what the shipped preset does, then pick photos where that effect actu
 
 ## Rules
 
-- Never commit rembg/ONNX weights; models stay in `~/.rembg/` (rembg) and `~/.local-studio/models/` (Real-ESRGAN for `ai_upscale`).
+- Never commit rembg/ONNX weights; the models are baked into the backend image (`/opt/local-studio/rembg` for rembg, `/opt/local-studio/models` for the Real-ESRGAN `ai_upscale` graphs, built from the bundled `model/realesrgan/*.pth`).
 - Do not invent extra HTTP routes unless asked — apply by DB name via existing `POST /api/apply-preset` (optional multipart `text` when needed).
 - Do not finalize name/keywords/`ar`/text fields/HD pre-pass/fonts/DB/files/gallery assets before the user confirms each gate.
 - HD pre-pass means one `ai_upscale` step at index 0 — reuse that helper; never write a separate upscaler or call a cloud API.
