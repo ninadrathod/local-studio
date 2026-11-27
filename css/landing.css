@@ -290,35 +290,37 @@ body[data-scene="3"] .lp-aurora__blob--c {
 .lp-brand__mark i::after {
   content: "";
   position: absolute;
+  top: 0;
   left: 50%;
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  translate: -50% -50%;
+  /* Knobs travel inside the 22px track: top edge 0.5px → bottom edge 21.5px. */
+  translate: -50% var(--knob-y, 0.5px);
   animation: fader 4.8s var(--ease-warp) infinite;
 }
 
 .lp-brand__mark i:nth-child(1)::after {
-  top: 35%;
+  --knob-y: 4px;
   background: var(--coral);
   box-shadow: 0 0 10px var(--coral);
 }
 .lp-brand__mark i:nth-child(2)::after {
-  top: 70%;
+  --knob-y: 12px;
   background: var(--sky);
   box-shadow: 0 0 10px var(--sky);
   animation-delay: -1.6s;
 }
 .lp-brand__mark i:nth-child(3)::after {
-  top: 20%;
+  --knob-y: 1.5px;
   background: var(--lemon);
   box-shadow: 0 0 10px var(--lemon);
   animation-delay: -3.2s;
 }
 
 @keyframes fader {
-  0%, 100% { translate: -50% -50%; }
-  50% { translate: -50% 120%; }
+  0%, 100% { translate: -50% 0.5px; }
+  50% { translate: -50% 14.5px; }
 }
 
 .lp-brand__word {
@@ -358,25 +360,6 @@ body[data-scene="3"] .lp-aurora__blob--c {
 .lp-hud__link--cta:hover {
   background: rgba(255, 255, 255, 0.1);
 }
-
-.lp-corners {
-  position: fixed;
-  inset: 0.85rem;
-  z-index: 30;
-  pointer-events: none;
-}
-
-.lp-corners i {
-  position: absolute;
-  width: 18px;
-  height: 18px;
-  border: 0 solid rgba(255, 255, 255, 0.28);
-}
-
-.lp-corners i:nth-child(1) { top: 0; left: 0; border-top-width: 1px; border-left-width: 1px; }
-.lp-corners i:nth-child(2) { top: 0; right: 0; border-top-width: 1px; border-right-width: 1px; }
-.lp-corners i:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 1px; border-left-width: 1px; }
-.lp-corners i:nth-child(4) { bottom: 0; right: 0; border-bottom-width: 1px; border-right-width: 1px; }
 
 /* Section rail: numbered stops on a progress line. The current stop always shows
    its name; the others reveal theirs on hover / focus. */
@@ -1997,10 +1980,6 @@ body[data-scene="3"] .lp-aurora__blob--c {
     display: none;
   }
 
-
-  .lp-corners {
-    inset: 0.5rem;
-  }
 
   .origin__stats .stat {
     flex: 1 1 0;
