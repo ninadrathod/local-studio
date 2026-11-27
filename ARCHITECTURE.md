@@ -78,7 +78,7 @@ Detailed architecture for the preset-based local image editor.
 ### Marketing page
 
 - `index.html` (repo root) is the local landing page served at `/` by the frontend server; it links into `studio.html`.
-- `docs/index.html` is the GitHub Pages version of the landing page (published from `/docs`), identical scenes and motion, but self-contained because Pages only serves `docs/`: `docs/css/styles.css` and `docs/js/landing.js` are byte-for-byte copies of `css/landing.css` and `js/landing.js`; images come from `docs/previews/{post,pre}/` (560 px JPEG copies of the repo previews, licensed per `docs/previews/CREDITS.md`, linked from the page); `<body data-presets="previews/manifest.json">` points `landing.js` at a trimmed manifest `{ count, presets: [{ preset_name, post_edit_image }] }` instead of `previews/presets.json`. Every CTA goes to the GitHub repo or `/fork` — there is no hosted live app. After changing the landing CSS/JS, re-copy them into `docs/`; after adding presets, bump `count` in the manifest **and** in its inline copy (`<script type="application/json" id="lp-presets">` in `docs/index.html`, which `landing.js` prefers over fetching so the page also works opened straight from disk). Both landing pages load `landing.js` as a classic `defer` script (not a module) for the same reason.
+- `docs/index.html` is the GitHub Pages version of the landing page (published from `/docs`), identical scenes and motion, but self-contained because Pages only serves `docs/`: `docs/css/styles.css` and `docs/js/landing.js` are byte-for-byte copies of `css/landing.css` and `js/landing.js`; images come from `docs/previews/{post,pre}/` (560 px JPEG copies of the repo previews, licensed per `docs/previews/CREDITS.md`, linked from the page); `<body data-presets="previews/manifest.json">` points `landing.js` at a trimmed manifest `{ count, presets: [{ preset_name, post_edit_image }] }` instead of `previews/presets.json`. Every CTA sends users to the GitHub repo to **clone** it (README `#setup`) — there is no hosted live app and no fork step; only the owner pushes, users update with `git pull` + `docker compose up -d --build`. After changing the landing CSS/JS, re-copy them into `docs/`; after adding presets, bump `count` in the manifest **and** in its inline copy (`<script type="application/json" id="lp-presets">` in `docs/index.html`, which `landing.js` prefers over fetching so the page also works opened straight from disk). Both landing pages load `landing.js` as a classic `defer` script (not a module) for the same reason.
 
 ## Backend
 
@@ -269,7 +269,7 @@ browser ──▶ host :5500 ──▶ frontend (nginx :8080) ──studio-inter
 | `ARCHITECTURE.md` | This file — design & data flow |
 | `backend/presets/PRESETS.md` | Helpers, filters, shipped presets, create-preset how-to |
 | `.cursor/skills/create-preset/SKILL.md` | Gated agent workflow to design/ship a new preset |
-| `docs/` | GitHub Pages pitch (`docs/index.html`); CTAs link to GitHub fork |
+| `docs/` | GitHub Pages pitch (`docs/index.html`); CTAs send users to clone the repo (README setup) |
 | `compose.yaml`, `docker/` | How the app runs: frontend (nginx + API proxy) and backend containers on a private network, plus the `dev` tooling service |
 | `test-suite/` | Service-function unit tests (pytest); CI via `.github/workflows/test-suite.yml` |
 
