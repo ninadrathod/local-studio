@@ -1,0 +1,78 @@
+# The Local Studio in Docker: `docker compose up -d --build`, then open http://localhost:5500
+#
+#   frontend  nginx — static site + reverse proxy for /api/ and /health
+#   backend   FastAPI — image processing, AI models baked into the image
+#
+# Both share the `studio-internal` network. It is internal-only: no host ports and no
+# internet. The backend sits only there, so nothing but the frontend container can
+# reach its API. The frontend also joins `studio-edge` to publish its port.
+
+name: local-studio
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      target: runtime
+    image: local-studio-backend
+    environment:
+      # 1 = low-RAM mode; read from .env
+      LIGHTWEIGHT: ${LIGHTWEIGHT:-0}
+    volumes:
+      - studio-data:/data # preset DB + popular counts
+    networks:
+      - studio-internal
+    expose:
+      - "8000" # internal network only — deliberately no `ports:`
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+    image: local-studio-frontend
+    ports:
+      - "${FRONTEND_PORT:-5500}:8080"
+    networks:
+      - studio-internal
+      - studio-edge
+    depends_on:
+      backend:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+
+  # Dev tooling, not part of the running app (profile "dev" keeps it out of `up`):
+  #   docker compose run --rm dev                      # run the test suite
+  #   docker compose run --rm dev python <script> …    # e.g. the create-preset renderer
+  # Your working copy is mounted at /repo; no network access.
+  dev:
+    profiles: ["dev"]
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      target: dev
+    image: local-studio-dev
+    volumes:
+      - .:/repo
+    network_mode: none
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+networks:
+  studio-internal:
+    internal: true
+  studio-edge: {}
+
+volumes:
+  studio-data: {}

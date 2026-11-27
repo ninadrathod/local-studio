@@ -6,23 +6,24 @@ Uses existing helpers — do not reimplement the filter pipeline:
   backend/helpers/apply_preset.py  (apply_preset_file)
   backend/helpers/filters.py       (draw_text)
 
-Usage (from repo root, with helper venv):
+Usage (from the repo root, in the dev container; open the written index.html on the host —
+the container has no browser, so --open only prints a notice there):
 
-  backend/.venv/bin/python .cursor/skills/create-preset/scripts/render_candidates.py poc \\
-    --input photo.jpg --outdir previews/_candidates/poc --open \\
+  docker compose run --rm dev python .cursor/skills/create-preset/scripts/render_candidates.py poc \\
+    --input photo.jpg --outdir previews/_candidates/poc \\
     A=previews/_candidates/poc/draft_a.json B=previews/_candidates/poc/draft_b.json
 
-  backend/.venv/bin/python .cursor/skills/create-preset/scripts/render_candidates.py fonts \\
-    --text "instant memory" --outdir previews/_candidates/fonts --open \\
+  docker compose run --rm dev python .cursor/skills/create-preset/scripts/render_candidates.py fonts \\
+    --text "instant memory" --outdir previews/_candidates/fonts \\
     --image previews/_candidates/poc/A.png A=sans B=flow
 
-  backend/.venv/bin/python .cursor/skills/create-preset/scripts/render_candidates.py gallery \\
-    --preset polaroid_memory --outdir previews/_candidates/gallery --open \\
+  docker compose run --rm dev python .cursor/skills/create-preset/scripts/render_candidates.py gallery \\
+    --preset polaroid_memory --outdir previews/_candidates/gallery \\
     --crop A=left --crop B=top \\
     A=src/street.jpg B=src/portrait.jpg
 
-  backend/.venv/bin/python .cursor/skills/create-preset/scripts/render_candidates.py html \\
-    --title "Glow color" --outdir previews/_candidates/variants --open \\
+  docker compose run --rm dev python .cursor/skills/create-preset/scripts/render_candidates.py html \\
+    --title "Glow color" --outdir previews/_candidates/variants \\
     --original original.jpg A=red.png B=cyan.png
 """
 

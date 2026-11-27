@@ -4,7 +4,8 @@ Local AI super-resolution (Real-ESRGAN `realesr-general-x4v3`, BSD-3-Clause).
 
 Weights come from the official Real-ESRGAN GitHub release (xinntao/Real-ESRGAN
 v0.2.5.0). They are converted to ONNX locally (no PyTorch needed) and cached
-under ~/.local-studio/models/ — never under the git repo.
+under $LOCAL_STUDIO_MODELS (default ~/.local-studio/models/; the backend image uses
+/opt/local-studio/models) — never under the git repo.
 
 Like the upstream CLI, `denoise` blends the regular and "wdn" (weak-denoise)
 checkpoints: 0.0 keeps the most grain/detail, 1.0 denoises the most.

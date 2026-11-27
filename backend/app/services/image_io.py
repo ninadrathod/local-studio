@@ -21,7 +21,7 @@ MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # 100 MiB — full-quality DSLR JPEGs / TI
 # full-frame DSLR files (45–61 MP) at native resolution; the heaviest presets
 # peak at ~3.7 GiB there.
 MAX_IMAGE_SIDE = 12_000
-# LIGHTWEIGHT=1 (low-RAM machines, e.g. a 1 GB Raspberry Pi): downscale every
+# LIGHTWEIGHT=1 (low-RAM machines): downscale every
 # input to ≤ 2 MP before any filter runs.
 LIGHTWEIGHT = os.environ.get("LIGHTWEIGHT", "0").strip() == "1"
 MAX_IMAGE_PIXELS = 2_000_000 if LIGHTWEIGHT else 64_000_000  # 64 MP e.g. 9504×6336 (61 MP)

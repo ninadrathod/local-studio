@@ -66,7 +66,7 @@ Detailed architecture for the preset-based local image editor.
 
 ### Config
 
-- API base URL is derived in `script.js` from the page host (`127.0.0.1:8000` when the UI is on `localhost`, otherwise same hostname on port 8000).
+- API base URL: `script.js` uses `API_BASE = ""` — same origin; the frontend container's nginx proxies `/api/*` to the backend.
 
 ### Preset preview assets
 
@@ -97,8 +97,8 @@ Detailed architecture for the preset-based local image editor.
 backend/
   requirements.txt
   helpers/
-    requirements.txt     # rembg[cpu] + onnx + certifi — installed by setup.sh
-    download_model.py    # warm-cache u2net during setup (~/.rembg)
+    requirements.txt     # rembg[cpu] + onnx + certifi — installed in the backend image
+    download_model.py    # warm-cache the rembg model ($REMBG_HOME)
     extract_subject.py   # CLI: image in → subject PNG (transparent bg)
     upscale_model.py     # Real-ESRGAN weights → local ONNX + tiled 4× inference
     filters.py           # Pillow + rembg + upscale filter ops for presets
@@ -112,12 +112,12 @@ backend/
   database/
     schema.sql           # presets + popular tables
     init_db.py           # create presets.local.db (first time: copy legacy presets.db)
-    prepare_db.py        # init + migrate + seed (run by setup.sh and run.sh)
+    prepare_db.py        # init + migrate + seed (run on every backend container start)
     db_ops.py            # CRUD for preset metadata + download counts
     presets.local.db     # live SQLite file (local, gitignored; created by prepare_db.py)
     presets.db           # legacy committed copy, frozen (seed source for old clones)
   app/
-    main.py              # FastAPI app, CORS, /health, router mount
+    main.py              # FastAPI app, /health, router mount (no CORS — same-origin via nginx)
     routes/
       blur.py            # POST /api/blur
       preset.py          # POST /api/apply-preset
@@ -155,7 +155,7 @@ test-suite/              # pytest unit tests for services only (not routes/HTTP)
 
 Error responses use FastAPI `HTTPException` with JSON `detail` (e.g. non-image, empty file, unknown preset, decode failure, square-only preset on a non-square image). Oversized uploads/images return **413**. Apply-preset returns **503** when the concurrency gate is full. `POST /api/presets/use` returns **404** for an unknown `preset_name`.
 
-Upload guards (`services/image_io.py`): max **100 MiB** body (`MAX_UPLOAD_BYTES`, full-quality DSLR JPEG/TIFF); images over the working size (max side **12000** px / **64M** pixels — full-frame DSLR files up to 61 MP stay native) are **downscaled to fit**; with `LIGHTWEIGHT=1` (env, set in the gitignored `.env` that `run.sh` exports; read once at import) the working cap drops to **2M pixels**, so every input is downscaled to ≤ 2 MP before any filter runs (low-RAM hosts); the same flag makes `filters.ai_upscale` skip Real-ESRGAN and do a plain Lanczos `upscale` to the same target (so Full HD / 4K Crisp still deliver their resolution) and `extract_subject.py` use `u2netp` (~5 MB; ~0.9 GB peak vs ~2.1 GB for `u2net` at 2 MP, slightly rougher edges; downloaded by rembg on first use) (LANCZOS, aspect kept; JPEGs decode at reduced scale via `draft` first), not rejected; images over **120M** pixels (`MAX_DECODE_PIXELS`) are rejected from the header before decoding. At 61 MP the heaviest (cut-out) presets take ~5–10 s and peak at ~3.8 GiB, of which ~1.75 GiB is the fixed rembg/ONNX model. Decode and encode run via `asyncio.to_thread` so a large file doesn't stall the event loop. Preset JSON paths from the DB must resolve under `backend/presets/` (`PresetPathUnsafeError` otherwise). Apply-preset runs off the event loop via `asyncio.to_thread` and allows only **1** concurrent job (`MAX_CONCURRENT_PRESET_JOBS`) so rembg cannot pile up. `/api/apply-preset`, `/api/blur` and `/api/preview` all take that slot (`preset_job_slot`) **before** reading the upload into memory and hold it through decode → filters → encode, so extra requests get **503** immediately without buffering or decoding (the multipart body is already spooled to a temp file).
+Upload guards (`services/image_io.py`): max **100 MiB** body (`MAX_UPLOAD_BYTES`, full-quality DSLR JPEG/TIFF); images over the working size (max side **12000** px / **64M** pixels — full-frame DSLR files up to 61 MP stay native) are **downscaled to fit**; with `LIGHTWEIGHT=1` (env, set in the gitignored `.env` that `docker compose` passes to the backend; read once at import) the working cap drops to **2M pixels**, so every input is downscaled to ≤ 2 MP before any filter runs (low-RAM hosts); the same flag makes `filters.ai_upscale` skip Real-ESRGAN and do a plain Lanczos `upscale` to the same target (so Full HD / 4K Crisp still deliver their resolution) and `extract_subject.py` use `u2netp` (~5 MB; ~0.9 GB peak vs ~2.1 GB for `u2net` at 2 MP, slightly rougher edges; downloaded by rembg on first use) (LANCZOS, aspect kept; JPEGs decode at reduced scale via `draft` first), not rejected; images over **120M** pixels (`MAX_DECODE_PIXELS`) are rejected from the header before decoding. At 61 MP the heaviest (cut-out) presets take ~5–10 s and peak at ~3.8 GiB, of which ~1.75 GiB is the fixed rembg/ONNX model. Decode and encode run via `asyncio.to_thread` so a large file doesn't stall the event loop. Preset JSON paths from the DB must resolve under `backend/presets/` (`PresetPathUnsafeError` otherwise). Apply-preset runs off the event loop via `asyncio.to_thread` and allows only **1** concurrent job (`MAX_CONCURRENT_PRESET_JOBS`) so rembg cannot pile up. `/api/apply-preset`, `/api/blur` and `/api/preview` all take that slot (`preset_job_slot`) **before** reading the upload into memory and hold it through decode → filters → encode, so extra requests get **503** immediately without buffering or decoding (the multipart body is already spooled to a temp file).
 
 ### Blur algorithm
 
@@ -167,14 +167,14 @@ Upload guards (`services/image_io.py`): max **100 MiB** body (`MAX_UPLOAD_BYTES`
 - `backend/helpers/extract_subject.py` — local background removal via **rembg** (`u2net` session / onnxruntime). Only rembg's alpha is kept; colour comes from the source photo, because rembg darkens soft edge pixels (≈ premultiplied), which otherwise shows as a dark rim after compositing.
 - Input: any Pillow-readable image path. Output: PNG with alpha (subject kept, background transparent).
 - Not mounted as an HTTP route.
-- `./scripts/setup.sh` installs `backend/helpers/requirements.txt` and runs `download_model.py` so `u2net` (~176MB) is cached under `~/.rembg/` (outside the repo).
+- The backend image installs `backend/helpers/requirements.txt` and bakes `u2net` (~176MB) and `u2netp` into `REMBG_HOME=/opt/local-studio/rembg` at build time (outside the repo).
 - Gitignore blocks `.rembg/`, `*.onnx`, and `backend/helpers/models/` so weights are never committed.
-- Example: `python backend/helpers/extract_subject.py photo.jpg -o subject.png`
+- Example: `docker compose run --rm dev python backend/helpers/extract_subject.py photo.jpg -o subject.png`
 
 ### AI upscale helper
 
 - `backend/helpers/upscale_model.py` — Real-ESRGAN `realesr-general-x4v3` (BSD-3-Clause) from the official `xinntao/Real-ESRGAN` v0.2.5.0 release. Both checkpoints (regular + `wdn`) are SHA-256 pinned and fetched over verified HTTPS (certifi CA bundle, 60 s stall timeout; temp file renamed into place only after the hash matches); a restricted unpickler reads them without PyTorch, `denoise` blends them (upstream DNI), and `onnx` builds the SRVGGNetCompact graph (conv/PReLU body → `DepthToSpace` + nearest residual).
-- Cache: `~/.local-studio/models/` (`LOCAL_STUDIO_MODELS` overrides) — one `realesr-general-x4v3-dn<strength>.onnx` per denoise value, written to a temp file and renamed so a crash never leaves a partial model. `./scripts/setup.sh` warms the default (`python upscale_model.py`).
+- Cache: `LOCAL_STUDIO_MODELS` (default `~/.local-studio/models/`; the backend image uses `/opt/local-studio/models`, seeded with the repo's `model/realesrgan/*.pth` so nothing is downloaded) — one `realesr-general-x4v3-dn<strength>.onnx` per denoise value, written to a temp file and renamed so a crash never leaves a partial model. The image build pre-builds the ONNX graphs for the denoise strengths presets use (0.3, 0.5).
 - Inference: onnxruntime CPU, 256 px tiles with 24 px overlap; session cached per model path.
 - `filters.ai_upscale` runs the 4× pass then Lanczos-resizes to `long_edge` (capped by `max_scale`, never shrinks). Inputs over `max_input_pixels` (default 1 MP) are reduced first so time/memory stay bounded (~1–4 s per image on CPU).
 
@@ -232,22 +232,33 @@ Upload guards (`services/image_io.py`): max **100 MiB** body (`MAX_UPLOAD_BYTES`
 
 ### Preset metadata database
 
-- Location: `backend/database/` (SQLite file `presets.local.db`, same pattern as a lightweight local store). The file is **not committed** (gitignored):  each install keeps its own `popular` counts, so `git pull` can't conflict on it. `prepare_db.py` (called by `setup.sh` and on every `run.sh`) runs `init_db()` + `migrate_schema()` + `seed_default_presets()`, which inserts any shipped preset that is missing and syncs metadata of existing ones without touching counts; the `defaults` list in `seed_default_presets()` is the source of truth for shipped presets. `presets.db` stays committed but **frozen** (legacy: never written, never change or delete it) so clones from before this change can `git pull` cleanly; its rows and counts are copied into `presets.local.db` the first time that file is created.
+- Location: `backend/database/` (SQLite file `presets.local.db`, same pattern as a lightweight local store; `LOCAL_STUDIO_DB` overrides the file path via `init_db.default_db_path()` — Docker sets `/data/presets.local.db` on a volume). The file is **not committed** (gitignored):  each install keeps its own `popular` counts, so `git pull` can't conflict on it. `prepare_db.py` (run on every backend container start) runs `init_db()` + `migrate_schema()` + `seed_default_presets()`, which inserts any shipped preset that is missing and syncs metadata of existing ones without touching counts; the `defaults` list in `seed_default_presets()` is the source of truth for shipped presets. `presets.db` stays committed but **frozen** (legacy: never written, never change or delete it) so clones from before this change can `git pull` cleanly; its rows and counts are copied into `presets.local.db` the first time that file is created.
 - Table `presets`: `preset_id` (PK auto), `preset_name`, `preset_path`, `keywords` (JSON list), `ar` (`square` or `non-square`, default `non-square`), `text_input` (`yes` or `no`, default `no`), `default_text` (default `''`), `text_character_limit` (integer, default `0`, max 200), `created_date` (auto `datetime('now')`). Existing DBs gain `ar` and text columns via `migrate_schema()`. `list_presets()` returns rows `ORDER BY preset_id DESC` (newest first).
 - Table `popular`: `preset_id` (PK + FK to `presets.preset_id`, `ON DELETE CASCADE`), `used_count` (integer, default `0`). One row per preset; `list_popular()` / `GET /api/presets/popular` return `{ preset_id, preset_name, used_count }` ordered by `used_count DESC`. Existing DBs gain the table (and a 0-count row per preset) via `migrate_schema()`.
 - Service functions: `backend/database/db_ops.py` (`add_preset`, `list_presets`, `search_presets_by_keyword`, `get_preset_by_id`, `update_preset`, `delete_preset`, `seed_default_presets`, `list_popular`, `increment_used_count`, `increment_used_count_by_name`).
 - Keyword search API: `GET /api/presets/search?q=…` → case-insensitive substring match against each preset’s `preset_name` and keywords (`services/preset_search.py` + `routes/search.py`). Returns `ar` plus text-input metadata, newest `preset_id` first.
 - Download-count API: `POST /api/presets/use` increments `popular.used_count` for a `preset_name` (`services/preset_popular.py` + `routes/popular.py`). Unknown names return **404**.
-- `./scripts/setup.sh` runs `init_db()` and seeds shipped presets (`bw_bg_glowing_subject`, `polaroid_memory`, `warm_faded_print`).
+- The backend container runs `prepare_db.py` (`init_db()` + migrate + seed shipped presets) on every start.
 
 ### CORS
 
-- Development CORS allows all origins so any local static host can call the API. Tighten this before production deployment.
+- None. The browser only reaches the API same-origin through the frontend's nginx proxy, and the backend has no host port, so `main.py` installs no CORS middleware (cross-origin calls are refused by the browser).
 
-## Local run
+## Running (Docker)
 
-- `./scripts/setup.sh` creates `backend/.venv` (or recreates it if relocated/broken), installs deps, and prepares the local preset DB (`prepare_db.py`); `run.sh` re-runs `prepare_db.py` on every start so presets from a `git pull` are seeded.
-- `./scripts/run.sh` starts uvicorn on `0.0.0.0:8000` and a static frontend on port `5500` via the venv Python (`scripts/serve_frontend.py`: `http.server` plus `Cache-Control: no-cache`, so updated JS / CSS load on the next refresh), in the background; fails fast if deps are missing or ports are taken.
+`docker compose up -d --build` (`compose.yaml`, project `local-studio`) is the only way to run the app — there is no host Python environment:
+
+```
+browser ──▶ host :5500 ──▶ frontend (nginx :8080) ──studio-internal──▶ backend (uvicorn :8000)
+                            ├─ static site (index.html, studio.html, js/, css/, icons/, previews/)
+                            └─ /api/*, /health → proxy_pass http://backend:8000   (script.js API_BASE = "")
+```
+
+- **Networks:** `studio-internal` is `internal: true` (no published ports, no internet egress) and holds both containers; the backend is *only* there and has `expose: 8000` but no `ports:`, so the API is reachable solely through the frontend proxy. The frontend also joins `studio-edge` to publish `${FRONTEND_PORT:-5500}:8080`. Only `/api/` and `/health` are proxied — FastAPI's `/docs` / `/openapi.json` are not exposed.
+- **Backend image** (`docker/backend/Dockerfile`): `python:3.12-slim-bookworm`, `backend/requirements.txt` + `backend/helpers/requirements.txt`. Because the container has no internet, models are baked in at build time: the repo's `model/realesrgan/*.pth` are copied into `LOCAL_STUDIO_MODELS=/opt/local-studio/models` (sha256-matched, so `upscale_model.py` never downloads) and ONNX graphs are pre-built for the denoise strengths presets use (0.3, 0.5); rembg `u2net` + `u2netp` are fetched into `REMBG_HOME=/opt/local-studio/rembg`. Runs as uid 10001, `cap_drop: ALL`, `no-new-privileges`; start = `prepare_db.py` then a single uvicorn worker (the API serialises image jobs). DB on the `studio-data` volume (`LOCAL_STUDIO_DB=/data/presets.local.db`; first start copies the committed legacy `presets.db` counts). `LIGHTWEIGHT` comes from `.env`.
+- **Frontend image** (`docker/frontend/Dockerfile` + `nginx.conf`): `nginxinc/nginx-unprivileged:1.27-alpine` (non-root, port 8080), `Cache-Control: no-cache` (browsers revalidate JS / CSS on every load), `client_max_body_size 101m` (API cap 100 MiB), 600 s proxy timeouts for slow AI edits, Docker DNS re-resolution so a restarted backend is found again. Waits for the backend health check before starting.
+- **Dev image** (`dev` stage of the backend Dockerfile, compose service `dev`, profile `dev`): the backend image plus `test-suite/requirements.txt`, the repo bind-mounted at `/repo`, `network_mode: none`. `docker compose run --rm dev` runs the test suite; `docker compose run --rm dev python <script> …` runs CLI helpers (`apply_preset.py`, `extract_subject.py`) and the create-preset renderer against the working copy.
+- `.dockerignore` keeps `.git`, venvs, `docs/`, `test-suite/` (except its `requirements.txt`), logs and any local DB out of the build context.
 
 ## Documentation responsibilities
 
@@ -259,20 +270,10 @@ Upload guards (`services/image_io.py`): max **100 MiB** body (`MAX_UPLOAD_BYTES`
 | `backend/presets/PRESETS.md` | Helpers, filters, shipped presets, create-preset how-to |
 | `.cursor/skills/create-preset/SKILL.md` | Gated agent workflow to design/ship a new preset |
 | `docs/` | GitHub Pages pitch (`docs/index.html`); CTAs link to GitHub fork |
-| `scripts/setup.sh` | One-command local bootstrap |
-| `scripts/run.sh` | One-command API + frontend start (background) |
-| `scripts/update.sh` | Pull latest code, stop, and restart |
+| `compose.yaml`, `docker/` | How the app runs: frontend (nginx + API proxy) and backend containers on a private network, plus the `dev` tooling service |
 | `test-suite/` | Service-function unit tests (pytest); CI via `.github/workflows/test-suite.yml` |
 
 When features change, update these in the same change set (enforced by `.cursor/rules/docs-and-branch-safety.mdc`). When `backend/app/services/` change, update matching `test-suite/` tests **only where necessary**. When helpers/filters/presets/DB metadata change, update `PRESETS.md` as needed.
-
-## Helper scripts
-
-- `scripts/setup.sh` — creates `backend/.venv` (recreates if shebangs/interpreter are broken after a folder rename), installs API + helper requirements, downloads rembg `u2net` into `~/.rembg/`, builds the Real-ESRGAN ONNX model in `~/.local-studio/models/`, creates/seeds the local `backend/database/presets.local.db` via `prepare_db.py`, ensures scripts are executable.
-- `scripts/run.sh` — starts uvicorn (port 8000) and a static file server on the repo root (port 5500) using `backend/.venv/bin/python` (`-m uvicorn …` and `scripts/serve_frontend.py`); loads `.env` (copy of `.env.example`) into the environment; checks deps + free ports; runs `backend/database/prepare_db.py` (seed new presets, keep counts); both run under `nohup` in the background with output in `logs/api.log` / `logs/frontend.log` (gitignored). The script waits up to ~30 s for `/health`, then returns and leaves them running; on a failed start it kills what it launched and prints the log tail. Stop with `scripts/stop.sh`.
-- `scripts/serve_frontend.py` — the frontend static server `run.sh` starts: `http.server` (threaded, all interfaces) whose responses add `Cache-Control: no-cache`, so browsers revalidate `script.js`, `css/styles.css` and `js/*.js` on each load instead of mixing stale and new files. `make_server(port, directory, host)` is covered by `test-suite/test_serve_frontend.py`.
-- `scripts/stop.sh` — sends SIGTERM to whatever listens on ports 8000 / 5500, waits up to ~10 s for both ports to free (SIGKILL after that), so `run.sh` can start straight after.
-- `scripts/update.sh` — runs `git pull`, `scripts/stop.sh`, then `scripts/run.sh` in that order, with no checks (all three run even when there is nothing to pull or a step fails).
 
 ## Extension points
 
@@ -287,5 +288,5 @@ New edits should follow the same pattern:
 ### Testing
 
 - Scope: **service functions only** (`app.services.*`). Do not exercise FastAPI routes here.
-- Local: after `./scripts/setup.sh`, install `test-suite/requirements.txt` into the same venv, then `pytest test-suite/ -v`.
+- Local: `docker compose run --rm dev` (same Python, packages and models as the backend; working copy mounted).
 - CI: `.github/workflows/test-suite.yml` runs the same suite on pull requests (and pushes to `main`).

@@ -16,10 +16,10 @@ and `filters.draw_text`).
 | `backend/helpers/filters.py` | Filter implementations (Pillow + rembg) |
 | `backend/helpers/apply_preset.py` | Step runner + CLI |
 | `backend/helpers/extract_subject.py` | Subject cutout CLI (rembg / `u2net`) |
-| `backend/helpers/download_model.py` | Warm-cache `u2net` during setup |
+| `backend/helpers/download_model.py` | Warm-cache the rembg model in `$REMBG_HOME` (the backend image bakes `u2net` + `u2netp` in at build time) |
 | `backend/fonts/` | Bundled open-licensed display fonts (OFL / Apache, licence next to each) used by `draw_text` `font_style` |
-| `backend/helpers/upscale_model.py` | Real-ESRGAN weights → local ONNX (`~/.local-studio/models/`) + tiled 4× inference for `ai_upscale`; `python upscale_model.py` warms the cache |
-| `backend/database/` | SQLite metadata (local `presets.local.db`, `db_ops.py`, `prepare_db.py`) |
+| `backend/helpers/upscale_model.py` | Real-ESRGAN weights → local ONNX (`$LOCAL_STUDIO_MODELS`; built into the backend image from `model/realesrgan/`) + tiled 4× inference for `ai_upscale` |
+| `backend/database/` | SQLite metadata (`db_ops.py`, `prepare_db.py`; the live `presets.local.db` is on the backend's Docker volume) |
 | `previews/pre-edit/` + `previews/post-edit/` + `previews/presets.json` | Before/after gallery assets per DB preset + name→path map (sources in `previews/CREDITS.md`) |
 | `previews/_candidates/` | Gitignored create-preset comparison HTML (POC / fonts / gallery); not shipped |
 | `.cursor/skills/create-preset/scripts/render_candidates.py` | Writes those HTML pages using `apply_preset_file` + `draw_text` |
@@ -28,16 +28,17 @@ and `filters.draw_text`).
 ## Run a preset
 
 ```bash
-source backend/.venv/bin/activate
-python backend/helpers/apply_preset.py path/to/photo.jpg -p PRESET_NAME -o out.png
+docker compose run --rm dev python backend/helpers/apply_preset.py path/to/photo.jpg -p PRESET_NAME -o out.png
 ```
+
+(The `dev` container mounts the repo at `/repo`, so input and output paths are relative to the repo root.)
 
 `PRESET_NAME` is a file under `backend/presets/` (with or without `.json`), or a full path to a JSON file. Input may be any Pillow-readable image, including HEIC/HEIF. An `-o` ending in `.jpg`/`.jpeg` writes JPEG (a transparent result is written as `.png` beside it instead); anything else writes PNG.
 
-Via API (name must exist in the preset DB):
+Via API (name must exist in the preset DB; the API is only reachable through the frontend proxy):
 
 ```bash
-curl -s -X POST "http://localhost:8000/api/apply-preset" \
+curl -s -X POST "http://localhost:5500/api/apply-preset" \
   -F "preset_name=bw_bg_glowing_subject" \
   -F "file=@path/to/photo.jpg" \
   -o out.png
@@ -815,9 +816,9 @@ Rules of thumb:
 
 ## Database metadata
 
-`backend/database/presets.local.db` is **local and gitignored**: `scripts/setup.sh` and `scripts/run.sh` call `backend/database/prepare_db.py`, which creates/migrates it and runs `seed_default_presets()` (adds missing shipped presets, syncs their metadata, never resets `popular` counts). The seed list in `db_ops.py` is the source of truth for shipped presets. `presets.db` stays committed but **frozen** (legacy: never written, never change or delete it) so clones from before this change can `git pull` cleanly; its rows and counts are copied into `presets.local.db` the first time that file is created.
+The live `presets.local.db` sits on the backend's Docker volume (`LOCAL_STUDIO_DB=/data/presets.local.db`), never in git: every backend container start runs `backend/database/prepare_db.py`, which creates/migrates it and runs `seed_default_presets()` (adds missing shipped presets, syncs their metadata, never resets `popular` counts). The seed list in `db_ops.py` is the source of truth for shipped presets. `presets.db` stays committed but **frozen** (legacy: never written, never change or delete it) so clones from before this change can `git pull` cleanly; its rows and counts are copied into `presets.local.db` the first time that file is created.
 
-Table `presets` in `backend/database/presets.local.db`:
+Table `presets` in `presets.local.db`:
 
 | Column | Meaning |
 |--------|---------|
@@ -840,11 +841,10 @@ Table `popular` (one row per preset; ordered by `used_count` descending when lis
 
 `add_preset` inserts a `popular` row with `used_count = 0`. Existing databases gain the table via `migrate_schema()`. List with `list_presets()` (newest `preset_id` first) and `list_popular()` / `GET /api/presets/popular` (`preset_id`, `preset_name`, `used_count`, highest count first). Download increments `used_count` immediately. The studio **Popular** control turns that sort on; the refresh button beside search reloads the gallery in that order. Unclicking **Popular** restores newest-first order. New gallery entries go at the top of `previews/presets.json`.
 
+Inspect the live database inside the running backend container:
+
 ```bash
-source backend/.venv/bin/activate
-python -c '
-import sys
-sys.path.insert(0, "backend")
+docker compose exec backend python -c '
 from database.db_ops import add_preset, list_presets, list_popular, search_presets_by_keyword
 print(list_presets())
 print(search_presets_by_keyword("glow"))
@@ -866,7 +866,7 @@ print(list_popular())
 10. Agent then ships code:
    - adds helpers/filters only if needed (register in `FILTERS`; no API if/else)
    - writes `backend/presets/<name>.json` (include `"ar"` and `text_input` / `default_text` / `text_character_limit`)
-   - adds an entry to `seed_default_presets()` in `backend/database/db_ops.py` (name, path, keywords, `ar`, text fields) and runs `python backend/database/prepare_db.py`, which inserts it (plus a `popular` row at `used_count` 0) into the local DB
+   - adds an entry to `seed_default_presets()` in `backend/database/db_ops.py` (name, path, keywords, `ar`, text fields) and rebuilds with `docker compose up -d --build`; the backend's start-up `prepare_db.py` inserts it (plus a `popular` row at `used_count` 0) into the live DB
    - updates this file + CONTEXT/ARCHITECTURE (+ tests if needed)
 11. Gallery previews (gated — see create-preset skill step 8):
    - search open-licensed candidates that suit the preset

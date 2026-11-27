@@ -24,7 +24,7 @@ from database.db_ops import (  # noqa: E402
     seed_default_presets,
     update_preset,
 )
-from database.init_db import init_db  # noqa: E402
+from database.init_db import DATABASE_DIR, default_db_path, init_db  # noqa: E402
 
 
 def test_init_and_crud(tmp_path: Path) -> None:
@@ -737,3 +737,18 @@ def test_init_db_copies_legacy_db_once(tmp_path: Path, monkeypatch) -> None:
     init_db(live)
     assert [r["used_count"] for r in list_popular(db_path=live)] == [2]
     assert [r["used_count"] for r in list_popular(db_path=legacy)] == [1]
+
+
+def test_default_db_path_uses_env_override(tmp_path: Path) -> None:
+    # No override (or a blank one): the live DB sits next to the database package.
+    assert default_db_path({}) == DATABASE_DIR / "presets.local.db"
+    assert default_db_path({"LOCAL_STUDIO_DB": "  "}) == DATABASE_DIR / "presets.local.db"
+    # Docker points it at a volume.
+    target = tmp_path / "data" / "presets.local.db"
+    assert default_db_path({"LOCAL_STUDIO_DB": str(target)}) == target
+
+
+def test_init_db_creates_missing_parent_dir(tmp_path: Path) -> None:
+    db = tmp_path / "volume" / "nested" / "presets.local.db"
+    assert init_db(db) == db
+    assert db.is_file()

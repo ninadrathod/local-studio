@@ -2,14 +2,30 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 import sqlite3
+from collections.abc import Mapping
 from pathlib import Path
 
 DATABASE_DIR = Path(__file__).resolve().parent
-# Live database: local to each install and gitignored, so `git pull` never
-# conflicts with the download counts the app writes.
-DB_PATH = DATABASE_DIR / "presets.local.db"
+
+
+def default_db_path(environ: Mapping[str, str] = os.environ) -> Path:
+    """Where the live database lives.
+
+    `LOCAL_STUDIO_DB` (a file path) overrides it — the Docker setup points it at a
+    volume so download counts survive image rebuilds. Otherwise it sits next to
+    this module, local to each install and gitignored, so `git pull` never
+    conflicts with the counts the app writes.
+    """
+    override = environ.get("LOCAL_STUDIO_DB", "").strip()
+    if override:
+        return Path(override).expanduser()
+    return DATABASE_DIR / "presets.local.db"
+
+
+DB_PATH = default_db_path()
 # Older releases committed and wrote `presets.db`. It stays in the repo frozen
 # (never written again) so existing clones can pull cleanly; its rows and
 # counts are copied into DB_PATH once, the first time DB_PATH is created.

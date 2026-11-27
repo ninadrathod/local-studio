@@ -12,18 +12,10 @@ import {
 import { isImageFile, createObjectUrl, revokeObjectUrl } from "./js/image.js";
 
 /**
- * Prefer IPv4 loopback when the page is on `localhost`.
- * macOS often resolves `localhost` → `::1` first, while uvicorn
- * (`--host 0.0.0.0`) only accepts IPv4 — fetch then fails with a network error.
+ * The API is always same-origin: the frontend container's nginx proxies /api/* to
+ * the backend container, which has no port of its own on the host.
  */
-function apiBaseUrl() {
-  const { protocol, hostname } = window.location;
-  const apiHost =
-    !hostname || hostname === "localhost" ? "127.0.0.1" : hostname;
-  return `${protocol}//${apiHost}:8000`;
-}
-
-const API_BASE = apiBaseUrl();
+const API_BASE = "";
 const PRESETS_MANIFEST = "previews/presets.json";
 /** The manifest lists newest presets first; this many get a "New" badge (the gallery itself is shuffled). */
 const NEW_BADGE_COUNT = 5;
