@@ -244,21 +244,23 @@ input {
 .orb-mark i::after {
   content: "";
   position: absolute;
+  top: 0;
   left: 50%;
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  translate: -50% -50%;
+  /* Knobs travel inside the 22px track: top edge 0.5px → bottom edge 21.5px. */
+  translate: -50% var(--knob-y, 0.5px);
   animation: orb-fader 4.8s var(--ease-io) infinite;
 }
 
-.orb-mark i:nth-child(1)::after { top: 35%; background: var(--coral); box-shadow: 0 0 10px var(--coral); }
-.orb-mark i:nth-child(2)::after { top: 70%; background: var(--sky); box-shadow: 0 0 10px var(--sky); animation-delay: -1.6s; }
-.orb-mark i:nth-child(3)::after { top: 20%; background: var(--lemon); box-shadow: 0 0 10px var(--lemon); animation-delay: -3.2s; }
+.orb-mark i:nth-child(1)::after { --knob-y: 4px; background: var(--coral); box-shadow: 0 0 10px var(--coral); }
+.orb-mark i:nth-child(2)::after { --knob-y: 12px; background: var(--sky); box-shadow: 0 0 10px var(--sky); animation-delay: -1.6s; }
+.orb-mark i:nth-child(3)::after { --knob-y: 1.5px; background: var(--lemon); box-shadow: 0 0 10px var(--lemon); animation-delay: -3.2s; }
 
 @keyframes orb-fader {
-  0%, 100% { translate: -50% -50%; }
-  50% { translate: -50% 120%; }
+  0%, 100% { translate: -50% 0.5px; }
+  50% { translate: -50% 14.5px; }
 }
 
 .hud__nav {

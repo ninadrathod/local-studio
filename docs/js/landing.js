@@ -531,7 +531,7 @@ const archive = (() => {
   };
 })();
 
-/* ───────── Preset count (static manifest) ───────── */
+/* ───────── Preset list (static manifest) ───────── */
 
 // An inline <script type="application/json" id="lp-presets"> wins over the fetch, so the
 // page also works when opened straight from disk (file:// blocks fetch).
@@ -552,17 +552,11 @@ function loadPresets() {
 loadPresets()
   .then((data) => {
     const list = Array.isArray(data) ? data : data?.presets;
-    const count = Array.isArray(data) ? data.length : Number(data?.count);
     if (!Array.isArray(list) || !list.length) return;
-    if (Number.isFinite(count) && count > 0) {
-      document.querySelectorAll("[data-preset-count]").forEach((el) => {
-        el.textContent = String(count);
-      });
-    }
     archive.setPresets(list);
   })
   .catch(() => {
-    /* Opened without a server (file://) — keep the static fallback copy. */
+    /* Opened without a server (file://) — keep the static archive markup. */
   });
 
 /* ───────── Scene hooks ───────── */
