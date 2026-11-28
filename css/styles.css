@@ -977,6 +977,17 @@ input {
   translate: 0 0;
 }
 
+/* Hold the wipe + beam until script.js has decoded the original (`--ready`),
+   so a fast hover never wipes in an empty frame; it plays as soon as it's ready. */
+.preset-card:not(.preset-card--ready) .preset-card__img--original {
+  clip-path: inset(0 100% 0 0) !important;
+  animation: none !important;
+}
+
+.preset-card:not(.preset-card--ready) .preset-card__media::before {
+  animation: none !important;
+}
+
 @keyframes beam-sweep {
   0% { left: 0; opacity: 1; }
   85% { left: calc(100% - 2px); opacity: 1; }
