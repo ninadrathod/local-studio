@@ -1,9 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none">
-  <rect width="40" height="40" rx="10" fill="#FFFFFF" stroke="#1A1A1A" stroke-width="2.5"/>
-  <line x1="12" y1="12" x2="12" y2="28" stroke="#1A1A1A" stroke-width="2.5" stroke-linecap="round"/>
-  <line x1="20" y1="12" x2="20" y2="28" stroke="#1A1A1A" stroke-width="2.5" stroke-linecap="round"/>
-  <line x1="28" y1="12" x2="28" y2="28" stroke="#1A1A1A" stroke-width="2.5" stroke-linecap="round"/>
-  <circle cx="12" cy="18" r="3.2" fill="#E53935" stroke="#1A1A1A" stroke-width="1.75"/>
-  <circle cx="20" cy="23" r="3.2" fill="#1E88E5" stroke="#1A1A1A" stroke-width="1.75"/>
-  <circle cx="28" cy="15" r="3.2" fill="#43A047" stroke="#1A1A1A" stroke-width="1.75"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="40" height="40" fill="none">
+  <!-- The landing-page brand dial (.lp-brand__mark): three faders, glowing knobs at their resting positions. -->
+  <defs>
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="1.3"/>
+    </filter>
+  </defs>
+  <g stroke="#9096AE" stroke-width="2" stroke-linecap="round">
+    <line x1="8.5" y1="6.5" x2="8.5" y2="25.5"/>
+    <line x1="16" y1="6.5" x2="16" y2="25.5"/>
+    <line x1="23.5" y1="6.5" x2="23.5" y2="25.5"/>
+  </g>
+  <g filter="url(#glow)">
+    <circle cx="8.5" cy="12.8" r="3.4" fill="#FF6B4A"/>
+    <circle cx="16" cy="20.1" r="3.4" fill="#4EC5F1"/>
+    <circle cx="23.5" cy="10.5" r="3.4" fill="#FFE566"/>
+  </g>
+  <circle cx="8.5" cy="12.8" r="3.4" fill="#FF6B4A"/>
+  <circle cx="16" cy="20.1" r="3.4" fill="#4EC5F1"/>
+  <circle cx="23.5" cy="10.5" r="3.4" fill="#FFE566"/>
 </svg>
