@@ -526,6 +526,7 @@ function createPresetCard(preset) {
   imgOriginal.loading = "lazy";
   imgOriginal.decoding = "async";
   imgOriginal.draggable = false;
+  primeOriginalImage(button, imgEdited, imgOriginal);
 
   media.append(imgEdited, imgOriginal);
   if (preset.is_new) {
@@ -543,6 +544,33 @@ function createPresetCard(preset) {
   button.append(media, nameEl);
   button.addEventListener("click", () => setSelectedPreset(name));
   return button;
+}
+
+/**
+ * The original photo sits fully clipped until a hover/peek wipes it in, so the
+ * browser would otherwise fetch and decode it only at that moment and the wipe
+ * would reveal an empty frame. Once the card's edited image has loaded (the card
+ * is near the viewport), fetch + decode the original ahead of time, and mark the
+ * card ready so the CSS only starts the wipe when there is a picture to show.
+ * @param {HTMLElement} card
+ * @param {HTMLImageElement} imgEdited
+ * @param {HTMLImageElement} imgOriginal
+ */
+function primeOriginalImage(card, imgEdited, imgOriginal) {
+  let primed = false;
+  const markReady = () => card.classList.add("preset-card--ready");
+  const prime = () => {
+    if (primed) return;
+    primed = true;
+    imgOriginal.loading = "eager";
+    imgOriginal.decode().then(markReady, markReady);
+  };
+  imgEdited.addEventListener("load", prime, { once: true });
+  imgEdited.addEventListener("error", prime, { once: true });
+  // Hovering, focusing, or pressing before the edited image arrived: start now.
+  card.addEventListener("pointerenter", prime, { once: true });
+  card.addEventListener("pointerdown", prime, { once: true });
+  card.addEventListener("focus", prime, { once: true });
 }
 
 function isPreviewImageSquare() {
