@@ -708,3 +708,10 @@ is required where the license says so; CC0 and public-domain sources need none.
 - **Photographer:** [Scott Webb](https://unsplash.com/@scottwebb) (via Wikimedia Commons Unsplash CC0 archive)
 - **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
 - **Files:** `pre-edit/expired_film.webp` → `post-edit/expired_film.webp` (preset `expired_film`; post-edit Lanczos-downscaled from the 1920 px HD output)
+
+## `vintage_poster`
+
+- **Photograph:** [Trumpet Player (Unsplash)](https://commons.wikimedia.org/wiki/File:Trumpet_Player_(Unsplash).jpg)
+- **Photographer:** [Priscilla Du Preez](https://unsplash.com/@artographybyp) (via Wikimedia Commons Unsplash CC0 archive)
+- **License:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)
+- **Files:** `pre-edit/vintage_poster.webp` → `post-edit/vintage_poster.webp` (preset `vintage_poster`, title `MY MUSIC`; post-edit includes the 7% off-white frame, so it is 820×820)

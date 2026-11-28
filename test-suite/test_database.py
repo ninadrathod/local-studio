@@ -77,7 +77,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     init_db(db)
     first = seed_default_presets(db_path=db)
     second = seed_default_presets(db_path=db)
-    assert len(first) == 100
+    assert len(first) == 99
     names = {row["preset_name"] for row in first}
     assert names == {
         "bw_bg_glowing_subject",
@@ -162,8 +162,6 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "graffiti_outline_tower",
         "radial_swirl",
         "twirl_vortex",
-        "water_ripple",
-        "squiggle_wave",
         "liquid_spill",
         "codex_chalk_sepia",
         "codex_blueprint",
@@ -180,6 +178,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "green_cast_film",
         "classic_slide_64",
         "expired_film",
+        "vintage_poster",
     }
     by_name = {row["preset_name"]: row for row in first}
     assert by_name["bw_bg_glowing_subject"]["ar"] == "non-square"
@@ -198,6 +197,10 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     assert by_name["split_word_portrait"]["text_input"] == "yes"
     assert by_name["split_word_portrait"]["default_text"] == "DREAM"
     assert by_name["split_word_portrait"]["text_character_limit"] == 20
+    assert by_name["vintage_poster"]["ar"] == "non-square"
+    assert by_name["vintage_poster"]["text_input"] == "yes"
+    assert by_name["vintage_poster"]["default_text"] == "MY MUSIC"
+    assert by_name["vintage_poster"]["text_character_limit"] == 20
     for name in ("instax_mini_classic", "instax_square_sunny", "instax_wide_cool", "instax_monochrome", "instax_sky_flash"):
         assert by_name[name]["ar"] == "non-square"
         assert by_name[name]["text_input"] == "yes"
@@ -262,8 +265,6 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "shape_window_portrait",
         "radial_swirl",
         "twirl_vortex",
-        "water_ripple",
-        "squiggle_wave",
         "liquid_spill",
         "codex_chalk_sepia",
         "codex_blueprint",
@@ -287,6 +288,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
     assert second == []
     names_in_order = [row["preset_name"] for row in list_presets(db_path=db)]
     assert names_in_order == [
+        "vintage_poster",
         "expired_film",
         "classic_slide_64",
         "green_cast_film",
@@ -303,8 +305,6 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "codex_blueprint",
         "codex_chalk_sepia",
         "liquid_spill",
-        "squiggle_wave",
-        "water_ripple",
         "twirl_vortex",
         "radial_swirl",
         "graffiti_outline_tower",
@@ -389,7 +389,7 @@ def test_seed_default_presets_is_idempotent(tmp_path: Path) -> None:
         "bw_bg_glowing_subject",
     ]
     popular = list_popular(db_path=db)
-    assert len(popular) == 100
+    assert len(popular) == 99
     assert all(row["used_count"] == 0 for row in popular)
 
 
@@ -491,8 +491,6 @@ def test_seed_default_presets_syncs_text_fields(tmp_path: Path) -> None:
         "graffiti_outline_tower",
         "radial_swirl",
         "twirl_vortex",
-        "water_ripple",
-        "squiggle_wave",
         "liquid_spill",
         "codex_chalk_sepia",
         "codex_blueprint",
@@ -509,6 +507,7 @@ def test_seed_default_presets_syncs_text_fields(tmp_path: Path) -> None:
         "green_cast_film",
         "classic_slide_64",
         "expired_film",
+        "vintage_poster",
     ]
     synced =get_preset_by_name("bw_bg_glowing_subject", db_path=db)
     assert synced is not None
@@ -752,3 +751,29 @@ def test_init_db_creates_missing_parent_dir(tmp_path: Path) -> None:
     db = tmp_path / "volume" / "nested" / "presets.local.db"
     assert init_db(db) == db
     assert db.is_file()
+
+
+def test_seed_skips_and_removes_disabled_presets(tmp_path: Path) -> None:
+    from database.db_ops import DISABLED_PRESETS
+
+    assert {"water_ripple", "squiggle_wave"} <= DISABLED_PRESETS
+    db = tmp_path / "presets.db"
+    init_db(db)
+    # An install seeded before the presets were disabled still has their rows.
+    stale = add_preset("water_ripple", "backend/presets/water_ripple.json", ["ripple"], db_path=db)
+    increment_used_count(int(stale["preset_id"]), db_path=db)
+    created = seed_default_presets(db_path=db)
+    names = {row["preset_name"] for row in list_presets(db_path=db)}
+    assert not names & DISABLED_PRESETS
+    assert not {row["preset_name"] for row in created} & DISABLED_PRESETS
+    assert all(row["preset_name"] not in DISABLED_PRESETS for row in list_popular(db_path=db))
+    assert get_preset_by_name("water_ripple", db_path=db) is None
+
+
+def test_disabled_presets_are_hidden_from_gallery() -> None:
+    import json
+
+    from database.db_ops import DISABLED_PRESETS
+
+    manifest = json.loads((Path(__file__).resolve().parents[1] / "previews" / "presets.json").read_text())
+    assert not {entry["preset_name"] for entry in manifest} & DISABLED_PRESETS

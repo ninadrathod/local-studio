@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import io
+
 import sys
 from pathlib import Path
 
@@ -69,6 +71,21 @@ def test_downscale_square_uses_crop_align() -> None:
     out = downscale_square(image, size=4, align="left")
     assert out.size == (4, 4)
     assert out.getpixel((1, 1)) == (255, 0, 0)
+
+
+def test_downscale_square_applies_exif_orientation() -> None:
+    # Stored 4×2 (red left, blue right) with orientation 6 → displayed 2×4, red on top.
+    image = _wide_red_blue()
+    exif = Image.Exif()
+    exif[0x0112] = 6
+    buf = io.BytesIO()
+    image.save(buf, format="JPEG", exif=exif.tobytes(), quality=100)
+    buf.seek(0)
+    with Image.open(buf) as tagged:
+        tagged.load()
+        out = downscale_square(tagged, size=2, align="top")
+    r, g, b = out.getpixel((1, 0))
+    assert r > 150 and b < 100
 
 
 def test_font_path_preview_matches_draw_text() -> None:

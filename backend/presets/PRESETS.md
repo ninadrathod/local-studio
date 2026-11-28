@@ -47,6 +47,12 @@ curl -s -X POST "http://localhost:5500/api/apply-preset" \
 For a preset with `text_input: yes`, also send `-F "text=Your caption"`. If `text` is omitted, `default_text` is used. The runner does not branch on filter type: each JSON step names a registered helper and its parameters.
 
 Only one apply-preset job runs at a time; concurrent extras get HTTP **503**.
+### Disable / re-enable a preset
+
+- **Disable:** add its name to `DISABLED_PRESETS` in `backend/database/db_ops.py` and remove its object from `previews/presets.json`. Keep the preset JSON, seed entry, gallery images and credits. On the next start `seed_default_presets()` skips it and deletes any live row (its `popular` count goes with it via `ON DELETE CASCADE`), so search, popular and `POST /api/apply-preset` no longer offer it. Mark its section here as disabled.
+- **Re-enable:** remove the name from `DISABLED_PRESETS`, put its object back in `previews/presets.json`, and drop the "disabled" note here. It is re-seeded on the next start (with a fresh `used_count` of 0).
+- Disabled now: `water_ripple`, `squiggle_wave`.
+
 ## Shipped presets
 
 ### `bw_bg_glowing_subject`
@@ -455,13 +461,17 @@ Ten looks built on point curves (`tone_curve`) and local shadow / highlight reco
 - **Steps:** `extract_subject` (`single_subject: true`) → `warp` on background (`mode: twirl`, amount 160°, radius 1.0, `exclude: subject`) → `composite` → `vignette` 0.3
 - **File:** `backend/presets/twirl_vortex.json`
 
-#### `water_ripple` — Water ripple
+#### `water_ripple` — Water ripple (disabled)
+
+> **Disabled** (listed in `DISABLED_PRESETS` in `backend/database/db_ops.py`): not seeded, removed from live DBs on start, and left out of `previews/presets.json`. The JSON, seed entry and gallery images stay so it can be switched back on.
 
 - **Idea:** Concentric pond rings spread out from behind the subject, shaded crests fading toward the edges, cool grade on the background.
 - **Steps:** `extract_subject` → `warp` on background (`mode: ripple`, amount 0.014, wavelength 0.06, shade 0.35, falloff 1.6, `exclude: subject`) → `color_grade` on background (temperature -0.2, saturation 0.9) → `composite`
 - **File:** `backend/presets/water_ripple.json`
 
-#### `squiggle_wave` — Squiggle wave
+#### `squiggle_wave` — Squiggle wave (disabled)
+
+> **Disabled** — same as `water_ripple` above.
 
 - **Idea:** Psychedelic squiggly background — diagonal sine wobble on both axes with boosted colour; subject crisp.
 - **Steps:** `extract_subject` → `warp` on background (`mode: wave`, amount 0.025, wavelength 0.09, angle 20, `exclude: subject`) → `color_grade` on background (saturation 1.35, contrast 0.1) → `composite`
@@ -506,6 +516,15 @@ Five professional film-stock looks driven by per-channel RGB curves (`tone_curve
 - **Idea:** an expired-roll look: flattened, faded blacks, a magenta-cyan colour crossover (red and blue lifted in the shadows, green dipped), muted colour, grain and faint stains.
 - **Steps:** HD → `tone_curve` (master 0→20 128→128 255→235; red 0→26 128→138 255→238; green 0→10 128→118 255→230; blue 0→32 128→132 255→224) → `color_grade` → `paper_texture`
 - **File:** `backend/presets/expired_film.json`
+
+### Vintage poster
+
+#### `vintage_poster` — Vintage poster
+
+- **Idea:** an old printed poster: warm faded grade on aged paper, the user's title in condensed capitals dead centre (Anton/Impact squashed to 70% height, cream, 85% opacity so the photo shows through, with a faint soft multiplied shadow so it still reads on bright backgrounds), a plain off-white frame (7% of the short side on every side), then two short worn fold creases (cracked ink, grime band, lit ridge) placed per photo. `ar: non-square`, `text_input: yes`, default `MY MUSIC`, limit **20**, no HD.
+- **Steps:** `color_grade` (temperature 0.3, contrast -0.12, black_lift 0.12, saturation 0.65) → `paper_texture` (tint 0.3, grain 0.08, stains 0.2, fade 0.12, `seed: "auto"`) → `draw_text` `$text` as layer `titled` (`poster`, `uppercase`, centre, font_size_ratio 0.1, scale_y 0.7, max_width_ratio 0.8, shadow_ratio 0.015, shadow_color [40, 28, 18], shadow_opacity 0.55) → `blend` `titled` over `image` at opacity 0.85 → `place_on_canvas` (margins 0.07 ×4, fill [242, 237, 226]) → `fold_marks` (cols 1, rows 1, extra 2, `extra_style: scatter`, `seed: "auto"`)
+- **Text opacity pattern:** `draw_text` has no opacity; draw onto a copy (`"as": "titled"`) and `blend` it back with `opacity`.
+- **File:** `backend/presets/vintage_poster.json`
 
 ### Subject spotlights
 
@@ -743,10 +762,11 @@ Five notebook-page looks inspired by Leonardo da Vinci's codices: rough mirror-w
 | `halation` | Film halation: a red-orange halo around (not on) bright highlights; worked at ≤ 1024 px | `on`, `threshold`, `radius_ratio`, `amount`, `color`/`rgb` (default [255, 70, 30]) |
 | `light_leak` | Analog light leak / "sun puddle" screened in from an edge or corner, with a hot `core` and a `streak` stretched along the edge; built at ≤ 256 px | `on`, `anchor` (`top_right`/`top_left`/`bottom_right`/`bottom_left`/`left`/`right`/`top`/`bottom`), `size` (reach, fraction of diagonal), `amount`, `color`/`rgb`, `core`, `streak` (0–1) |
 | `film_dust` | Seeded scanned-film dust: white (and some dark) specks, curly hairs, faint vertical scratches; sizes are fractions of the short side | `on`, `amount` (0–1 speck count), `hairs`, `scratches`, `opacity`, `seed` |
+| `fold_marks` | Worn poster creases: full-length folds from a `cols` × `rows` panel grid (nudged by `jitter`, tilted by `tilt`, wandering slightly) plus `extra` short creases (`corner` diagonal bends or `scatter` straight creases anywhere, `extra_length` [min, max] of the short side). `cols` / `rows` are capped at 12. Each crease gets cracked-off ink showing `paper` (`wear`), a brownish dirt band (`grime`) and a lit/shaded ridge (`strength`); `panels` shades each folded panel slightly differently. Widths are fractions of the short side; numpy in ≤ 1 MP strips; `seed: "auto"` = per-photo layout | `on`, `cols`, `rows`, `extra`, `extra_style`, `extra_length`, `strength`, `wear`, `grime`, `panels` (0–0.2), `width_ratio` (0.004), `jitter`, `tilt` (degrees), `paper` ([r,g,b]), `seed` |
 | `chromatic_aberration` | Radial lens fringing: red scaled out, green half, blue fixed, so colour edges split more toward the corners (no border) | `on`, `amount` (fraction of size, ≤ 0.05) |
 | `blur` | Gaussian blur by `radius_ratio` × short side; large radii run on a shrunken copy (flat cost). RGBA blurs with premultiplied alpha (no dark edges toward transparency). `exclude` names a layer (e.g. `subject`) whose alpha, grown by `exclude_grow`, gets zero weight, so the blurred background fills the cut-out hole from its surroundings | `on`, `radius_ratio`, `exclude` (layer name), `exclude_grow` (fraction of short side; default 0.004) |
 | `selective_color` | Push one colour family (HSV hue band) and optionally mute the rest; near-greys get little weight; numpy in ≤ 1 MP strips | `on`, `hue` (degrees, name `red`/`orange`/`yellow`/`green`/`cyan`/`teal`/`blue`/`purple`/`magenta`/`pink`, or [r,g,b]), `width` (band half-width, degrees), `saturation` (in-band ×), `lightness` (in-band lift 0–1), `others` (out-of-band saturation ×; 0 = grey), `pull` (0–1, rotate in-band hues toward the target) |
-| `draw_text` | Paint a string onto a layer | `on`, `text` (`$text` / `$datetime` / `$date` / `$time` — stamps use the photo's EXIF capture time, else now), `font_size`, `color`/`rgb`, `align` (`center`/`top`/`bottom`/`top_left`/`top_right`/`bottom_left`/`bottom_right`), `font_style` (`sans`/`flow`/`stamp` — bold mono date imprint; poster styles `poster` (Impact → bundled Anton), `brush` (Brush Script → bundled Yellowtail), `slab`, `signature`, `scribble` (bundled Nanum Pen Script, loose felt-pen handwriting), graffiti styles `graffiti` (Sedgwick Ave Display) / `wet_paint` (Rubik Wet Paint, dripping) / `spray` (Rubik Spray Paint), `bold_display`, `stencil`, caps-only `neon_lines` / `marquee`), `font_path` (optional TTF/OTF/TTC; overrides `font_style`), `margin`, `x`, `y`, `stroke_width` (px), or `font_size_ratio` / `margin_ratio` / `stroke_ratio` (fractions of the short side — prefer these); too-wide text shrinks to fit. Poster extras: `scale_y` (vertical stretch), `angle` (tilt, degrees), `glow_ratio` (≤ 0.05) / `glow_color` (neon halo, fixed brightness), `box` (`frame`/`double`/`corners`/`label`) with `box_color`, `box_fill` ([r,g,b(,a)]), `box_ratio`, `box_pad_ratio`, `box_radius_ratio` — the box stretches, tilts and glows with the text. Placement extras: `center_x` / `center_y` (fractions of width / height, together) centre the finished block on a point — e.g. inside a `draw_shape` badge or along an edge with `angle: 90`; `max_width_ratio` (0.05–1, default 0.9 of the width) caps the text width before it shrinks; `uppercase: true` renders the text in capitals |
+| `draw_text` | Paint a string onto a layer | `on`, `text` (`$text` / `$datetime` / `$date` / `$time` — stamps use the photo's EXIF capture time, else now), `font_size`, `color`/`rgb`, `align` (`center`/`top`/`bottom`/`top_left`/`top_right`/`bottom_left`/`bottom_right`), `font_style` (`sans`/`flow`/`stamp` — bold mono date imprint; poster styles `poster` (Impact → bundled Anton), `brush` (Brush Script → bundled Yellowtail), `slab`, `signature`, `scribble` (bundled Nanum Pen Script, loose felt-pen handwriting), graffiti styles `graffiti` (Sedgwick Ave Display) / `wet_paint` (Rubik Wet Paint, dripping) / `spray` (Rubik Spray Paint), `bold_display`, `stencil`, caps-only `neon_lines` / `marquee`), `font_path` (optional TTF/OTF/TTC; overrides `font_style`), `margin`, `x`, `y`, `stroke_width` (px), or `font_size_ratio` / `margin_ratio` / `stroke_ratio` (fractions of the short side — prefer these); too-wide text shrinks to fit. Poster extras: `scale_y` (vertical stretch), `angle` (tilt, degrees), `glow_ratio` (≤ 0.05) / `glow_color` (neon halo, fixed brightness), `box` (`frame`/`double`/`corners`/`label`) with `box_color`, `box_fill` ([r,g,b(,a)]), `box_ratio`, `box_pad_ratio`, `box_radius_ratio` — the box stretches, tilts and glows with the text. Placement extras: `center_x` / `center_y` (fractions of width / height, together) centre the finished block on a point — e.g. inside a `draw_shape` badge or along an edge with `angle: 90`; `max_width_ratio` (0.05–1, default 0.9 of the width) caps the text width before it shrinks; `uppercase: true` renders the text in capitals. Shadow: `shadow_ratio` (blur radius, fraction of the short side, ≤ 0.05), `shadow_color` (default near-black), `shadow_opacity` (0–1, default 0.5) — a soft multiplied shadow that darkens bright backdrops under the text without a hard outline |
 
 Layers are named images in memory. Typical keys: `image`, `subject`, `background`.
 
@@ -866,7 +886,7 @@ print(list_popular())
 10. Agent then ships code:
    - adds helpers/filters only if needed (register in `FILTERS`; no API if/else)
    - writes `backend/presets/<name>.json` (include `"ar"` and `text_input` / `default_text` / `text_character_limit`)
-   - adds an entry to `seed_default_presets()` in `backend/database/db_ops.py` (name, path, keywords, `ar`, text fields) and rebuilds with `docker compose up -d --build`; the backend's start-up `prepare_db.py` inserts it (plus a `popular` row at `used_count` 0) into the live DB
+   - adds an entry to `seed_default_presets()` in `backend/database/db_ops.py` (name, path, keywords, `ar`, text fields); after all changes in the session, the agent asks once whether to rebuild (`docker compose up -d --build`) and only rebuilds on yes — the backend's start-up `prepare_db.py` then inserts it (plus a `popular` row at `used_count` 0) into the live DB
    - updates this file + CONTEXT/ARCHITECTURE (+ tests if needed)
 11. Gallery previews (gated — see create-preset skill step 8):
    - search open-licensed candidates that suit the preset

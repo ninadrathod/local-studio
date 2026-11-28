@@ -1259,6 +1259,81 @@ def test_film_dust_is_seeded_and_scales() -> None:
     assert 0.7 < share((2400, 1800)) / share((1200, 900)) < 1.4
 
 
+def test_fold_marks_seeded_and_local() -> None:
+    import numpy as np
+
+    paper = Image.new("RGB", (400, 300), (120, 110, 100))
+    a = F.fold_marks(paper, cols=1, rows=1, extra=2, extra_style="scatter", seed=5)
+    b = F.fold_marks(paper, cols=1, rows=1, extra=2, extra_style="scatter", seed=5)
+    c = F.fold_marks(paper, cols=1, rows=1, extra=2, extra_style="scatter", seed=6)
+    assert a.size == paper.size and a.mode == "RGB"
+    assert a.tobytes() == b.tobytes() and a.tobytes() != c.tobytes()
+    # Short creases touch only a small part of the sheet.
+    changed = (np.abs(np.asarray(a, dtype=int) - np.asarray(paper, dtype=int)).max(axis=2) > 2).mean()
+    assert 0 < changed < 0.15
+    # A full 2 × 2 fold reaches both edges.
+    full = np.asarray(F.fold_marks(paper, cols=2, rows=2, extra=0, seed=5), dtype=int)
+    diff = np.abs(full - np.asarray(paper, dtype=int)).max(axis=2) > 2
+    assert diff[0].any() and diff[-1].any() and diff[:, 0].any() and diff[:, -1].any()
+    assert F.fold_marks(paper, strength=0, wear=0, grime=0, panels=0, seed=5).tobytes() == paper.tobytes()
+    rgba = F.fold_marks(paper.convert("RGBA"), seed=5)
+    assert rgba.mode == "RGBA"
+    with pytest.raises(ValueError):
+        F.fold_marks(paper, extra_style="zigzag")
+
+
+def test_fold_marks_caps_fold_count() -> None:
+    paper = Image.new("RGB", (120, 90), (120, 110, 100))
+    capped = F.fold_marks(paper, cols=12, rows=12, extra=0, seed=2)
+    huge = F.fold_marks(paper, cols=5000, rows=5000, extra=0, seed=2)
+    assert huge.tobytes() == capped.tobytes()
+
+
+def test_draw_text_shadow_darkens_bright_backdrop_only_near_text() -> None:
+    white = Image.new("RGB", (300, 200), (250, 250, 250))
+    plain = F.draw_text(white, text="HI", color=[255, 255, 255], font_size_ratio=0.3)
+    shaded = F.draw_text(
+        white, text="HI", color=[255, 255, 255], font_size_ratio=0.3,
+        shadow_ratio=0.02, shadow_color=[40, 30, 20], shadow_opacity=0.6,
+    )
+    assert plain.convert("L").getextrema()[0] >= 245
+    assert shaded.convert("L").getextrema()[0] < 230  # halo visible around white letters
+    assert shaded.convert("RGB").getpixel((2, 2)) == (250, 250, 250)  # corners untouched
+    off = F.draw_text(white, text="HI", color=[255, 255, 255], font_size_ratio=0.3, shadow_ratio=0.02, shadow_opacity=0)
+    assert off.tobytes() == plain.tobytes()
+    with pytest.raises(ValueError):
+        F.draw_text(white, text="HI", shadow_ratio=0.02, shadow_opacity=2)
+
+
+def test_apply_preset_file_honours_exif_orientation(tmp_path) -> None:
+    from apply_preset import apply_preset_file
+
+    preset = tmp_path / "noop.json"
+    preset.write_text(json.dumps({"name": "noop", "steps": [{"filter": "brightness", "amount": 1.0}]}))
+    src = Image.new("RGB", (40, 20), (200, 0, 0))
+    exif = Image.Exif()
+    exif[0x0112] = 6  # rotate 90° on display
+    path = tmp_path / "tagged.jpg"
+    src.save(path, format="JPEG", exif=exif.tobytes())
+    out = apply_preset_file(path, preset, tmp_path / "out.png")
+    assert Image.open(out).size == (20, 40)
+
+
+def test_vintage_poster_preset_applies(monkeypatch: pytest.MonkeyPatch) -> None:
+    data = load_preset(PRESETS / "vintage_poster.json")
+    assert data["ar"] == "non-square" and data["text_input"] == "yes"
+    assert data["default_text"] == "MY MUSIC" and data["text_character_limit"] == 20
+    assert all(s["filter"] in FILTERS for s in data["steps"])
+    assert not any(s["filter"] == "ai_upscale" for s in data["steps"])
+    src = Image.new("RGB", (300, 200), (90, 120, 160))
+    out = apply_preset(src, PRESETS / "vintage_poster.json", text="my music")
+    short = 200
+    margin = round(0.07 * short)
+    assert out.size == (300 + 2 * margin, 200 + 2 * margin)
+    # Frame corner stays off-white.
+    assert all(abs(v - e) < 30 for v, e in zip(out.convert("RGB").getpixel((2, 2)), (242, 237, 226)))
+
+
 def test_chromatic_aberration_fringes_edges_not_centre() -> None:
     src = Image.new("RGB", (200, 200), (0, 0, 0))
     src.paste((255, 255, 255), (170, 90, 190, 110))  # white block near the right edge

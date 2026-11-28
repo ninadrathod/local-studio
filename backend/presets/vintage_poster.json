@@ -1,0 +1,98 @@
+{
+  "name": "vintage_poster",
+  "label": "Vintage poster",
+  "description": "Warm faded grade on aged paper, the user's title in condensed caps (70% height, 85% opacity, faint soft shadow) dead centre, a plain off-white frame, and two short worn fold creases placed per photo.",
+  "ar": "non-square",
+  "text_input": "yes",
+  "default_text": "MY MUSIC",
+  "text_character_limit": 20,
+  "steps": [
+    {
+      "filter": "color_grade",
+      "on": "image",
+      "temperature": 0.3,
+      "contrast": -0.12,
+      "black_lift": 0.12,
+      "saturation": 0.65
+    },
+    {
+      "filter": "paper_texture",
+      "on": "image",
+      "color": [
+        240,
+        226,
+        196
+      ],
+      "tint": 0.3,
+      "grain": 0.08,
+      "stains": 0.2,
+      "fade": 0.12,
+      "seed": "auto"
+    },
+    {
+      "filter": "draw_text",
+      "on": "image",
+      "text": "$text",
+      "uppercase": true,
+      "font_style": "poster",
+      "align": "center",
+      "color": [
+        246,
+        240,
+        226
+      ],
+      "font_size_ratio": 0.1,
+      "max_width_ratio": 0.8,
+      "scale_y": 0.7,
+      "as": "titled",
+      "shadow_ratio": 0.015,
+      "shadow_color": [
+        40,
+        28,
+        18
+      ],
+      "shadow_opacity": 0.55
+    },
+    {
+      "filter": "blend",
+      "base": "image",
+      "overlay": "titled",
+      "opacity": 0.85,
+      "as": "image"
+    },
+    {
+      "filter": "place_on_canvas",
+      "on": "image",
+      "margins": [
+        0.07,
+        0.07,
+        0.07,
+        0.07
+      ],
+      "fill": [
+        242,
+        237,
+        226
+      ],
+      "as": "image"
+    },
+    {
+      "filter": "fold_marks",
+      "on": "image",
+      "cols": 1,
+      "rows": 1,
+      "extra": 2,
+      "extra_style": "scatter",
+      "extra_length": [
+        0.16,
+        0.4
+      ],
+      "strength": 0.5,
+      "wear": 0.6,
+      "grime": 0.4,
+      "panels": 0.0,
+      "width_ratio": 0.004,
+      "seed": "auto"
+    }
+  ]
+}
