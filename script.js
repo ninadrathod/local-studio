@@ -17,7 +17,7 @@ import { isImageFile, createObjectUrl, revokeObjectUrl } from "./js/image.js";
  */
 const API_BASE = "";
 const PRESETS_MANIFEST = "previews/presets.json";
-/** The manifest lists newest presets first; this many get a "New" badge (the gallery itself is shuffled). */
+/** The manifest lists newest presets first (the gallery keeps that order); this many get a "New" badge. */
 const NEW_BADGE_COUNT = 5;
 const SEARCH_DEBOUNCE_MS = 180;
 
@@ -89,43 +89,10 @@ let searchMatchNames = null;
 let inputImageIsSquare = true;
 /** When true, the search-row refresh loads gallery order from the `popular` table. */
 let popularSortActive = false;
-/** Last applied popular `preset_name` order; `null` means this visit's shuffled gallery order. */
+/** Last applied popular `preset_name` order; `null` means the default newest-first order. */
 let popularOrderNames = null;
 /** Bumped on each popular refresh — ignores stale responses. */
 let popularGeneration = 0;
-
-/**
- * Random integer in [0, n). Uses `crypto.getRandomValues` when available
- * (rejection sampling, so every index is equally likely), else Math.random.
- * @param {number} n
- */
-function randomIndex(n) {
-  const cryptoObj = globalThis.crypto;
-  if (cryptoObj?.getRandomValues) {
-    const limit = Math.floor(0x100000000 / n) * n;
-    const buf = new Uint32Array(1);
-    do {
-      cryptoObj.getRandomValues(buf);
-    } while (buf[0] >= limit);
-    return buf[0] % n;
-  }
-  return Math.floor(Math.random() * n);
-}
-
-/**
- * Fisher–Yates shuffle into a new array (the input is left untouched).
- * @template T
- * @param {T[]} list
- * @returns {T[]}
- */
-function shuffled(list) {
-  const out = [...list];
-  for (let i = out.length - 1; i > 0; i -= 1) {
-    const j = randomIndex(i + 1);
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
-}
 
 function formatPresetLabel(name) {
   return String(name || "")
@@ -664,8 +631,7 @@ async function loadPresets() {
       );
     }
 
-    // Fresh random order on every page load; search / Popular reorder on top of it.
-    allGalleryPresets = shuffled(allGalleryPresets);
+    // Manifest order is the default: newest first. Search / Popular reorder on top of it.
     renderVisibleGallery();
   } catch (err) {
     els.presetLoading?.remove();
@@ -714,8 +680,8 @@ function reorderByNameRank(list, orderNames) {
 }
 
 /**
- * Search keeps only the matches, in this visit's shuffled order (stable while
- * typing, so cards don't jump on each keystroke). No search → full shuffled order.
+ * Search keeps only the matches, in the default newest-first order (stable while
+ * typing, so cards don't jump on each keystroke). No search → the full gallery.
  * @param {Array<{ preset_name: string }>} list
  * @returns {Array<{ preset_name: string }>}
  */

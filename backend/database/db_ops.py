@@ -24,6 +24,11 @@ VALID_AR = frozenset({"square", "non-square"})
 DEFAULT_TEXT_INPUT = "no"
 VALID_TEXT_INPUT = frozenset({"yes", "no"})
 MAX_PRESET_TEXT_CHARS = 200
+# Presets switched off: their seed entries stay below (so re-enabling is just
+# removing the name here), but they are never seeded and any live row — with its
+# popular count — is removed on the next start. Also drop their gallery entries
+# from previews/presets.json while disabled.
+DISABLED_PRESETS = frozenset({"water_ripple", "squiggle_wave"})
 
 
 def get_connection(db_path: Path = DB_PATH) -> sqlite3.Connection:
@@ -2896,10 +2901,46 @@ def seed_default_presets(*, db_path: Path = DB_PATH) -> list[dict[str, Any]]:
             "default_text": "",
             "text_character_limit": 0,
         },
+        {
+            "preset_name": "vintage_poster",
+            "preset_path": "backend/presets/vintage_poster.json",
+            "keywords": [
+                "vintage",
+                "retro",
+                "old",
+                "aged",
+                "antique",
+                "nostalgic",
+                "classic",
+                "worn",
+                "faded",
+                "poster",
+                "vintage poster",
+                "old poster",
+                "print",
+                "paper",
+                "film poster",
+                "movie poster",
+                "travel poster",
+                "cover",
+                "album cover",
+                "event",
+                "memories",
+                "keepsake",
+            ],
+            "ar": "non-square",
+            "text_input": "yes",
+            "default_text": "MY MUSIC",
+            "text_character_limit": 20,
+        },
     ]
     created: list[dict[str, Any]] = []
     for item in defaults:
         existing = get_preset_by_name(item["preset_name"], db_path=db_path)
+        if item["preset_name"] in DISABLED_PRESETS:
+            if existing is not None:
+                delete_preset(int(existing["preset_id"]), db_path=db_path)
+            continue
         if existing is None:
             created.append(
                 add_preset(

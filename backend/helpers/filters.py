@@ -2769,6 +2769,171 @@ def film_dust(
     return _keep_alpha(out, image)
 
 
+def _smooth_noise_1d(rng, n: int = 8):
+    """Seeded smooth 1-D noise on [0, 1] → [0, 1] (cosine-interpolated knots)."""
+    import numpy as np
+
+    knots = np.asarray([rng.random() for _ in range(n + 1)], dtype=np.float32)
+
+    def sample(t):
+        pos = np.clip(t, 0.0, 1.0) * n
+        i = np.minimum(pos.astype(np.int32), n - 1)
+        f = pos - i
+        f = (1 - np.cos(f * np.pi)) / 2
+        return knots[i] * (1 - f) + knots[i + 1] * f
+
+    return sample
+
+
+_MAX_FOLDS = 12
+
+
+def fold_marks(
+    image: Image.Image,
+    cols: int = 2,
+    rows: int = 2,
+    extra: int = 1,
+    extra_style: str = "corner",
+    extra_length: Sequence[float] = (0.16, 0.4),
+    strength: float = 0.5,
+    wear: float = 0.6,
+    grime: float = 0.4,
+    panels: float = 0.04,
+    width_ratio: float = 0.004,
+    jitter: float = 0.04,
+    tilt: float = 1.0,
+    paper: Sequence[int] | None = None,
+    seed: int | str = "auto",
+) -> Image.Image:
+    """
+    Worn creases from a poster that was folded for years and opened again.
+
+    `cols` / `rows` are the folded panels (2 × 2 → one vertical + one horizontal
+    crease); each crease is nudged off the grid by up to `jitter` (fraction of the
+    side), tilted by up to `tilt` degrees and wanders slightly along its length.
+    `extra` adds short random creases: `extra_style` `corner` (diagonal bends
+    near the corners) or `scatter` (short straight creases anywhere, along the
+    grid directions); `extra_length` is their [min, max] length as a fraction
+    of the short side. `cols` / `rows` of 1 mean no full-length crease, so only
+    the short ones show. Along every crease:
+      - `wear` (0–1): ink cracked off in broken patches, showing `paper`;
+      - `grime` (0–1): a soft brownish dirt band;
+      - `strength` (0–1): the fold's ridge, lit on one side and shaded on the other.
+    `cols` / `rows` are capped at 12. `panels` (0–0.2) shades each folded panel slightly differently, as a sheet
+    that never lies quite flat again. `width_ratio` is the crease width as a
+    fraction of the short side. `seed: "auto"` gives each photo its own layout.
+    """
+    import random
+
+    import numpy as np
+
+    out = _as_rgb(image)
+    w, h = out.size
+    short = min(w, h)
+    base_seed = _image_seed(out) if seed == "auto" else int(seed)
+    rng = random.Random(base_seed)
+    clamp = lambda v, hi=1.0: max(0.0, min(hi, float(v)))
+    s, wr, gr, pn = clamp(strength), clamp(wear), clamp(grime), clamp(panels, 0.2)
+    jit, tilt_max = clamp(jitter, 0.2), clamp(tilt, 10.0)
+    cw = max(1.0, _ratio_px(width_ratio, out.size, 3.0))
+    paper_rgb = np.asarray(_rgb_tint(paper, None, (238, 230, 210)), dtype=np.float32)
+    # Capped: every crease is evaluated per strip, so a typo like `cols: 500` can't stall a render.
+    n_cols, n_rows = max(1, min(_MAX_FOLDS, int(cols))), max(1, min(_MAX_FOLDS, int(rows)))
+    extra_style = (extra_style or "corner").strip().lower()
+    if extra_style not in {"corner", "scatter"}:
+        raise ValueError("extra_style must be 'corner' or 'scatter'")
+    if len(extra_length) != 2:
+        raise ValueError("extra_length must be [min, max]")
+
+    creases = []
+
+    def add(px, py, angle_deg, half_len, gain):
+        a = math.radians(angle_deg)
+        creases.append(
+            dict(
+                px=px, py=py, dx=math.cos(a), dy=math.sin(a), half=half_len,
+                lit=rng.choice((-1, 1)), gain=gain,
+                env=_smooth_noise_1d(rng, 6), wobble=_smooth_noise_1d(rng, 24),
+                cracks=_smooth_noise_1d(rng, 160), grit=_smooth_noise_1d(rng, 12),
+            )
+        )
+
+    xs_cut = [0.0]
+    for i in range(1, n_cols):
+        x = (i / n_cols + rng.uniform(-jit, jit)) * w
+        xs_cut.append(x)
+        add(x, h / 2, 90 + rng.uniform(-tilt_max, tilt_max), math.inf, rng.uniform(0.75, 1.0))
+    ys_cut = [0.0]
+    for i in range(1, n_rows):
+        y = (i / n_rows + rng.uniform(-jit, jit)) * h
+        ys_cut.append(y)
+        add(w / 2, y, rng.uniform(-tilt_max, tilt_max), math.inf, rng.uniform(0.75, 1.0))
+    lo, hi = sorted((clamp(extra_length[0]), clamp(extra_length[1])))
+    for _ in range(max(0, min(8, int(extra)))):
+        if extra_style == "corner":
+            cx = rng.choice((rng.uniform(0.02, 0.2), rng.uniform(0.8, 0.98))) * w
+            cy = rng.choice((rng.uniform(0.02, 0.2), rng.uniform(0.8, 0.98))) * h
+            angle = rng.choice((45, 135)) + rng.uniform(-20, 20)
+        else:
+            # A short crease anywhere, running roughly along the fold grid.
+            cx, cy = rng.uniform(0.12, 0.88) * w, rng.uniform(0.12, 0.88) * h
+            angle = rng.choice((0, 90)) + rng.uniform(-6, 6)
+        add(cx, cy, angle, short * rng.uniform(lo, hi) / 2, rng.uniform(0.6, 0.9))
+    panel_gain = [[1 + pn * rng.uniform(-1, 1) for _ in xs_cut] for _ in ys_cut]
+
+    # uint8 frame + float32 work on ≤ 1 MP strips only, so a 61 MP photo stays bounded.
+    pixels = np.asarray(out, dtype=np.uint8).copy()
+    strip = max(1, _GRADE_STRIP_PIXELS // max(1, w))
+    xs = np.arange(w, dtype=np.float32)[None, :]
+    col_idx = np.searchsorted(np.asarray(xs_cut[1:], dtype=np.float32), xs[0])
+    for y0 in range(0, h, strip):
+        y1 = min(h, y0 + strip)
+        ys = np.arange(y0, y1, dtype=np.float32)[:, None]
+        fine = np.random.default_rng((base_seed + y0) & 0xFFFFFFFF).random((y1 - y0, w), dtype=np.float32)
+        shade = np.zeros((y1 - y0, w), dtype=np.float32)  # + lighten / − darken
+        dirt = np.zeros_like(shade)
+        scuff = np.zeros_like(shade)
+        for c in creases:
+            rx, ry = xs - c["px"], ys - c["py"]
+            t = rx * c["dx"] + ry * c["dy"]
+            if math.isinf(c["half"]):
+                u = t / (abs(c["dx"]) * w + abs(c["dy"]) * h) + 0.5
+                env = 0.6 + 0.4 * c["env"](u)
+            else:
+                u = t / (2 * c["half"]) + 0.5
+                edge = np.clip(np.minimum(u, 1 - u) * 5, 0, 1)
+                env = edge * edge * (3 - 2 * edge) * (0.6 + 0.4 * c["env"](u))
+            d = (rx * -c["dy"] + ry * c["dx"]) / cw + (c["wobble"](u) - 0.5) * 1.6
+            near = np.abs(d) < 10
+            if not near.any():
+                continue
+            env = env * c["gain"]
+            g = np.exp(-0.5 * d * d)
+            shade += np.where(near, c["lit"] * -d * g * 1.65 * env, 0)
+            dirt += np.where(near, np.exp(-0.5 * (d / 3.0) ** 2) * (0.5 + 0.5 * c["grit"](u)) * env, 0)
+            # Cracked ink: thin core broken into patches, with fibrous pixel noise.
+            broken = np.clip((c["cracks"](u) - 0.35) * 3.0, 0, 1)
+            core = np.exp(-0.5 * (d / 0.9) ** 2) * (0.35 + 0.65 * fine)
+            scuff = np.maximum(scuff, np.where(near, core * broken * env, 0))
+        rgb = pixels[y0:y1].astype(np.float32)
+        if pn > 0:
+            row_idx = np.searchsorted(np.asarray(ys_cut[1:], dtype=np.float32), ys[:, 0])
+            gains = np.asarray(panel_gain, dtype=np.float32)[row_idx][:, col_idx]
+            rgb *= gains[..., None]
+        if gr > 0:
+            k = np.clip(dirt * gr * 0.35, 0, 0.6)[..., None]
+            rgb *= 1 - k * (1 - np.asarray((0.82, 0.7, 0.55), dtype=np.float32))
+        if s > 0:
+            dl = (shade * s * 0.35)[..., None]
+            rgb[:] = np.where(dl > 0, rgb + dl * (255 - rgb), rgb * (1 + dl))
+        if wr > 0:
+            m = np.clip(scuff * wr, 0, 1)[..., None]
+            rgb[:] = rgb + m * (paper_rgb - rgb)
+        pixels[y0:y1] = np.clip(rgb + 0.5, 0, 255).astype(np.uint8)
+    out = Image.fromarray(pixels, "RGB")
+    return _keep_alpha(out, image)
+
+
 def chromatic_aberration(
     image: Image.Image,
     amount: float = 0.004,
@@ -3519,6 +3684,9 @@ def _paste_text_block(
     box: dict | None = None,
     xy: tuple[int, int] | None = None,
     center: tuple[float, float] | None = None,
+    shadow: float = 0.0,
+    shadow_rgb: tuple[int, int, int] = (0, 0, 0),
+    shadow_alpha: float = 0.0,
 ) -> Image.Image:
     """Render text on its own layer, stretch it, frame it, tilt it, add a neon glow, and paste it.
 
@@ -3543,7 +3711,7 @@ def _paste_text_block(
     if angle:
         layer = layer.rotate(float(angle), resample=Image.Resampling.BICUBIC, expand=True)
     # Room for the glow to fade out inside the layer instead of being cut at its edge.
-    spread = int(math.ceil(glow * 3)) if glow > 0 else 0
+    spread = int(math.ceil(max(glow, shadow) * 3)) if max(glow, shadow) > 0 else 0
     if spread:
         padded = Image.new("RGBA", (layer.width + 2 * spread, layer.height + 2 * spread), (0, 0, 0, 0))
         padded.paste(layer, (spread, spread))
@@ -3569,7 +3737,18 @@ def _paste_text_block(
             top = (ch - lh) / 2
     pos = (int(round(left)), int(round(top)))
 
-    if spread:
+    if shadow > 0 and shadow_alpha > 0:
+        # Soft shadow: blurred alpha multiplied in `shadow_rgb`, so it darkens a
+        # bright backdrop under the letters and barely changes a dark one.
+        soft = layer.getchannel("A").filter(ImageFilter.GaussianBlur(max(0.5, shadow)))
+        soft = soft.point(lambda v: int(v * shadow_alpha))
+        mask = Image.new("L", canvas.size, 0)
+        mask.paste(soft, pos)
+        white = Image.new("RGB", canvas.size, (255, 255, 255))
+        mix = Image.composite(Image.new("RGB", canvas.size, shadow_rgb), white, mask)
+        shaded = ImageChops.multiply(canvas.convert("RGB"), mix)
+        canvas = Image.merge("RGBA", (*shaded.split(), canvas.getchannel("A")))
+    if glow > 0:
         # Neon halo: blurred alpha in `glow_rgb`, screened onto the canvas twice
         # (wide soft bloom + tighter hot ring) before the crisp text goes on top.
         alpha = layer.getchannel("A")
@@ -3633,11 +3812,19 @@ def draw_text(
     center_y: float | None = None,
     max_width_ratio: float | None = None,
     uppercase: bool = False,
+    shadow_ratio: float = 0.0,
+    shadow_color: Sequence[int] | None = None,
+    shadow_opacity: float = 0.5,
 ) -> Image.Image:
     """
     Draw `text` onto an image.
 
     `uppercase: true` renders the text in capitals whatever the user typed.
+
+    `shadow_ratio` (blur radius, fraction of the short side, capped at 0.05)
+    adds a soft shadow in `shadow_color` (default near-black) at
+    `shadow_opacity` (0–1) under the text. It is multiplied in, so it lifts
+    pale text off a bright backdrop without drawing a hard outline.
 
     `center_x` / `center_y` (fractions of the width / height, both required)
     centre the finished text block on that point — e.g. inside a speech bubble
@@ -3739,7 +3926,16 @@ def draw_text(
 
     stretch = max(0.1, float(scale_y))
     glow = _ratio_px(min(float(glow_ratio), _MAX_TEXT_GLOW_RATIO), canvas.size, 0.0) if glow_ratio else 0.0
-    layered = stretch != 1.0 or bool(angle) or glow > 0 or frame is not None or centre is not None
+    shadow = _ratio_px(min(float(shadow_ratio), _MAX_TEXT_GLOW_RATIO), canvas.size, 0.0) if shadow_ratio else 0.0
+    shadow_alpha = float(shadow_opacity)
+    if not math.isfinite(shadow_alpha) or not 0.0 <= shadow_alpha <= 1.0:
+        raise ValueError("shadow_opacity must be between 0 and 1")
+    if shadow_alpha == 0:
+        shadow = 0.0
+    shadow_rgb = _rgb_tint(shadow_color, None, (20, 16, 12))
+    layered = (
+        stretch != 1.0 or bool(angle) or glow > 0 or shadow > 0 or frame is not None or centre is not None
+    )
     xy = (int(x), int(y)) if x is not None and y is not None else None
 
     if xy is not None and not layered:
@@ -3756,7 +3952,7 @@ def draw_text(
         glow_rgb = _rgb_tint(glow_color, None, stroke_fill[:3] if stroke_fill else tint)
         return _paste_text_block(
             canvas, value, draw_kwargs, bbox, stretch, float(angle or 0), glow, glow_rgb,
-            mode, pad, frame, xy, centre,
+            mode, pad, frame, xy, centre, shadow, shadow_rgb, shadow_alpha,
         )
 
     def _draw_at(px: float, py: float, anchor: str) -> None:

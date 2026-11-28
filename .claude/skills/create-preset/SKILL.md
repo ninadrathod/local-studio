@@ -33,6 +33,7 @@ Create-preset progress:
 - [ ] 6b. Font options via _candidates HTML (only if the look uses draw_text)
 - [ ] 7. Ship: helpers (if needed) + presets/*.json + database row + docs/tests
 - [ ] 8. Gallery previews: search → _candidates HTML → user picks → ship assets
+- [ ] 9. Ask once: rebuild the app now? (yes/no) — rebuild only on yes
 ```
 
 ## How the user will ask
@@ -167,11 +168,7 @@ open previews/_candidates/<round>/index.html
 
 1. Add any new filter ops under `backend/helpers/filters.py` and register them in `backend/helpers/apply_preset.py` `FILTERS` (use `_run_simple` for single-layer ops). Keep helpers modular. Do not add per-filter if/else in the API or the step runner.
 2. Write `backend/presets/<final_name>.json` with `name`, `label`, `description`, `ar` (`square` or `non-square`), `text_input` (`yes` or `no`), `default_text`, `text_character_limit`, and `steps`. Each step’s `"filter"` is the helper function name; remaining keys are that helper’s parameters. Use `"$text"` in a param when the step should receive the user string. If 6a was **yes**, `steps[0]` is the finalized `ai_upscale` step and later pixel-sized params are the HD-scaled values.
-3. Register the DB row. The live DB (`presets.local.db`) sits on the backend's Docker volume and the committed `presets.db` is a frozen legacy copy (never edit it), so the **seed list is the source of truth**: append an entry to `defaults` in `seed_default_presets()` (`backend/database/db_ops.py`) with `preset_name`, `preset_path` (`backend/presets/<final_name>.json`), the finalized `keywords`, `ar`, `text_input`, `default_text`, and `text_character_limit`. Then rebuild — the backend runs `prepare_db.py` on start, which adds it to the live DB (every other install picks it up on its next rebuild):
-
-```bash
-docker compose up -d --build
-```
+3. Register the DB row. The live DB (`presets.local.db`) sits on the backend's Docker volume and the committed `presets.db` is a frozen legacy copy (never edit it), so the **seed list is the source of truth**: append an entry to `defaults` in `seed_default_presets()` (`backend/database/db_ops.py`) with `preset_name`, `preset_path` (`backend/presets/<final_name>.json`), the finalized `keywords`, `ar`, `text_input`, `default_text`, and `text_character_limit`. The running app only picks it up after a rebuild (the backend runs `prepare_db.py` on start, which adds it to the live DB; every other install picks it up on its next rebuild) — but **do not rebuild here**. The user may ship several presets or changes in one session; rebuilding is asked once at the very end (step 9). Final checks in step 6 and step 8 run in the `dev` container, which sees the working copy without a rebuild.
 
 Update the expected names/counts in `test-suite/test_database.py` (seed tests) to include the new preset, and run the suite with `docker compose run --rm dev`.
 
@@ -194,6 +191,16 @@ Understand what the shipped preset does, then pick photos where that effect actu
    - prepend `{ "preset_name", "ar", "text_input", "default_text", "text_character_limit", "pre_edit_image", "post_edit_image" }` to `previews/presets.json` (newest first)
    - record source + photographer + license in `previews/CREDITS.md`
    - delete `previews/_candidates/`
+
+### 9. Rebuild? (ask once, at the very end)
+
+After the gallery ships (or whenever the session's preset work is done), ask the user one yes/no question: **"Rebuild the app now so the new preset shows up at localhost:5500? (yes/no)"**. Never rebuild on your own — not after shipping a preset, a fix, or a gallery update. Only on **yes**, run:
+
+```bash
+docker compose up -d --build
+```
+
+On **no**, leave it; the user will rebuild later (several changes can share one rebuild).
 
 ## Rules
 

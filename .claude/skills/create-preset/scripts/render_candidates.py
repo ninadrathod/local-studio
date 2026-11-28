@@ -39,7 +39,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 _CARD_ID = re.compile(r"^[A-Za-z0-9_-]+$")
 
@@ -139,6 +139,8 @@ def downscale_square(
     size: int = GALLERY_SIZE,
     align: str = "center",
 ) -> Image.Image:
+    # Phone photos often store rotation as an EXIF tag; apply it so the crop isn't sideways.
+    image = ImageOps.exif_transpose(image) or image
     square = crop_square(image, align)
     if square.size[0] == size:
         return square

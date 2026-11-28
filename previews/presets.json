@@ -1,5 +1,14 @@
 [
   {
+    "preset_name": "vintage_poster",
+    "ar": "non-square",
+    "text_input": "yes",
+    "default_text": "MY MUSIC",
+    "text_character_limit": 20,
+    "pre_edit_image": "previews/pre-edit/vintage_poster.webp",
+    "post_edit_image": "previews/post-edit/vintage_poster.webp"
+  },
+  {
     "preset_name": "expired_film",
     "ar": "non-square",
     "text_input": "no",
@@ -151,24 +160,6 @@
     "text_character_limit": 0,
     "pre_edit_image": "previews/pre-edit/liquid_spill.webp",
     "post_edit_image": "previews/post-edit/liquid_spill.webp"
-  },
-  {
-    "preset_name": "squiggle_wave",
-    "ar": "non-square",
-    "text_input": "no",
-    "default_text": "",
-    "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/squiggle_wave.webp",
-    "post_edit_image": "previews/post-edit/squiggle_wave.webp"
-  },
-  {
-    "preset_name": "water_ripple",
-    "ar": "non-square",
-    "text_input": "no",
-    "default_text": "",
-    "text_character_limit": 0,
-    "pre_edit_image": "previews/pre-edit/water_ripple.webp",
-    "post_edit_image": "previews/post-edit/water_ripple.webp"
   },
   {
     "preset_name": "radial_swirl",

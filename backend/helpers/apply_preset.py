@@ -22,7 +22,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
 
-from PIL import Image, ImageStat
+from PIL import Image, ImageOps, ImageStat
 from pillow_heif import register_heif_opener
 
 import filters as F
@@ -331,6 +331,7 @@ FILTERS: dict[str, FilterHandler] = {
     "halation": _run_simple(F.halation),
     "light_leak": _run_simple(F.light_leak),
     "film_dust": _run_simple(F.film_dust),
+    "fold_marks": _run_simple(F.fold_marks),
     "chromatic_aberration": _run_simple(F.chromatic_aberration),
     "motion_blur": _run_excluding(F.motion_blur),
     "radial_blur": _run_excluding(F.radial_blur),
@@ -509,7 +510,9 @@ def apply_preset_file(
 
     with Image.open(src) as image:
         image.load()
-        result = apply_preset(image, preset, presets_dir=presets_dir, text=text)
+        # Match the API (image_io): honour the EXIF orientation tag before applying.
+        upright = ImageOps.exif_transpose(image) or image
+        result = apply_preset(upright, preset, presets_dir=presets_dir, text=text)
 
     dst.parent.mkdir(parents=True, exist_ok=True)
     has_alpha = result.mode == "RGBA" and result.getchannel("A").getextrema() != (255, 255)
